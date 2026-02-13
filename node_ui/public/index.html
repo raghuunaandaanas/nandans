@@ -1,0 +1,259 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>History Trade Dashboard</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #111827;
+      --line: #243244;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --accent: #38bdf8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(1200px 600px at 10% -20%, #23324b 0%, var(--bg) 55%);
+      color: var(--text);
+      font: 14px/1.4 "Segoe UI", system-ui, sans-serif;
+    }
+    .wrap { max-width: 1920px; margin: 0 auto; padding: 12px; }
+    .top {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(180px, 1fr));
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .card {
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, #111827, #0e1626);
+      border-radius: 10px;
+      padding: 10px;
+    }
+    .k { color: var(--muted); font-size: 12px; }
+    .v { font-size: 18px; font-weight: 600; margin-top: 2px; }
+    .ctrl {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      border: 1px solid var(--line);
+      background: var(--card);
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    input, select, button {
+      border: 1px solid var(--line);
+      background: #0b1220;
+      color: var(--text);
+      border-radius: 8px;
+      padding: 7px 10px;
+      min-height: 34px;
+    }
+    button { cursor: pointer; }
+    input[type="text"] { min-width: 220px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--line);
+      background: #0b1220;
+    }
+    th, td {
+      border-bottom: 1px solid #1f2937;
+      padding: 7px;
+      text-align: left;
+      white-space: nowrap;
+      font-size: 13px;
+    }
+    th {
+      position: sticky;
+      top: 0;
+      background: #111827;
+      color: #d1d5db;
+      z-index: 2;
+    }
+    .ok { color: var(--ok); }
+    .pending { color: var(--warn); }
+    .table-wrap {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      overflow: auto;
+      max-height: calc(100vh - 238px);
+      background: #0b1220;
+    }
+    .meta { color: var(--muted); margin-left: auto; }
+    .pill {
+      display: inline-block;
+      border: 1px solid var(--line);
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top" id="stats"></div>
+
+    <div class="ctrl">
+      <span class="pill" id="snapDay">day:-</span>
+
+      <label>Timeframe
+        <select id="tf">
+          <option value="1m">1m</option>
+          <option value="5m" selected>5m</option>
+          <option value="15m">15m</option>
+        </select>
+      </label>
+
+      <label>Factor
+        <select id="factor">
+          <option value="micro" selected>micro 0.2611%</option>
+          <option value="mini">mini 2.61%</option>
+          <option value="mega">mega 26.11%</option>
+        </select>
+      </label>
+
+      <input id="search" type="text" placeholder="Search symbol or tsym" />
+      <label><input id="completeOnly" type="checkbox" /> Complete only</label>
+      <label><input id="triggerOnly" type="checkbox" checked /> Only BU1-BU5</label>
+      <label>Limit <input id="limit" type="number" value="5000" min="1" max="50000" style="width:95px"/></label>
+      <label>Refresh(ms) <input id="refreshMs" type="number" value="2000" min="500" max="10000" style="width:110px"/></label>
+      <button id="apply">Apply</button>
+      <span class="meta" id="meta">-</span>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Symbol</th>
+            <th>TSym</th>
+            <th>LTP</th>
+            <th>Volume</th>
+            <th>Close(TF)</th>
+            <th>Points</th>
+            <th>BU1</th>
+            <th>BU2</th>
+            <th>BU3</th>
+            <th>BU4</th>
+            <th>BU5</th>
+            <th>InRange</th>
+            <th>Updated</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const statsEl = document.getElementById('stats');
+    const rowsEl = document.getElementById('rows');
+    const metaEl = document.getElementById('meta');
+    const snapDayEl = document.getElementById('snapDay');
+
+    const tfEl = document.getElementById('tf');
+    const factorEl = document.getElementById('factor');
+    const searchEl = document.getElementById('search');
+    const completeOnlyEl = document.getElementById('completeOnly');
+    const triggerOnlyEl = document.getElementById('triggerOnly');
+    const limitEl = document.getElementById('limit');
+    const refreshMsEl = document.getElementById('refreshMs');
+    const applyEl = document.getElementById('apply');
+
+    let timer = null;
+
+    function f2(v) {
+      if (v === null || v === undefined || v === '') return '-';
+      const n = Number(v);
+      return Number.isFinite(n) ? n.toFixed(2) : String(v);
+    }
+
+    function statCards(stats, extra) {
+      const cards = [
+        ['Total Symbols', stats.total_symbols],
+        ['Today Complete', stats.today_complete],
+        ['Today Pending', stats.today_pending],
+        ['History Pending Symbols', stats.history_pending_symbols],
+        ['Ticks File MB', stats.ticks_file_mb],
+        ['Trigger In-Range Seen', extra.trigger_in_range_seen],
+        ['Scan Rows', extra.scan_rows],
+        ['Displayed Rows', extra.displayed_rows],
+        ['Last Tick Write', stats.last_tick_write],
+        ['Snapshot Updated', extra.snapshot_updated_at],
+      ];
+      statsEl.innerHTML = cards.map(([k, v]) => `
+        <div class="card"><div class="k">${k}</div><div class="v">${v ?? '-'}</div></div>
+      `).join('');
+    }
+
+    function renderRows(rows) {
+      rowsEl.innerHTML = rows.map(r => {
+        const ok = !!r.in_range;
+        return `
+          <tr>
+            <td>${r.symbol ?? ''}</td>
+            <td>${r.tsym ?? ''}</td>
+            <td>${f2(r.ltp)}</td>
+            <td>${f2(r.volume)}</td>
+            <td>${f2(r.close)}</td>
+            <td>${f2(r.points)}</td>
+            <td>${f2(r.bu1)}</td>
+            <td>${f2(r.bu2)}</td>
+            <td>${f2(r.bu3)}</td>
+            <td>${f2(r.bu4)}</td>
+            <td>${f2(r.bu5)}</td>
+            <td class="${ok ? 'ok' : 'pending'}">${ok ? 'yes' : 'no'}</td>
+            <td>${r.updated_at ?? '-'}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function refresh() {
+      const q = encodeURIComponent(searchEl.value || '');
+      const complete = completeOnlyEl.checked ? '1' : '0';
+      const trigger = triggerOnlyEl.checked ? '1' : '0';
+      const tf = encodeURIComponent(tfEl.value || '5m');
+      const factor = encodeURIComponent(factorEl.value || 'micro');
+      const limit = Math.max(1, Math.min(50000, Number(limitEl.value || 5000)));
+      const t0 = performance.now();
+
+      const res = await fetch(`/api/dashboard?q=${q}&complete=${complete}&trigger_only=${trigger}&tf=${tf}&factor=${factor}&limit=${limit}`);
+      const data = await res.json();
+
+      statCards(data.stats || {}, {
+        trigger_in_range_seen: data.trigger_in_range_seen,
+        scan_rows: data.scan_rows,
+        displayed_rows: data.displayed_rows,
+        snapshot_updated_at: data.snapshot_updated_at,
+      });
+      renderRows(data.rows || []);
+
+      const cfg = data.config || {};
+      snapDayEl.textContent = `day:${data.snapshot_day || '-'} tf:${cfg.timeframe || '-'} factor:${cfg.factor || '-'}`;
+      metaEl.textContent = `shown:${data.displayed_rows} | source:${data.snapshot_rows} | load:${(performance.now()-t0).toFixed(0)}ms`;
+    }
+
+    function restartLoop() {
+      if (timer) clearInterval(timer);
+      const ms = Math.max(500, Math.min(10000, Number(refreshMsEl.value || 2000)));
+      refresh();
+      timer = setInterval(refresh, ms);
+    }
+
+    applyEl.addEventListener('click', restartLoop);
+    restartLoop();
+  </script>
+</body>
+</html>
+
+
