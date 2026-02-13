@@ -46,6 +46,12 @@ import urllib.request
 import urllib.parse
 import urllib.error
 
+# Import Traderscope module
+from traderscope import (
+    TraderscopeEngine, DigitAnalysis, RangeShift, PriceObservation,
+    init_traderscope_db, MICRO_ZONES, SPECIAL_RULES
+)
+
 # =============================================================================
 # CONFIGURATION - Parallel to historyapp.py but adapted for Delta India
 # =============================================================================
@@ -563,8 +569,12 @@ class B5StrategyEngine:
         100: {'name': 'next_block', 'type': 'target'},
     }
     
-    def __init__(self, factor: str = 'smart'):
+    def __init__(self, factor: str = 'smart', db_path: str = None):
         self.factor = factor
+        # Initialize Traderscope engine for micro-fib analysis
+        self.traderscope = TraderscopeEngine(db_path=db_path)
+        self.price_history = defaultdict(list)  # symbol -> list of prices
+        self.last_analysis = {}  # symbol -> last digit analysis
     
     def select_factor(self, ltp: float, close: float, symbol: str) -> dict:
         """
@@ -623,17 +633,44 @@ class B5StrategyEngine:
         
         return {'lower': 100, 'upper': 100, 'position': position, 'name': 'beyond', 'type': 'unknown'}
     
-    def analyze_setup(self, ltp: float, close: float, symbol: str) -> dict:
+    def analyze_setup(self, ltp: float, close: float, symbol: str, volume: float = 0) -> dict:
         """
-        Complete trade setup analysis
+        Complete trade setup analysis with Traderscope
         
-        Returns B5 levels + Micro-Fib zones + Entry signals
+        Returns B5 levels + Multi-digit Micro-Fib + Entry signals + Gamma detection
         """
         # Select factor
         factor_info = self.select_factor(ltp, close, symbol)
         
         # Calculate B5 levels
         levels = self.calculate_levels(close, factor_info['factor'])
+        
+        # TRADERSCOPE: Analyze all digit levels
+        digit_analyses = self.traderscope.analyze_all_digits(ltp)
+        
+        # Select best digit for trading
+        volatility = abs((ltp - close) / close) * 100
+        selected_digit = self.traderscope.select_active_digit(ltp, volatility=volatility)
+        selected_analysis = next((d for d in digit_analyses if d.digit == selected_digit), digit_analyses[0])
+        
+        # Detect range shifts
+        range_shifts = []
+        if symbol in self.last_analysis:
+            prev_analysis = self.last_analysis[symbol]
+            range_shifts = self.traderscope.detect_range_shift(
+                symbol, prev_analysis.get('ltp', ltp), ltp,
+                prev_analysis.get('digit_analyses', []), digit_analyses
+            )
+        
+        # Update price history for gamma detection
+        self.price_history[symbol].append(ltp)
+        if len(self.price_history[symbol]) > 20:
+            self.price_history[symbol] = self.price_history[symbol][-20:]
+        
+        # Detect gamma moves
+        gamma_move = self.traderscope.detect_gamma_move(
+            symbol, self.price_history[symbol], digit_analyses
+        )
         
         # Determine which B5 levels price is near
         signals = []
@@ -644,26 +681,55 @@ class B5StrategyEngine:
             # Check if LTP is near this level (within 0.5 points)
             distance = abs(ltp - level_price)
             if distance < levels['points'] * 0.5:
-                # Get micro-fib zone for this level
-                # Calculate which 100-point block this level is in
-                block_size = 100 if ltp < 10000 else 1000
+                # Get micro-fib zone for this level using Traderscope
+                block_size = selected_analysis.magnitude
                 block_start = (level_price // block_size) * block_size
                 position = ((level_price - block_start) / block_size) * 100
-                zone = self.get_micro_fib_zone(position)
+                zone = self.traderscope._get_zone(position)
+                
+                # Generate signal with Traderscope
+                ts_signal = self.traderscope.generate_signal(selected_analysis, level_name)
                 
                 signals.append({
                     'level_name': level_name,
                     'level_price': level_price,
                     'distance': distance,
                     'micro_zone': zone,
+                    'traderscope_signal': ts_signal,
                     'signal': self._generate_signal(level_name, zone)
                 })
+        
+        # Record observation for ML learning
+        observation = PriceObservation(
+            timestamp=datetime.now().isoformat(),
+            symbol=symbol,
+            ltp=ltp,
+            digit=selected_digit,
+            block_start=selected_analysis.block_start,
+            position=selected_analysis.position,
+            zone_name=selected_analysis.zone['name'],
+            b5_level=signals[0]['level_name'] if signals else None,
+            volume=volume
+        )
+        self.traderscope.record_observation(observation)
+        
+        # Store for next analysis
+        self.last_analysis[symbol] = {
+            'ltp': ltp,
+            'digit_analyses': digit_analyses,
+            'timestamp': datetime.now().isoformat()
+        }
         
         return {
             'factor': factor_info,
             'levels': levels,
             'ltp': ltp,
             'close': close,
+            'digit_analyses': digit_analyses,
+            'selected_digit': selected_digit,
+            'selected_analysis': selected_analysis,
+            'range_shifts': range_shifts,
+            'gamma_move': gamma_move,
             'signals': signals,
             'primary_signal': max(signals, key=lambda x: x['signal']['score']) if signals else None
         }

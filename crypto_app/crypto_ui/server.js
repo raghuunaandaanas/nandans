@@ -226,12 +226,23 @@ function recomputeDerived(baseRows, factorName) {
       }
     }
     
+    // Traderscope analysis from snapshot (if available)
+    const digitAnalyses = row.digit_analyses || [];
+    const selectedDigit = row.selected_digit || 5;
+    const selectedAnalysis = digitAnalyses.find(d => d.digit === selectedDigit) || {};
+    const gammaMove = row.gamma_move || null;
+    const rangeShifts = row.range_shifts || [];
+    
     const enriched = {
       ...row,
       close,
       points: levels.points,
       selected_factor: factorInfo.factorName,
       factor_reason: factorInfo.reason,
+      selected_digit: selectedDigit,
+      digit_analyses: digitAnalyses,
+      gamma_move: gammaMove,
+      range_shifts: rangeShifts,
       bu1: levels.bu1,
       bu2: levels.bu2,
       bu3: levels.bu3,
@@ -247,6 +258,10 @@ function recomputeDerived(baseRows, factorName) {
       near_name: nearName,
       near_value: nearValue,
       near_diff: ltp - nearValue,
+      // Traderscope zone info
+      zone_name: selectedAnalysis.zone?.name || '-',
+      zone_type: selectedAnalysis.zone?.type || '-',
+      position_pct: selectedAnalysis.position?.toFixed(2) || '0',
     };
     
     allRows.push(enriched);

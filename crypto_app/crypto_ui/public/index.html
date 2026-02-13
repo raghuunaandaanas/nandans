@@ -271,6 +271,10 @@
       <span class="value" id="inRangeCount">-</span>
     </div>
     <div class="stat-item">
+      <span class="label">Gamma Moves</span>
+      <span class="value" id="gammaCount">-</span>
+    </div>
+    <div class="stat-item">
       <span class="label">Active Factor</span>
       <span class="value" id="activeFactor">Smart</span>
     </div>
@@ -286,6 +290,7 @@
         <tr>
           <th>Symbol</th>
           <th>Factor</th>
+          <th>Digit</th>
           <th>LTP</th>
           <th>Close</th>
           <th>Trend</th>
@@ -296,12 +301,13 @@
           <th>BU3</th>
           <th>BU5</th>
           <th>BE5</th>
+          <th>Position</th>
           <th>Zone</th>
-          <th>Signal</th>
+          <th>Gamma</th>
         </tr>
       </thead>
       <tbody id="rows">
-        <tr><td colspan="14" style="text-align:center;padding:40px;color:#64748b;">Loading...</td></tr>
+        <tr><td colspan="16" style="text-align:center;padding:40px;color:#64748b;">Loading...</td></tr>
       </tbody>
     </table>
   </div>
@@ -392,17 +398,28 @@
       });
     }
     
+    // Render gamma badge
+    function gammaBadge(gamma) {
+      if (!gamma || !gamma.detected) return '-';
+      return `<span class="zone-badge zone-acceleration">🚀 ${gamma.score}</span>`;
+    }
+    
     // Render table
     function renderTable(rows) {
       if (!rows || rows.length === 0) {
-        rowsEl.innerHTML = '<tr><td colspan="14" style="text-align:center;padding:40px;color:#64748b;">No data available</td></tr>';
+        rowsEl.innerHTML = '<tr><td colspan="16" style="text-align:center;padding:40px;color:#64748b;">No data available</td></tr>';
         return;
       }
+      
+      // Count gamma moves
+      const gammaCount = rows.filter(r => r.gamma_move?.detected).length;
+      document.getElementById('gammaCount').textContent = gammaCount;
       
       rowsEl.innerHTML = rows.map(r => `
         <tr>
           <td><strong>${r.symbol}</strong></td>
           <td>${factorBadge(r.selected_factor)}</td>
+          <td>${r.selected_digit || '-'}</td>
           <td class="${r.ltp > r.close ? 'price-up' : 'price-down'}">${f2(r.ltp)}</td>
           <td>${f2(r.close)}</td>
           <td>${renderTrend(r.trend)}</td>
@@ -413,8 +430,9 @@
           <td>${f2(r.bu3)}</td>
           <td>${f2(r.bu5)}</td>
           <td>${f2(r.be5)}</td>
-          <td>${zoneBadge(r.micro_zone)}</td>
-          <td>${renderSignal(r.primary_signal)}</td>
+          <td>${r.position_pct || '-'}%</td>
+          <td>${zoneBadge({name: r.zone_name, type: r.zone_type})}</td>
+          <td>${gammaBadge(r.gamma_move)}</td>
         </tr>
       `).join('');
     }
