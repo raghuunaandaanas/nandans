@@ -701,15 +701,142 @@ function paperSummary() {
     engine_state: TRADE_MODE === 'live' ? (ENABLE_LIVE_TRADING ? 'live_ready' : 'live_blocked') : 'paper',
   };
 }
+function parseSymbolParts(symbol) {
+  const s = String(symbol || '');
+  const i = s.indexOf('|');
+  if (i < 0) return { exchange: '', token: s };
+  return { exchange: s.slice(0, i), token: s.slice(i + 1) };
+}
+
+function isTokenLike(v) {
+  return /^\d+$/.test(String(v || '').trim());
+}
+
+function enrichTradeRows(rows, snapshotRows) {
+  const snapMap = new Map();
+  for (const r of snapshotRows || []) {
+    if (r && r.symbol) snapMap.set(r.symbol, r);
+  }
+
+  return (rows || []).map((r) => {
+    const snap = snapMap.get(r.symbol) || {};
+    const parts = parseSymbolParts(r.symbol);
+    const tsymRaw = String(r.tsym || snap.tsym || '').trim();
+    const snapTsym = String(snap.tsym || '').trim();
+
+    let display = tsymRaw;
+    if (!display || isTokenLike(display)) {
+      if (snapTsym && !isTokenLike(snapTsym)) display = snapTsym;
+      else display = String(r.symbol || '');
+    }
+
+    return {
+      ...r,
+      exchange: parts.exchange || snap.exchange || '',
+      token: parts.token || snap.token || '',
+      tsym: tsymRaw,
+      display_symbol: display,
+      ltp: toNum(snap.ltp),
+      volume: toNum(snap.volume),
+      first_1m_close: toNum(snap.first_1m_close),
+      first_5m_close: toNum(snap.first_5m_close),
+      first_15m_close: toNum(snap.first_15m_close),
+    };
+  });
+}
+
+function buildTradeAnalysis(openRows, closedRows, snapshotRows) {
+  const topOpen = [...openRows].sort((a, b) => Number(b.pnl || 0) - Number(a.pnl || 0)).slice(0, 10);
+  const topClosed = [...closedRows].sort((a, b) => Number(b.pnl || 0) - Number(a.pnl || 0)).slice(0, 10);
+  const worstClosed = [...closedRows].sort((a, b) => Number(a.pnl || 0) - Number(b.pnl || 0)).slice(0, 10);
+
+  const bySymbol = new Map();
+  for (const r of closedRows) {
+    const key = String(r.display_symbol || r.symbol || '');
+    const prev = bySymbol.get(key) || {
+      symbol: key,
+      trades: 0,
+      wins: 0,
+      losses: 0,
+      pnl: 0,
+      avg_pnl: 0,
+    };
+    prev.trades += 1;
+    const pnl = Number(r.pnl || 0);
+    prev.pnl += pnl;
+    if (pnl > 0) prev.wins += 1;
+    else prev.losses += 1;
+    prev.avg_pnl = prev.trades ? prev.pnl / prev.trades : 0;
+    bySymbol.set(key, prev);
+  }
+
+  const symbolPerformance = Array.from(bySymbol.values())
+    .sort((a, b) => b.pnl - a.pnl)
+    .slice(0, 15)
+    .map((r) => ({
+      ...r,
+      win_rate: r.trades ? (r.wins / r.trades) * 100 : 0,
+    }));
+
+  const volumeRows = [];
+  for (const r of snapshotRows || []) {
+    const vol = toNum(r.volume);
+    if (vol === null || vol <= 0) continue;
+    const tsymRaw = String(r.tsym || '').trim();
+    const display = tsymRaw && !isTokenLike(tsymRaw) ? tsymRaw : String(r.symbol || '');
+    volumeRows.push({
+      symbol: r.symbol,
+      display_symbol: display,
+      volume: vol,
+      ltp: toNum(r.ltp),
+    });
+  }
+
+  let avgVol = 0;
+  if (volumeRows.length) {
+    avgVol = volumeRows.reduce((s, r) => s + Number(r.volume || 0), 0) / volumeRows.length;
+  }
+
+  const volumeLeaders = volumeRows
+    .sort((a, b) => b.volume - a.volume)
+    .slice(0, 20)
+    .map((r) => ({
+      ...r,
+      volume_vs_avg: avgVol > 0 ? r.volume / avgVol : 0,
+    }));
+
+  const topPerformer = topClosed.length ? topClosed[0] : (topOpen.length ? topOpen[0] : null);
+
+  return {
+    top_performer: topPerformer,
+    top_open: topOpen,
+    top_closed: topClosed,
+    worst_closed: worstClosed,
+    symbol_performance: symbolPerformance,
+    volume_leaders: volumeLeaders,
+    average_volume: avgVol,
+  };
+}
+
 function tradesData(urlObj) {
   const limitOpen = Math.max(1, Math.min(5000, Number(urlObj.searchParams.get('open_limit') || 500)));
   const limitClosed = Math.max(1, Math.min(10000, Number(urlObj.searchParams.get('closed_limit') || 1000)));
   const q = normalize(urlObj.searchParams.get('q') || '');
 
+  const snapshot = loadSnapshot();
+  const snapshotRows = Array.isArray(snapshot.rows) ? snapshot.rows : [];
+
   const db = getPaperDb();
   if (!db) {
-    const snapshot = loadSnapshot();
-    return { summary: paperSummary(), status: composeStatus(snapshot, paperSummary()), open_trades: [], recent_closed: [] };
+    const summary0 = paperSummary();
+    return {
+      summary: summary0,
+      status: composeStatus(snapshot, summary0),
+      analysis: buildTradeAnalysis([], [], snapshotRows),
+      open_trades: [],
+      recent_closed: [],
+      as_of: isoNow(),
+    };
   }
 
   let open = db.prepare('SELECT * FROM paper_trades WHERE status=? ORDER BY updated_at DESC LIMIT ?').all('OPEN', limitOpen);
@@ -720,17 +847,19 @@ function tradesData(urlObj) {
     closed = closed.filter((r) => normalize(r.symbol).includes(q) || normalize(r.tsym).includes(q));
   }
 
+  const openEnriched = enrichTradeRows(open, snapshotRows);
+  const closedEnriched = enrichTradeRows(closed, snapshotRows);
+
   const summary = paperSummary();
-  const snapshot = loadSnapshot();
   return {
     summary,
     status: composeStatus(snapshot, summary),
-    open_trades: open,
-    recent_closed: closed,
+    analysis: buildTradeAnalysis(openEnriched, closedEnriched, snapshotRows),
+    open_trades: openEnriched,
+    recent_closed: closedEnriched,
     as_of: isoNow(),
   };
 }
-
 function contentType(file) {
   const ext = path.extname(file).toLowerCase();
   if (ext === '.html') return 'text/html; charset=utf-8';
@@ -794,6 +923,7 @@ server.listen(PORT, () => {
   console.log(`Node UI running: http://127.0.0.1:${PORT}`);
   console.log(`Trade report: http://127.0.0.1:${PORT}/trades.html`);
 });
+
 
 
 

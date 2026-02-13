@@ -14,6 +14,7 @@
       --ok: #22c55e;
       --down: #ef4444;
       --accent: #38bdf8;
+      --warn: #f59e0b;
     }
     * { box-sizing: border-box; }
     body {
@@ -22,10 +23,10 @@
       color: var(--text);
       font: 14px/1.4 "Segoe UI", system-ui, sans-serif;
     }
-    .wrap { max-width: 2200px; margin: 0 auto; padding: 12px; }
+    .wrap { max-width: 2400px; margin: 0 auto; padding: 12px; }
     .top {
       display: grid;
-      grid-template-columns: repeat(6, minmax(170px, 1fr));
+      grid-template-columns: repeat(8, minmax(160px, 1fr));
       gap: 10px;
       margin-bottom: 10px;
     }
@@ -60,6 +61,22 @@
       align-items: center;
     }
     button { cursor: pointer; }
+    .grid2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .grid3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .section-title {
+      margin: 8px 0;
+      color: #dbeafe;
+      font-size: 15px;
+    }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -80,21 +97,18 @@
       color: #d1d5db;
       z-index: 2;
     }
-    .grid2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
     .table-wrap {
       border: 1px solid var(--line);
       border-radius: 10px;
       overflow: auto;
-      max-height: calc(100vh - 320px);
+      max-height: calc(100vh - 355px);
       background: #0b1220;
     }
     .pnl-pos { color: var(--ok); font-weight: 700; }
     .pnl-neg { color: var(--down); font-weight: 700; }
     .meta { color: var(--muted); margin-left: auto; }
+    .sub { color: var(--muted); font-size: 11px; }
+    .vol-hot { color: var(--warn); font-weight: 700; }
   </style>
 </head>
 <body>
@@ -113,14 +127,16 @@
 
     <div class="grid2">
       <div>
-        <h3>Open Trades</h3>
+        <div class="section-title">Open Trades</div>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
                 <th>Symbol</th>
+                <th>ID</th>
                 <th>Entry</th>
                 <th>Last</th>
+                <th>Volume</th>
                 <th>PnL</th>
                 <th>PnL%</th>
                 <th>Runup</th>
@@ -135,12 +151,13 @@
       </div>
 
       <div>
-        <h3>Recent Closed Trades</h3>
+        <div class="section-title">Recent Closed Trades</div>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
                 <th>Symbol</th>
+                <th>ID</th>
                 <th>Entry</th>
                 <th>Exit</th>
                 <th>PnL</th>
@@ -154,12 +171,68 @@
         </div>
       </div>
     </div>
+
+    <div class="grid3">
+      <div>
+        <div class="section-title">Top Profitable Trades</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Symbol</th>
+                <th>PnL</th>
+                <th>PnL%</th>
+                <th>Exit</th>
+              </tr>
+            </thead>
+            <tbody id="topClosedRows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">Worst Trades</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Symbol</th>
+                <th>PnL</th>
+                <th>PnL%</th>
+                <th>Exit</th>
+              </tr>
+            </thead>
+            <tbody id="worstClosedRows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-title">Top Volume Symbols (Live)</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Symbol</th>
+                <th>Volume</th>
+                <th>Vol/Avg</th>
+                <th>LTP</th>
+              </tr>
+            </thead>
+            <tbody id="volumeRows"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
     const statsEl = document.getElementById('stats');
     const openRowsEl = document.getElementById('openRows');
     const closedRowsEl = document.getElementById('closedRows');
+    const topClosedRowsEl = document.getElementById('topClosedRows');
+    const worstClosedRowsEl = document.getElementById('worstClosedRows');
+    const volumeRowsEl = document.getElementById('volumeRows');
     const metaEl = document.getElementById('meta');
 
     const searchEl = document.getElementById('search');
@@ -192,12 +265,18 @@
       return '';
     }
 
+    function label(r) {
+      return r.display_symbol || r.tsym || r.symbol || '-';
+    }
+
     function statCards(data) {
       const s = data.summary || {};
       const st = data.status || {};
+      const an = data.analysis || {};
       const pd = safe(st, ['past_data_download'], {});
       const ws = safe(st, ['websocket'], {});
       const login = safe(st, ['login'], {});
+      const top = an.top_performer || {};
 
       const cards = [
         ['Trade Mode', `${safe(s, ['trade_mode'], '-')} / ${safe(s, ['engine_state'], '-')}`],
@@ -207,7 +286,9 @@
         ['Realized PnL', f2(safe(s, ['realized_pnl'], 0))],
         ['Open PnL', f2(safe(s, ['open_pnl'], 0))],
         ['Gross PnL', f2(safe(s, ['gross_pnl'], 0))],
-        ['Drawdown', f2(safe(s, ['max_drawdown'], 0))],
+        ['Max Drawdown', f2(safe(s, ['max_drawdown'], 0))],
+        ['Top Performer', `${label(top)} (${f2(top.pnl)})`],
+        ['Avg Volume', f2(safe(an, ['average_volume'], 0))],
         ['Login', login.ok ? 'OK' : 'NO'],
         ['WebSocket', ws.open ? 'OPEN' : 'DOWN'],
         ['Backfill %', f2(safe(pd, ['progress_pct'], 0))],
@@ -222,9 +303,11 @@
     function renderOpen(rows) {
       openRowsEl.innerHTML = (rows || []).map(r => `
         <tr>
-          <td>${r.symbol ?? ''}</td>
+          <td>${label(r)}</td>
+          <td><span class="sub">${r.symbol ?? ''}</span></td>
           <td>${f2(r.entry_ltp)}</td>
           <td>${f2(r.last_ltp)}</td>
+          <td>${f2(r.volume)}</td>
           <td class="${pnlClass(r.pnl)}">${f2(r.pnl)}</td>
           <td class="${pnlClass(r.pnl_pct)}">${f2(r.pnl_pct)}</td>
           <td>${f2(r.runup)}</td>
@@ -238,7 +321,8 @@
     function renderClosed(rows) {
       closedRowsEl.innerHTML = (rows || []).map(r => `
         <tr>
-          <td>${r.symbol ?? ''}</td>
+          <td>${label(r)}</td>
+          <td><span class="sub">${r.symbol ?? ''}</span></td>
           <td>${f2(r.entry_ltp)}</td>
           <td>${f2(r.exit_ltp)}</td>
           <td class="${pnlClass(r.pnl)}">${f2(r.pnl)}</td>
@@ -247,6 +331,42 @@
           <td>${r.exit_ts ?? '-'}</td>
         </tr>
       `).join('');
+    }
+
+    function renderTopClosed(rows) {
+      topClosedRowsEl.innerHTML = (rows || []).map(r => `
+        <tr>
+          <td>${label(r)}</td>
+          <td class="${pnlClass(r.pnl)}">${f2(r.pnl)}</td>
+          <td class="${pnlClass(r.pnl_pct)}">${f2(r.pnl_pct)}</td>
+          <td>${r.exit_ts ?? '-'}</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderWorstClosed(rows) {
+      worstClosedRowsEl.innerHTML = (rows || []).map(r => `
+        <tr>
+          <td>${label(r)}</td>
+          <td class="${pnlClass(r.pnl)}">${f2(r.pnl)}</td>
+          <td class="${pnlClass(r.pnl_pct)}">${f2(r.pnl_pct)}</td>
+          <td>${r.exit_ts ?? '-'}</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderVolumes(rows) {
+      volumeRowsEl.innerHTML = (rows || []).map(r => {
+        const hot = Number(r.volume_vs_avg || 0) >= 2 ? 'vol-hot' : '';
+        return `
+          <tr>
+            <td>${r.display_symbol ?? r.symbol ?? '-'}</td>
+            <td>${f2(r.volume)}</td>
+            <td class="${hot}">${f2(r.volume_vs_avg)}x</td>
+            <td>${f2(r.ltp)}</td>
+          </tr>
+        `;
+      }).join('');
     }
 
     async function refresh() {
@@ -261,6 +381,9 @@
       statCards(data);
       renderOpen(data.open_trades || []);
       renderClosed(data.recent_closed || []);
+      renderTopClosed(safe(data, ['analysis', 'top_closed'], []));
+      renderWorstClosed(safe(data, ['analysis', 'worst_closed'], []));
+      renderVolumes(safe(data, ['analysis', 'volume_leaders'], []));
 
       metaEl.textContent = `open:${(data.open_trades || []).length} | closed:${(data.recent_closed || []).length} | load:${(performance.now()-t0).toFixed(0)}ms`;
     }
