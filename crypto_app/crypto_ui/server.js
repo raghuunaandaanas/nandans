@@ -326,20 +326,72 @@ function handleHealth(res) {
 }
 
 function handleTrades(res) {
-  // Mock trades data for now - in production this would query the database
-  const response = {
-    open_trades: [],
-    closed_trades: [],
-    summary: {
-      total_trades: 0,
-      open_trades: 0,
-      win_rate: 0,
-      gross_pnl: 0,
-      net_pnl: 0,
-    }
-  };
-  res.writeHead(200, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify(response));
+  const db = getDbRead();
+  if (!db) {
+    res.writeHead(503, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Database not available' }));
+    return;
+  }
+  
+  try {
+    // Get open trades
+    const openStmt = db.prepare(`
+      SELECT id, symbol, side, entry_price, entry_time, sl_price, tp_price, status, day
+      FROM paper_trades 
+      WHERE status = 'OPEN' 
+      ORDER BY entry_time DESC
+    `);
+    const openTrades = openStmt.all();
+    
+    // Get closed trades (last 50)
+    const closedStmt = db.prepare(`
+      SELECT id, symbol, side, entry_price, entry_time, exit_price, exit_time, 
+             status, pnl, pnl_pct, day
+      FROM paper_trades 
+      WHERE status = 'CLOSED' 
+      ORDER BY exit_time DESC
+      LIMIT 50
+    `);
+    const closedTrades = closedStmt.all();
+    
+    // Get summary
+    const totalStmt = db.prepare(`SELECT COUNT(*) as count FROM paper_trades`);
+    const totalResult = totalStmt.get();
+    
+    const openStmt2 = db.prepare(`SELECT COUNT(*) as count FROM paper_trades WHERE status = 'OPEN'`);
+    const openResult = openStmt2.get();
+    
+    const winStmt = db.prepare(`
+      SELECT COUNT(*) as count FROM paper_trades 
+      WHERE status = 'CLOSED' AND pnl > 0
+    `);
+    const winResult = winStmt.get();
+    
+    const pnlStmt = db.prepare(`
+      SELECT SUM(pnl) as total FROM paper_trades WHERE status = 'CLOSED'
+    `);
+    const pnlResult = pnlStmt.get();
+    
+    const totalClosed = (totalResult?.count || 0) - (openResult?.count || 0);
+    const winRate = totalClosed > 0 ? ((winResult?.count || 0) / totalClosed * 100).toFixed(1) : 0;
+    
+    const response = {
+      open_trades: openTrades || [],
+      closed_trades: closedTrades || [],
+      summary: {
+        total_trades: totalResult?.count || 0,
+        open_trades: openResult?.count || 0,
+        win_rate: winRate,
+        gross_pnl: (pnlResult?.total || 0).toFixed(2),
+        net_pnl: (pnlResult?.total || 0).toFixed(2),
+      }
+    };
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(response));
+  } catch (e) {
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: e.message }));
+  }
 }
 
 function serveStaticFile(filePath, res) {
