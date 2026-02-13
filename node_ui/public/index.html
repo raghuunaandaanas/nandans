@@ -15,6 +15,9 @@
       --warn: #f59e0b;
       --down: #ef4444;
       --accent: #38bdf8;
+      --level-near: #fde68a;
+      --level-near-text: #1f2937;
+      --level-pass: #334155;
     }
     * { box-sizing: border-box; }
     body {
@@ -94,7 +97,7 @@
       border: 1px solid var(--line);
       border-radius: 10px;
       overflow: auto;
-      max-height: calc(100vh - 270px);
+      max-height: calc(100vh - 290px);
       background: #0b1220;
     }
     .meta { color: var(--muted); margin-left: auto; }
@@ -106,6 +109,20 @@
       font-size: 12px;
       color: var(--accent);
     }
+    .voice-on { color: var(--ok); }
+    .voice-off { color: var(--down); }
+    .level-near {
+      background: var(--level-near);
+      color: var(--level-near-text);
+      font-weight: 700;
+    }
+    .level-pass {
+      background: linear-gradient(180deg, #1e293b, #111827);
+      color: #cbd5e1;
+    }
+    .prob-high { color: #86efac; font-weight: 700; }
+    .prob-mid { color: #fcd34d; font-weight: 700; }
+    .prob-low { color: #fca5a5; }
   </style>
 </head>
 <body>
@@ -134,10 +151,15 @@
       <input id="search" type="text" placeholder="Search symbol or tsym" />
       <label><input id="completeOnly" type="checkbox" /> Complete only</label>
       <label><input id="triggerOnly" type="checkbox" checked /> Only trend ranges</label>
+      <label><input id="voiceOn" type="checkbox" checked /> Voice</label>
+      <label>VoiceGap(s) <input id="voiceGap" type="number" value="3" min="1" max="30" style="width:85px"/></label>
+      <label>Fresh(s) <input id="freshSec" type="number" value="20" min="5" max="120" style="width:85px"/></label>
       <label>Limit <input id="limit" type="number" value="5000" min="1" max="50000" style="width:95px"/></label>
       <label>Refresh(ms) <input id="refreshMs" type="number" value="2000" min="500" max="10000" style="width:110px"/></label>
       <button id="apply">Apply</button>
+      <button id="voiceTest">Voice test</button>
       <a class="nav" href="/trades.html" target="_blank">Open Trade Monitor</a>
+      <span class="pill" id="voiceStatus">voice:-</span>
       <span class="meta" id="meta">-</span>
     </div>
 
@@ -149,9 +171,11 @@
             <th>TSym</th>
             <th>LTP</th>
             <th>Volume</th>
+            <th>VolDelta</th>
             <th>Trend</th>
             <th>Near</th>
             <th>Confirm</th>
+            <th>Prob</th>
             <th>Jackpot</th>
             <th>Close(TF)</th>
             <th>Points</th>
@@ -165,6 +189,7 @@
             <th>BU3</th>
             <th>BU4</th>
             <th>BU5</th>
+            <th>RR(BU5)</th>
             <th>InRange</th>
             <th>Updated</th>
           </tr>
@@ -179,24 +204,46 @@
     const rowsEl = document.getElementById('rows');
     const metaEl = document.getElementById('meta');
     const snapDayEl = document.getElementById('snapDay');
+    const voiceStatusEl = document.getElementById('voiceStatus');
 
     const tfEl = document.getElementById('tf');
     const factorEl = document.getElementById('factor');
     const searchEl = document.getElementById('search');
     const completeOnlyEl = document.getElementById('completeOnly');
     const triggerOnlyEl = document.getElementById('triggerOnly');
+    const voiceOnEl = document.getElementById('voiceOn');
+    const voiceGapEl = document.getElementById('voiceGap');
+    const freshSecEl = document.getElementById('freshSec');
     const limitEl = document.getElementById('limit');
     const refreshMsEl = document.getElementById('refreshMs');
     const applyEl = document.getElementById('apply');
+    const voiceTestEl = document.getElementById('voiceTest');
 
     let timer = null;
     const rowOrder = new Map();
     let rowSeq = 0;
 
+    const voiceState = {
+      enabled: true,
+      queue: [],
+      speaking: false,
+      announcedAt: new Map(),
+      symbolPulse: new Map(),
+      openTradeSeen: new Set(),
+      closedTradeSeen: new Set(),
+      lastTradePollMs: 0,
+      maxQueue: 40,
+    };
+
     function f2(v) {
       if (v === null || v === undefined || v === '') return '-';
       const n = Number(v);
       return Number.isFinite(n) ? n.toFixed(2) : String(v);
+    }
+
+    function i0(v) {
+      const n = Number(v);
+      return Number.isFinite(n) ? Math.round(n).toString() : '-';
     }
 
     function safe(obj, path, d = '-') {
@@ -206,6 +253,41 @@
         cur = cur[p];
       }
       return cur ?? d;
+    }
+
+    function toNum(v, d = null) {
+      if (v === null || v === undefined || v === '') return d;
+      const n = Number(v);
+      return Number.isFinite(n) ? n : d;
+    }
+
+    function toMs(v) {
+      const ms = Date.parse(String(v || ''));
+      return Number.isFinite(ms) ? ms : null;
+    }
+
+    function humanSymbol(r) {
+      const ts = String(r.tsym || '').trim();
+      if (ts && !/^\d+$/.test(ts)) return ts;
+      return String(r.symbol || '');
+    }
+
+    function levelClass(levelName, levelVal, ltp, points, nearName) {
+      const p = Math.abs(toNum(points, 0));
+      const tol = Math.max(p * 0.12, Math.abs(toNum(ltp, 0)) * 0.00035);
+      const diff = Math.abs(toNum(ltp, 0) - toNum(levelVal, 0));
+      const near = nearName === levelName || diff <= tol;
+      if (near) return 'level-near';
+      if (levelName.startsWith('BU') && toNum(ltp, -1e15) >= toNum(levelVal, 1e15)) return 'level-pass';
+      if (levelName.startsWith('BE') && toNum(ltp, 1e15) <= toNum(levelVal, -1e15)) return 'level-pass';
+      return '';
+    }
+
+    function probClass(score) {
+      const n = toNum(score, 0);
+      if (n >= 75) return 'prob-high';
+      if (n >= 50) return 'prob-mid';
+      return 'prob-low';
     }
 
     function statCards(data) {
@@ -260,34 +342,297 @@
         const trendClass = trend === 'UP' ? 'trend-up' : trend === 'DOWN' ? 'trend-down' : 'trend-side';
         const near = String(r.near_name || '-');
         const nearClass = near.startsWith('BU') ? 'near-up' : (near.startsWith('BE') ? 'near-down' : '');
-        const jackpot = !!r.jackpot_long || !!r.jackpot_short;
+        const jackpot = !!r.jackpot_be5_reversal || !!r.jackpot_long;
+
+        const be1c = levelClass('BE1', r.be1, r.ltp, r.points, near);
+        const be2c = levelClass('BE2', r.be2, r.ltp, r.points, near);
+        const be3c = levelClass('BE3', r.be3, r.ltp, r.points, near);
+        const be4c = levelClass('BE4', r.be4, r.ltp, r.points, near);
+        const be5c = levelClass('BE5', r.be5, r.ltp, r.points, near);
+        const bu1c = levelClass('BU1', r.bu1, r.ltp, r.points, near);
+        const bu2c = levelClass('BU2', r.bu2, r.ltp, r.points, near);
+        const bu3c = levelClass('BU3', r.bu3, r.ltp, r.points, near);
+        const bu4c = levelClass('BU4', r.bu4, r.ltp, r.points, near);
+        const bu5c = levelClass('BU5', r.bu5, r.ltp, r.points, near);
+
         return `
           <tr>
             <td>${r.symbol ?? ''}</td>
             <td>${r.tsym ?? ''}</td>
             <td>${f2(r.ltp)}</td>
-            <td>${f2(r.volume)}</td>
+            <td>${i0(r.volume)}</td>
+            <td>${i0(r.volume_delta)}</td>
             <td class="${trendClass}">${trend}</td>
             <td class="${nearClass}">${near} (${f2(r.near_diff)})</td>
             <td>${r.confirmation ?? 0}</td>
+            <td class="${probClass(r.probability_score)}">${i0(r.probability_score)}</td>
             <td class="${jackpot ? 'jackpot' : ''}">${jackpot ? 'JACKPOT' : '-'}</td>
             <td>${f2(r.close)}</td>
             <td>${f2(r.points)}</td>
-            <td>${f2(r.be1)}</td>
-            <td>${f2(r.be2)}</td>
-            <td>${f2(r.be3)}</td>
-            <td>${f2(r.be4)}</td>
-            <td>${f2(r.be5)}</td>
-            <td>${f2(r.bu1)}</td>
-            <td>${f2(r.bu2)}</td>
-            <td>${f2(r.bu3)}</td>
-            <td>${f2(r.bu4)}</td>
-            <td>${f2(r.bu5)}</td>
+            <td class="${be1c}">${f2(r.be1)}</td>
+            <td class="${be2c}">${f2(r.be2)}</td>
+            <td class="${be3c}">${f2(r.be3)}</td>
+            <td class="${be4c}">${f2(r.be4)}</td>
+            <td class="${be5c}">${f2(r.be5)}</td>
+            <td class="${bu1c}">${f2(r.bu1)}</td>
+            <td class="${bu2c}">${f2(r.bu2)}</td>
+            <td class="${bu3c}">${f2(r.bu3)}</td>
+            <td class="${bu4c}">${f2(r.bu4)}</td>
+            <td class="${bu5c}">${f2(r.bu5)}</td>
+            <td>${f2(r.rr_to_bu5)}</td>
             <td class="${r.in_range ? 'ok' : 'pending'}">${r.in_range ? 'yes' : 'no'}</td>
             <td>${r.updated_at ?? '-'}</td>
           </tr>
         `;
       }).join('');
+    }
+
+    function voiceSupported() {
+      return typeof window !== 'undefined' && 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+    }
+
+    function voiceGapMs() {
+      return Math.max(1000, Math.min(30000, Number(voiceGapEl.value || 3) * 1000));
+    }
+
+    function freshnessMs() {
+      return Math.max(5000, Math.min(120000, Number(freshSecEl.value || 20) * 1000));
+    }
+
+    function updateVoiceStatus(text, on = null) {
+      const enabled = on === null ? (voiceOnEl.checked && voiceSupported()) : !!on;
+      voiceStatusEl.textContent = text;
+      voiceStatusEl.className = `pill ${enabled ? 'voice-on' : 'voice-off'}`;
+    }
+
+    function clearVoiceQueue() {
+      voiceState.queue.length = 0;
+      voiceState.speaking = false;
+      try {
+        if (voiceSupported()) window.speechSynthesis.cancel();
+      } catch {}
+    }
+
+    function enqueueVoice(key, text, priority = 5, cooldownMs = 45000) {
+      if (!voiceOnEl.checked || !voiceSupported()) return;
+      const now = Date.now();
+      const last = voiceState.announcedAt.get(key) || 0;
+      if (now - last < cooldownMs) return;
+      if (voiceState.queue.find((q) => q.key === key)) return;
+
+      voiceState.announcedAt.set(key, now);
+      voiceState.queue.push({ key, text, priority, ts: now });
+      voiceState.queue.sort((a, b) => a.priority - b.priority || a.ts - b.ts);
+
+      if (voiceState.queue.length > voiceState.maxQueue) {
+        voiceState.queue.length = voiceState.maxQueue;
+      }
+      pumpVoiceQueue();
+    }
+
+    function pumpVoiceQueue() {
+      if (!voiceOnEl.checked || !voiceSupported()) {
+        clearVoiceQueue();
+        updateVoiceStatus('voice:off', false);
+        return;
+      }
+
+      if (voiceState.speaking) {
+        updateVoiceStatus(`voice:on q:${voiceState.queue.length}`, true);
+        return;
+      }
+
+      const next = voiceState.queue.shift();
+      if (!next) {
+        updateVoiceStatus('voice:on idle', true);
+        return;
+      }
+
+      voiceState.speaking = true;
+      updateVoiceStatus(`voice:on speaking q:${voiceState.queue.length}`, true);
+
+      const utter = new SpeechSynthesisUtterance(next.text);
+      utter.rate = 1.02;
+      utter.pitch = 1.0;
+      utter.volume = 1.0;
+      utter.onend = () => {
+        voiceState.speaking = false;
+        setTimeout(pumpVoiceQueue, voiceGapMs());
+      };
+      utter.onerror = () => {
+        voiceState.speaking = false;
+        setTimeout(pumpVoiceQueue, 600);
+      };
+      window.speechSynthesis.speak(utter);
+    }
+
+    function isFresh(updatedAt) {
+      const ms = toMs(updatedAt);
+      if (!ms) return true;
+      return (Date.now() - ms) <= freshnessMs();
+    }
+
+    function rememberPulse(symbol, data) {
+      voiceState.symbolPulse.set(symbol, data);
+    }
+
+    function getPulse(symbol) {
+      return voiceState.symbolPulse.get(symbol) || {};
+    }
+
+    function buildSignalCandidates(rows, config) {
+      const out = [];
+      const now = Date.now();
+      const lookbackMs = Math.max(120000, Number(config?.jackpot_touch_lookback_sec || 1800) * 1000);
+      const jackpotMinConf = Math.max(2, Number(config?.jackpot_min_confirmation || 3));
+      const jackpotMinRR = Math.max(1.2, Number(config?.jackpot_min_rr || 2.2));
+
+      for (const r of rows || []) {
+        if (!isFresh(r.updated_at)) continue;
+
+        const symbol = String(r.symbol || '');
+        if (!symbol) continue;
+
+        const ltp = toNum(r.ltp);
+        const bu1 = toNum(r.bu1);
+        const bu2 = toNum(r.bu2);
+        const bu5 = toNum(r.bu5);
+        const be5 = toNum(r.be5);
+        const points = Math.abs(toNum(r.points, 0));
+        const vol = Math.max(0, toNum(r.volume, 0));
+        const conf = toNum(r.confirmation, 0);
+        const trend = String(r.trend || 'SIDEWAYS');
+
+        if ([ltp, bu1, bu2, bu5, be5].some((v) => v === null)) continue;
+
+        const pulsePrev = getPulse(symbol);
+        const prevLtp = toNum(pulsePrev.ltp);
+        const prevVol = toNum(pulsePrev.volume, vol);
+        const prevVolDelta = toNum(pulsePrev.volDelta, 0);
+
+        const volDelta = Math.max(0, vol - prevVol);
+        const volAccel = prevVolDelta > 0 ? (volDelta / prevVolDelta) : (volDelta > 0 ? 1 : 0);
+
+        let be5TouchAt = toNum(pulsePrev.be5TouchAt, 0);
+        let be5Low = toNum(pulsePrev.be5Low, null);
+        if (ltp <= be5) {
+          be5TouchAt = now;
+          be5Low = be5Low === null ? ltp : Math.min(be5Low, ltp);
+        }
+
+        const be5Recent = be5TouchAt > 0 && (now - be5TouchAt) <= lookbackMs;
+        if (!be5Recent) {
+          be5TouchAt = 0;
+          be5Low = null;
+        }
+
+        rememberPulse(symbol, {
+          ltp,
+          volume: vol,
+          volDelta,
+          be5TouchAt,
+          be5Low,
+        });
+
+        const tol = Math.max(points * 0.15, Math.abs(ltp) * 0.00035);
+        const nearBu1 = Math.abs(ltp - bu1) <= tol;
+        const crossedBu1 = prevLtp !== null && prevLtp < bu1 && ltp >= bu1;
+        const reward = Math.max(0, bu5 - ltp);
+        const risk = Math.max(0.0001, ltp - bu1);
+        const rr = reward / risk;
+        const symbolName = humanSymbol(r);
+
+        const setupScore = (nearBu1 ? 25 : 0) + (volAccel >= 1.1 ? 20 : 0) + Math.min(30, conf * 10);
+        const entryScore = (crossedBu1 ? 35 : (nearBu1 ? 15 : 0)) + Math.min(35, conf * 10) + Math.min(25, rr * 8) + (volAccel >= 1.1 ? 15 : 0);
+        const jackpotScore = (be5Recent ? 30 : 0) + Math.min(30, conf * 10) + Math.min(30, rr * 8) + (volAccel >= 1.15 ? 10 : 0);
+
+        if (trend !== 'DOWN' && ltp < bu1 && nearBu1 && volAccel >= 1.1) {
+          out.push({
+            key: `setup:${symbol}`,
+            priority: 3,
+            cooldownMs: 60000,
+            score: setupScore,
+            text: `${symbolName} setup watch. Volume building near BU1 ${bu1.toFixed(2)}. Wait close confirmation, then entry above BU1. Stop loss below BU1.`,
+          });
+        }
+
+        if (trend === 'UP' && (crossedBu1 || nearBu1) && conf >= 2 && rr >= 1.3 && volAccel >= 1.05) {
+          out.push({
+            key: `entry:${symbol}`,
+            priority: 2,
+            cooldownMs: 45000,
+            score: entryScore,
+            text: `${symbolName} entry active. Buy above BU1 ${bu1.toFixed(2)}. Current ${ltp.toFixed(2)}. Stop ${bu1.toFixed(2)}. Targets BU2 ${bu2.toFixed(2)} to BU5 ${bu5.toFixed(2)}.`,
+          });
+        }
+
+        if (be5Recent && ltp >= bu1 && conf >= jackpotMinConf && rr >= jackpotMinRR && volAccel >= 1.1) {
+          out.push({
+            key: `jackpot:${symbol}`,
+            priority: 1,
+            cooldownMs: 150000,
+            score: jackpotScore,
+            text: `${symbolName} jackpot reversal. BE5 washout low ${f2(be5Low)} captured. High probability recovery above BU1 ${bu1.toFixed(2)}. Stop ${bu1.toFixed(2)}. Aggressive target BU5 ${bu5.toFixed(2)}.`,
+          });
+        }
+
+        if (trend === 'UP' && ltp >= (bu5 * 0.995)) {
+          out.push({
+            key: `exit:${symbol}`,
+            priority: 2,
+            cooldownMs: 90000,
+            score: 80,
+            text: `${symbolName} near BU5 ${bu5.toFixed(2)}. Book profit or move trailing stop immediately.`,
+          });
+        }
+      }
+
+      out.sort((a, b) => b.score - a.score || a.priority - b.priority);
+      return out.slice(0, 5);
+    }
+
+    function processVoiceFromRows(rows, config) {
+      if (!voiceOnEl.checked || !voiceSupported()) return;
+      const candidates = buildSignalCandidates(rows, config);
+      for (const c of candidates) {
+        enqueueVoice(c.key, c.text, c.priority, c.cooldownMs);
+      }
+    }
+
+    async function processVoiceFromTrades() {
+      if (!voiceOnEl.checked || !voiceSupported()) return;
+      const now = Date.now();
+      if ((now - voiceState.lastTradePollMs) < 3000) return;
+      voiceState.lastTradePollMs = now;
+
+      try {
+        const res = await fetch('/api/trades?open_limit=40&closed_limit=40');
+        const data = await res.json();
+        const fresh = freshnessMs();
+
+        for (const t of (data.open_trades || [])) {
+          const id = String(t.id || '');
+          if (!id || voiceState.openTradeSeen.has(id)) continue;
+          const ts = toMs(t.entry_ts);
+          if (ts && (Date.now() - ts) > fresh) continue;
+          voiceState.openTradeSeen.add(id);
+          const sym = String(t.display_symbol || t.symbol || 'symbol');
+          const msg = `${sym} paper trade opened. Entry ${f2(t.entry_ltp)}. Stop ${f2(t.bu1)}. Final target ${f2(t.bu5)}.`;
+          enqueueVoice(`trade-open:${id}`, msg, 2, 15000);
+        }
+
+        for (const t of (data.recent_closed || [])) {
+          const id = String(t.id || '');
+          if (!id || voiceState.closedTradeSeen.has(id)) continue;
+          const ts = toMs(t.exit_ts);
+          if (ts && (Date.now() - ts) > fresh) continue;
+          voiceState.closedTradeSeen.add(id);
+          const sym = String(t.display_symbol || t.symbol || 'symbol');
+          const pnl = toNum(t.pnl, 0);
+          const msg = `${sym} trade closed. Exit ${f2(t.exit_ltp)}. PNL ${pnl >= 0 ? 'plus' : 'minus'} ${Math.abs(pnl).toFixed(2)}. Reason ${String(t.reason || 'update')}.`;
+          enqueueVoice(`trade-close:${id}`, msg, 2, 10000);
+        }
+      } catch {}
     }
 
     async function refresh() {
@@ -304,11 +649,16 @@
 
       statCards(data);
       renderRows(data.rows || []);
+      processVoiceFromRows(data.rows || [], data.config || {});
+      processVoiceFromTrades();
 
       const cfg = data.config || {};
       snapDayEl.textContent = `day:${data.snapshot_day || '-'} tf:${cfg.timeframe || '-'} factor:${cfg.factor || '-'}`;
       const tradeState = safe(data, ['status', 'trade', 'engine_state'], '-');
       metaEl.textContent = `shown:${data.displayed_rows} | source:${data.snapshot_rows} | trade:${tradeState} | load:${(performance.now()-t0).toFixed(0)}ms`;
+      if (!voiceSupported()) updateVoiceStatus('voice:unsupported', false);
+      else if (!voiceOnEl.checked) updateVoiceStatus('voice:off', false);
+      else updateVoiceStatus(`voice:on q:${voiceState.queue.length}`, true);
     }
 
     function restartLoop() {
@@ -318,8 +668,27 @@
       timer = setInterval(refresh, ms);
     }
 
+    voiceOnEl.addEventListener('change', () => {
+      if (!voiceOnEl.checked) {
+        clearVoiceQueue();
+        updateVoiceStatus('voice:off', false);
+      } else {
+        updateVoiceStatus('voice:on', true);
+        pumpVoiceQueue();
+      }
+    });
+
+    voiceTestEl.addEventListener('click', () => {
+      if (!voiceSupported()) {
+        updateVoiceStatus('voice:unsupported', false);
+        return;
+      }
+      enqueueVoice('manual:test', 'Voice announcer online. Queue and timing checks are active.', 1, 2000);
+    });
+
     applyEl.addEventListener('click', restartLoop);
     restartLoop();
   </script>
 </body>
 </html>
+

@@ -39,6 +39,10 @@ const TREND_ONLY = process.env.TREND_ONLY !== '0';
 const MIN_CONFIRMATION = Math.max(1, Number(process.env.MIN_CONFIRMATION || 2));
 const MIN_RR = Math.max(0.1, Number(process.env.MIN_RR || 1.2));
 const JACKPOT_ONLY = process.env.JACKPOT_ONLY === '1';
+const JACKPOT_TOUCH_LOOKBACK_SEC = Math.max(60, Number(process.env.JACKPOT_TOUCH_LOOKBACK_SEC || 1800));
+const JACKPOT_MIN_CONFIRMATION = Math.max(MIN_CONFIRMATION, Number(process.env.JACKPOT_MIN_CONFIRMATION || 3));
+const JACKPOT_MIN_RR = Math.max(MIN_RR, Number(process.env.JACKPOT_MIN_RR || 2.2));
+const MIN_VOLUME_ACCEL = Math.max(1, Number(process.env.MIN_VOLUME_ACCEL || 1.15));
 
 let snapshotCache = { mtimeMs: -1, data: { day: '-', updated_at: '-', row_count: 0, rows: [] } };
 let symbolCache = { mtimeMs: -1, count: 0 };
@@ -58,12 +62,16 @@ const paperState = {
   maxDrawdown: 0,
 };
 
+const signalState = {
+  byConfig: new Map(),
+};
 function json(res, status, body) {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify(body));
 }
 
 function toNum(v) {
+  if (v === null || v === undefined || v === '') return null;
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
 }
@@ -80,6 +88,10 @@ function cfgKey(timeframe, factorName) {
   return `${timeframe}|${factorName}`;
 }
 
+function toMs(v) {
+  const ms = Date.parse(String(v || ''));
+  return Number.isFinite(ms) ? ms : null;
+}
 function getDbRead() {
   if (dbRead) return dbRead;
   if (!fs.existsSync(DB_FILE)) return null;
@@ -217,16 +229,39 @@ function ticksMeta() {
 function recomputeDerivedForConfig(baseRows, timeframe, factorName) {
   const closeField = TF_CLOSE_FIELD[timeframe];
   const factorVal = FACTORS[factorName];
+  const key = cfgKey(timeframe, factorName);
+  let cfgState = signalState.byConfig.get(key);
+  if (!cfgState) {
+    cfgState = new Map();
+    signalState.byConfig.set(key, cfgState);
+  }
 
   const allRows = [];
   const triggerRows = [];
+  const seenSymbols = new Set();
+  const nowMs = Date.now();
 
   for (const row of baseRows) {
     const ltp = toNum(row.ltp);
     const close = toNum(row[closeField]);
     if (ltp === null || close === null) continue;
 
-        const points = close * factorVal;
+    const symbol = String(row.symbol || '');
+    if (!symbol) continue;
+    seenSymbols.add(symbol);
+
+    const volume = Math.max(0, Number(toNum(row.volume) || 0));
+    const rowTsMs = toMs(row.updated_at) || nowMs;
+    const prev = cfgState.get(symbol) || {
+      prevLtp: null,
+      prevVolume: null,
+      prevVolDelta: 0,
+      be5TouchTs: 0,
+      be5MinLtp: null,
+      be5TouchVolume: 0,
+    };
+
+    const points = close * factorVal;
     const bu1 = close + points;
     const bu2 = close + points * 2;
     const bu3 = close + points * 3;
@@ -280,7 +315,54 @@ function recomputeDerivedForConfig(baseRows, timeframe, factorName) {
     const downBreakCount = [be1, be2, be3, be4, be5].filter((v) => ltp <= v).length;
     const confirmation = trend === 'UP' ? upBreakCount : trend === 'DOWN' ? downBreakCount : 0;
 
-    const jackpotLong = trend === 'UP' && nearName === 'BU1' && Math.abs(nearPct) <= 0.08;
+    const volDelta = prev.prevVolume === null ? 0 : Math.max(0, volume - Number(prev.prevVolume));
+    const volumeAccel = prev.prevVolDelta > 0 ? volDelta / Number(prev.prevVolDelta) : (volDelta > 0 ? 1 : 0);
+    const crossedBu1 = prev.prevLtp !== null && Number(prev.prevLtp) < bu1 && ltp >= bu1;
+
+    if (ltp <= be5) {
+      prev.be5TouchTs = rowTsMs;
+      prev.be5MinLtp = prev.be5MinLtp === null ? ltp : Math.min(Number(prev.be5MinLtp), ltp);
+      prev.be5TouchVolume = volume;
+    }
+
+    const be5TouchAgeSec = prev.be5TouchTs ? Math.max(0, (rowTsMs - Number(prev.be5TouchTs)) / 1000) : null;
+    const be5TouchedRecent = be5TouchAgeSec !== null && be5TouchAgeSec <= JACKPOT_TOUCH_LOOKBACK_SEC;
+
+    if (!be5TouchedRecent) {
+      prev.be5TouchTs = 0;
+      prev.be5MinLtp = null;
+      prev.be5TouchVolume = 0;
+    }
+
+    const risk = Math.max(0.0001, ltp - bu1);
+    const reward = Math.max(0, bu5 - ltp);
+    const rrToBu5 = reward / risk;
+
+    const jackpotRetest = trend === 'UP' && nearName === 'BU1' && Math.abs(nearPct) <= 0.08;
+    const jackpotBe5Reversal =
+      be5TouchedRecent &&
+      prev.be5MinLtp !== null &&
+      Number(prev.be5MinLtp) <= be5 &&
+      ltp >= bu1 &&
+      (crossedBu1 || nearName === 'BU1') &&
+      Number(confirmation) >= JACKPOT_MIN_CONFIRMATION &&
+      rrToBu5 >= JACKPOT_MIN_RR &&
+      volumeAccel >= MIN_VOLUME_ACCEL;
+
+    const probabilityScore = Math.max(
+      0,
+      Math.min(
+        100,
+        Math.round(
+          (Math.min(5, Math.max(0, Number(confirmation))) / 5) * 45 +
+            (Math.min(5, Math.max(0, rrToBu5)) / 5) * 35 +
+            (Math.min(3, Math.max(0, volumeAccel)) / 3) * 15 +
+            (be5TouchedRecent ? 5 : 0)
+        )
+      )
+    );
+
+    const jackpotLong = jackpotBe5Reversal;
     const jackpotShort = trend === 'DOWN' && nearName === 'BE1' && Math.abs(nearPct) <= 0.08;
 
     const enriched = {
@@ -309,16 +391,34 @@ function recomputeDerivedForConfig(baseRows, timeframe, factorName) {
       confirmation,
       up_break_count: upBreakCount,
       down_break_count: downBreakCount,
+      rr_to_bu5: rrToBu5,
+      volume_delta: volDelta,
+      volume_accel: volumeAccel,
+      be5_touched_recent: be5TouchedRecent,
+      be5_touch_age_sec: be5TouchedRecent ? be5TouchAgeSec : null,
+      be5_low_ltp: prev.be5MinLtp,
       jackpot_long: jackpotLong,
+      jackpot_retest: jackpotRetest,
+      jackpot_be5_reversal: jackpotBe5Reversal,
       jackpot_short: jackpotShort,
+      probability_score: probabilityScore,
       above_bu1: ltp >= bu1,
       below_be1: ltp <= be1,
       above_bu5: ltp > bu5,
       below_be5: ltp < be5,
     };
 
+    prev.prevLtp = ltp;
+    prev.prevVolume = volume;
+    prev.prevVolDelta = volDelta;
+    cfgState.set(symbol, prev);
+
     allRows.push(enriched);
     if (inRange) triggerRows.push(enriched);
+  }
+
+  for (const symbol of cfgState.keys()) {
+    if (!seenSymbols.has(symbol)) cfgState.delete(symbol);
   }
 
   const cmp = (a, b) => {
@@ -434,6 +534,10 @@ function dashboardData(urlObj) {
       factor: factorName,
       factor_value: FACTORS[factorName],
       trigger_only: triggerOnly,
+      jackpot_only: JACKPOT_ONLY,
+      jackpot_min_rr: JACKPOT_MIN_RR,
+      jackpot_min_confirmation: JACKPOT_MIN_CONFIRMATION,
+      jackpot_touch_lookback_sec: JACKPOT_TOUCH_LOOKBACK_SEC,
     },
     stats: {
       total_symbols: totalSymbols,
@@ -456,7 +560,7 @@ function loadOpenTrades() {
   for (const r of cur) paperState.openTrades.set(r.symbol, r);
 }
 
-function openTradeFromRow(row, day) {
+function openTradeFromRow(row, day, reason = 'trend_rr_entry') {
   const db = getPaperDb();
   const now = isoNow();
   const stmt = db.prepare(`
@@ -484,7 +588,7 @@ function openTradeFromRow(row, day) {
     row.ltp,
     now,
     'OPEN',
-    'trend_rr_entry',
+    reason,
     row.ltp,
     row.ltp,
     row.ltp,
@@ -515,7 +619,7 @@ function openTradeFromRow(row, day) {
     exit_ltp: null,
     exit_ts: null,
     status: 'OPEN',
-    reason: 'trend_rr_entry',
+    reason,
     last_ltp: row.ltp,
     max_ltp: row.ltp,
     min_ltp: row.ltp,
@@ -628,9 +732,10 @@ function runPaperCycle() {
     const rr = reward / risk;
     if (rr < MIN_RR) continue;
 
-    if (JACKPOT_ONLY && !r.jackpot_long) continue;
+    if (JACKPOT_ONLY && !r.jackpot_be5_reversal) continue;
 
-    openTradeFromRow(r, day);
+    const reason = r.jackpot_be5_reversal ? 'jackpot_be5_reversal' : (r.jackpot_retest ? 'bu1_retest_entry' : 'trend_rr_entry');
+    openTradeFromRow(r, day, reason);
   }
 }
 
@@ -923,17 +1028,4 @@ server.listen(PORT, () => {
   console.log(`Node UI running: http://127.0.0.1:${PORT}`);
   console.log(`Trade report: http://127.0.0.1:${PORT}/trades.html`);
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
 
