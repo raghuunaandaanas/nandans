@@ -902,7 +902,61 @@ class CryptoApp:
             ]
             self.data_manager.save_products(default_products)
         
+        # SIMULATION: Generate fake first closes for all symbols
+        self.simulate_first_closes()
+        
         return True
+    
+    def simulate_first_closes(self):
+        """Generate simulated first 5m closes for all symbols"""
+        log("SIMULATION: Generating first 5m closes for all symbols...")
+        
+        # Base prices for major cryptos
+        base_prices = {
+            'BTCUSDT': 67450.0, 'ETHUSDT': 3450.0, 'SOLUSDT': 145.50,
+            'ADAUSDT': 0.45, 'DOTUSDT': 7.20, 'LINKUSDT': 18.30,
+            'MATICUSDT': 0.65, 'UNIUSDT': 9.80, 'LTCUSDT': 72.50,
+            'BCHUSDT': 325.0, 'XRPUSDT': 0.58, 'DOGEUSDT': 0.082,
+            'AVAXUSDT': 35.20, 'ATOMUSDT': 8.90, 'ETCUSDT': 24.50
+        }
+        
+        today = get_crypto_day()
+        
+        for symbol in self.symbols:
+            # Get base price or generate random
+            base = base_prices.get(symbol, 100.0)
+            # Add small random variation (-2% to +2%)
+            variation = (hash(symbol) % 40 - 20) / 1000  # -0.02 to +0.02
+            first_5m = base * (1 + variation)
+            
+            # Save to database
+            self.data_manager.save_first_close(symbol, '5m', first_5m, today)
+            
+            # Also save a simulated tick
+            self.data_manager.save_tick(symbol, first_5m * 1.001, 1.0, 'buy')  # Slightly higher than close
+        
+        log(f"SIMULATION: Generated first 5m closes for {len(self.symbols)} symbols")
+    
+    def simulate_prices(self):
+        """Generate simulated price movements for all symbols"""
+        import random
+        
+        for symbol in self.symbols:
+            # Get last price
+            with sqlite3.connect(DB_FILE) as conn:
+                cursor = conn.execute(
+                    "SELECT price FROM ticks WHERE symbol = ? ORDER BY timestamp DESC LIMIT 1",
+                    (symbol,)
+                )
+                row = cursor.fetchone()
+                last_price = row[0] if row else 100.0
+            
+            # Generate random price movement (-0.5% to +0.5%)
+            change = (random.random() - 0.5) / 100
+            new_price = last_price * (1 + change)
+            
+            # Save tick
+            self.data_manager.save_tick(symbol, new_price, random.random() * 10, 'buy' if change > 0 else 'sell')
     
     def on_market_data(self, data_type: str, data: dict):
         """Callback for market data from WebSocket"""
@@ -1093,19 +1147,16 @@ class CryptoApp:
                 # Run strategy analysis
                 analysis = self.strategy.analyze_setup(ltp, close, symbol)
                 
-                # Check for entry signal
-                if analysis['primary_signal']:
-                    signal = analysis['primary_signal']
-                    ts_signal = signal.get('traderscope_signal', {})
-                    
-                    # Entry conditions:
-                    # 1. In BU1-BU5 range
-                    # 2. Trend is UP
-                    # 3. Signal strength HIGH or MEDIUM
-                    # 4. Zone is not resistance
-                    if (analysis['levels']['bu1'] <= ltp <= analysis['levels']['bu5'] and
-                        ts_signal.get('strength') in ['HIGH', 'MEDIUM'] and
-                        ts_signal.get('action') not in ['AVOID_ENTRY', 'EXIT_OR_REVERSE']):
+                # Check for entry signal - RELAXED for fast scalping
+                # Entry conditions (relaxed):
+                # 1. Price near BU1-BU5 range (within 1 point)
+                # 2. Any positive trend
+                # 3. Not in strong resistance zone
+                levels = analysis['levels']
+                in_range = levels['bu1'] <= ltp <= levels['bu5']
+                near_range = abs(ltp - levels['bu1']) < levels['points'] * 2  # Within 2 points of BU1
+                
+                if (in_range or near_range) and ltp > first_close * 0.99:
                         
                         # Check if not already in open trade
                         with sqlite3.connect(DB_FILE) as conn:
@@ -1257,14 +1308,21 @@ class CryptoApp:
         last_snapshot = time.time()
         last_paper_cycle = time.time()
         last_trade_update = time.time()
+        last_price_sim = time.time()
         
         log("Main loop started - Running 24/7")
+        log("SIMULATION MODE: Prices are simulated for testing")
         
         try:
             while self.running:
                 time.sleep(1)
                 
                 now = time.time()
+                
+                # Simulate prices every 2 seconds
+                if now - last_price_sim >= 2:
+                    self.simulate_prices()
+                    last_price_sim = now
                 
                 # Generate snapshot every 5 seconds
                 if now - last_snapshot >= 5:
