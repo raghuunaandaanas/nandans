@@ -190,6 +190,52 @@ function getDbRead() {
   }
 }
 
+function migratePaperDb(db) {
+  // Check if new columns exist, add them if not
+  try {
+    const cols = db.prepare("PRAGMA table_info(paper_trades)").all();
+    const colNames = cols.map(c => c.name);
+    
+    // Add missing columns for new schema
+    const migrations = [
+      { col: 'exchange', sql: 'ALTER TABLE paper_trades ADD COLUMN exchange TEXT' },
+      { col: 'instrument_type', sql: 'ALTER TABLE paper_trades ADD COLUMN instrument_type TEXT DEFAULT "EQUITY"' },
+      { col: 'be1', sql: 'ALTER TABLE paper_trades ADD COLUMN be1 REAL' },
+      { col: 'be2', sql: 'ALTER TABLE paper_trades ADD COLUMN be2 REAL' },
+      { col: 'be3', sql: 'ALTER TABLE paper_trades ADD COLUMN be3 REAL' },
+      { col: 'be4', sql: 'ALTER TABLE paper_trades ADD COLUMN be4 REAL' },
+      { col: 'be5', sql: 'ALTER TABLE paper_trades ADD COLUMN be5 REAL' },
+      { col: 'sl_price', sql: 'ALTER TABLE paper_trades ADD COLUMN sl_price REAL' },
+      { col: 'tp_price', sql: 'ALTER TABLE paper_trades ADD COLUMN tp_price REAL' },
+      { col: 'tsl_trigger', sql: 'ALTER TABLE paper_trades ADD COLUMN tsl_trigger REAL' },
+      { col: 'tsl_active', sql: 'ALTER TABLE paper_trades ADD COLUMN tsl_active INTEGER DEFAULT 0' },
+      { col: 'tsl_sl_price', sql: 'ALTER TABLE paper_trades ADD COLUMN tsl_sl_price REAL' },
+      { col: 'max_profit_points', sql: 'ALTER TABLE paper_trades ADD COLUMN max_profit_points REAL DEFAULT 0' },
+      { col: 'quantity', sql: 'ALTER TABLE paper_trades ADD COLUMN quantity INTEGER DEFAULT 1' },
+      { col: 'brokerage', sql: 'ALTER TABLE paper_trades ADD COLUMN brokerage REAL DEFAULT 0' },
+      { col: 'stt', sql: 'ALTER TABLE paper_trades ADD COLUMN stt REAL DEFAULT 0' },
+      { col: 'exchange_charges', sql: 'ALTER TABLE paper_trades ADD COLUMN exchange_charges REAL DEFAULT 0' },
+      { col: 'sebi_charges', sql: 'ALTER TABLE paper_trades ADD COLUMN sebi_charges REAL DEFAULT 0' },
+      { col: 'stamp_duty', sql: 'ALTER TABLE paper_trades ADD COLUMN stamp_duty REAL DEFAULT 0' },
+      { col: 'gst', sql: 'ALTER TABLE paper_trades ADD COLUMN gst REAL DEFAULT 0' },
+      { col: 'total_charges', sql: 'ALTER TABLE paper_trades ADD COLUMN total_charges REAL DEFAULT 0' },
+      { col: 'net_pnl', sql: 'ALTER TABLE paper_trades ADD COLUMN net_pnl REAL' },
+    ];
+    
+    for (const mig of migrations) {
+      if (!colNames.includes(mig.col)) {
+        try {
+          db.exec(mig.sql);
+        } catch (e) {
+          // Column might already exist
+        }
+      }
+    }
+  } catch (e) {
+    // Table might not exist yet
+  }
+}
+
 function getPaperDb() {
   if (paperDb) return paperDb;
   paperDb = new DatabaseSync(PAPER_DB_FILE, { open: true, readOnly: false });
@@ -206,7 +252,7 @@ function getPaperDb() {
       day TEXT NOT NULL,
       timeframe TEXT NOT NULL,
       factor TEXT NOT NULL,
-      instrument_type TEXT, -- EQUITY, OPTION, FUTURE, COMMODITY
+      instrument_type TEXT DEFAULT 'EQUITY',
       close_price REAL,
       points REAL,
       bu1 REAL,
@@ -223,14 +269,12 @@ function getPaperDb() {
       entry_ts TEXT NOT NULL,
       exit_ltp REAL,
       exit_ts TEXT,
-      -- SL/TP/TSL fields
-      sl_price REAL,          -- Stop Loss at BE1
-      tp_price REAL,          -- Target at BU5
-      tsl_trigger REAL,       -- TSL trigger price (BU3)
-      tsl_active BOOLEAN DEFAULT 0,
-      tsl_sl_price REAL,      -- Trailing SL price
+      sl_price REAL,
+      tp_price REAL,
+      tsl_trigger REAL,
+      tsl_active INTEGER DEFAULT 0,
+      tsl_sl_price REAL,
       max_profit_points REAL DEFAULT 0,
-      -- PnL tracking
       status TEXT NOT NULL,
       reason TEXT,
       last_ltp REAL,
@@ -241,21 +285,23 @@ function getPaperDb() {
       pnl REAL,
       pnl_pct REAL,
       quantity INTEGER DEFAULT 1,
-      total_pnl REAL,         -- Real money calculation
-      brokerage REAL,         -- Brokerage charges
-      stt REAL,               -- STT charges
-      exchange_charges REAL,  -- Exchange charges
-      gst REAL,               -- GST charges
-      sebi_charges REAL,      -- SEBI charges
-      stamp_duty REAL,        -- Stamp duty
-      total_charges REAL,     -- Total charges
-      net_pnl REAL,           -- Net PnL after charges
+      brokerage REAL DEFAULT 0,
+      stt REAL DEFAULT 0,
+      exchange_charges REAL DEFAULT 0,
+      sebi_charges REAL DEFAULT 0,
+      stamp_duty REAL DEFAULT 0,
+      gst REAL DEFAULT 0,
+      total_charges REAL DEFAULT 0,
+      net_pnl REAL,
       updated_at TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_paper_status ON paper_trades(status);
     CREATE INDEX IF NOT EXISTS idx_paper_symbol ON paper_trades(symbol);
     CREATE INDEX IF NOT EXISTS idx_paper_day ON paper_trades(day);
   `);
+  
+  // Run migrations for existing tables
+  migratePaperDb(paperDb);
   
   // Broker limits tracking table
   paperDb.exec(`
@@ -819,7 +865,35 @@ function tradeGuardLongRow(row, ltp) {
 function loadOpenTrades() {
   const db = getPaperDb();
   const cur = db.prepare('SELECT * FROM paper_trades WHERE status = ?').all('OPEN');
-  for (const r of cur) paperState.openTrades.set(r.symbol, r);
+  for (const r of cur) {
+    // Add defaults for new columns if not present
+    const trade = {
+      ...r,
+      exchange: r.exchange || '',
+      instrument_type: r.instrument_type || 'EQUITY',
+      be1: r.be1 || (r.bu1 ? r.bu1 - (r.points || 0) : 0),
+      be2: r.be2 || (r.bu1 ? r.bu1 - 2 * (r.points || 0) : 0),
+      be3: r.be3 || (r.bu1 ? r.bu1 - 3 * (r.points || 0) : 0),
+      be4: r.be4 || (r.bu1 ? r.bu1 - 4 * (r.points || 0) : 0),
+      be5: r.be5 || (r.bu1 ? r.bu1 - 5 * (r.points || 0) : 0),
+      sl_price: r.sl_price || (r.bu1 ? r.bu1 - (r.points || 0) : 0),
+      tp_price: r.tp_price || r.bu5 || 0,
+      tsl_trigger: r.tsl_trigger || r.bu3 || 0,
+      tsl_active: r.tsl_active || 0,
+      tsl_sl_price: r.tsl_sl_price || r.sl_price || 0,
+      max_profit_points: r.max_profit_points || 0,
+      quantity: r.quantity || 1,
+      brokerage: r.brokerage || 0,
+      stt: r.stt || 0,
+      exchange_charges: r.exchange_charges || 0,
+      sebi_charges: r.sebi_charges || 0,
+      stamp_duty: r.stamp_duty || 0,
+      gst: r.gst || 0,
+      total_charges: r.total_charges || 0,
+      net_pnl: r.net_pnl || r.pnl || 0,
+    };
+    paperState.openTrades.set(r.symbol, trade);
+  }
 }
 
 function detectInstrumentType(exchange, tsym) {
@@ -868,7 +942,7 @@ function openTradeFromRow(row, day, reason = 'trend_rr_entry') {
       sl_price, tp_price, tsl_trigger, tsl_active, tsl_sl_price,
       last_ltp, max_ltp, min_ltp, runup, drawdown,
       pnl, pnl_pct, quantity, updated_at
-    ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   
   stmt.run(
