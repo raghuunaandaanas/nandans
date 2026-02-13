@@ -1,25 +1,32 @@
 #!/usr/bin/env python3
 """
 ================================================================================
-UNIFIED TRADING SYSTEM LAUNCHER
+UNIFIED TRADING SYSTEM LAUNCHER - V2
 ================================================================================
-PURPOSE: Start both Shoonya (NSE/BSE/MCX) and Crypto (Delta India) apps together
+PURPOSE: Kill all existing processes, then start both Shoonya and Crypto together
+
+FEATURES:
+1. Aggressive cleanup - kills all processes on ports 8787, 8788
+2. Kills all Python/Node processes related to trading apps
+3. Starts both systems fresh on fixed ports
+4. Parallel startup for faster initialization
+
+PORTS (FIXED):
+- Shoonya: 8787 (NSE/BSE/MCX)
+- Crypto: 8788 (Delta India)
 
 USAGE:
-    python start_all.py start    # Start both systems
-    python start_all.py stop     # Stop both systems
-    python start_all.py restart  # Restart both systems
-    python start_all.py status   # Check status of both
-    python start_all.py logs     # Show logs from both
+    python start_all.py
 
-PORTS:
-    Shoonya: http://127.0.0.1:8787 (NSE/BSE/MCX)
-    Crypto:  http://127.0.0.1:8788 (Delta India)
+No arguments needed - just run and it handles everything:
+    1. Kill all existing processes
+    2. Start Shoonya on port 8787
+    3. Start Crypto on port 8788
+    4. Show status
 
 GIT TRACKING:
     - Created: 2026-02-13
-    - Author: AI Assistant
-    - Feature: Unified launcher for both trading systems
+    - Modified: 2026-02-13 (aggressive cleanup + parallel start)
 ================================================================================
 """
 
@@ -29,23 +36,28 @@ import time
 import json
 import subprocess
 import signal
+import socket
 from pathlib import Path
 from datetime import datetime
 import threading
 import urllib.request
 
-# Configuration
+# =============================================================================
+# CONFIGURATION
+# =============================================================================
+
 ROOT = Path(__file__).parent.resolve()
 CRYPTO_ROOT = ROOT / "crypto_app"
 
-SHOONYA_UI_URL = "http://127.0.0.1:8787/"
-CRYPTO_UI_URL = "http://127.0.0.1:8788/"
-SHOONYA_HEALTH = "http://127.0.0.1:8787/api/health"
-CRYPTO_HEALTH = "http://127.0.0.1:8788/api/health"
+SHOONYA_PORT = 8787
+CRYPTO_PORT = 8788
 
-STATE_FILE = ROOT / "runtime" / "unified_state.json"
+SHOONYA_URL = f"http://127.0.0.1:{SHOONYA_PORT}/"
+CRYPTO_URL = f"http://127.0.0.1:{CRYPTO_PORT}/"
+SHOONYA_HEALTH = f"http://127.0.0.1:{SHOONYA_PORT}/api/health"
+CRYPTO_HEALTH = f"http://127.0.0.1:{CRYPTO_PORT}/api/health"
 
-# ANSI Colors for terminal output
+# Colors
 class Colors:
     HEADER = '\033[95m'
     BLUE = '\033[94m'
@@ -57,420 +69,438 @@ class Colors:
     BOLD = '\033[1m'
 
 def log(msg, color=Colors.ENDC):
-    """Print with timestamp and color"""
-    ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    ts = datetime.now().strftime("%H:%M:%S")
     print(f"{color}[{ts}] {msg}{Colors.ENDC}")
 
-def log_shoonya(msg):
-    """Log for Shoonya system"""
-    log(f"[SHOONYA] {msg}", Colors.BLUE)
+def log_step(step, msg):
+    log(f"[{step}/5] {msg}", Colors.BOLD)
 
-def log_crypto(msg):
-    """Log for Crypto system"""
-    log(f"[CRYPTO] {msg}", Colors.CYAN)
+def log_ok(msg):
+    log(f"  [OK] {msg}", Colors.GREEN)
 
-def log_success(msg):
-    log("[OK] " + msg, Colors.GREEN)
+def log_warn(msg):
+    log(f"  [WARN] {msg}", Colors.YELLOW)
 
-def log_warning(msg):
-    log("[WARN] " + msg, Colors.YELLOW)
+def log_err(msg):
+    log(f"  [ERR] {msg}", Colors.RED)
 
-def log_error(msg):
-    log("[ERROR] " + msg, Colors.RED)
+def log_info(msg):
+    log(f"  [INFO] {msg}", Colors.BLUE)
 
-def load_state():
-    """Load unified state"""
+# =============================================================================
+# STEP 1: AGGRESSIVE CLEANUP
+# =============================================================================
+
+def is_port_in_use(port):
+    """Check if port is in use"""
     try:
-        if STATE_FILE.exists():
-            with open(STATE_FILE, 'r') as f:
-                return json.load(f)
-    except Exception as e:
-        log_error(f"Error loading state: {e}")
-    return {'shoonya': {}, 'crypto': {}}
-
-def save_state(state):
-    """Save unified state"""
-    try:
-        STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
-        with open(STATE_FILE, 'w') as f:
-            json.dump(state, f, indent=2)
-    except Exception as e:
-        log_error(f"Error saving state: {e}")
-
-def is_port_open(port, timeout=2):
-    """Check if port is responding"""
-    try:
-        import socket
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(timeout)
+        sock.settimeout(1)
         result = sock.connect_ex(('127.0.0.1', port))
         sock.close()
         return result == 0
     except:
         return False
 
-def check_health(url, timeout=3):
-    """Check health endpoint"""
+def kill_port_processes(port):
+    """Kill all processes using a specific port"""
+    killed = []
     try:
-        req = urllib.request.Request(url, method='GET')
-        response = urllib.request.urlopen(req, timeout=timeout)
-        return response.status == 200
-    except:
+        # Use netstat to find PIDs
+        result = subprocess.run(
+            ['netstat', '-ano', '|', 'findstr', f':{port}'],
+            capture_output=True,
+            text=True,
+            shell=True
+        )
+        
+        for line in result.stdout.split('\n'):
+            if f':{port}' in line and 'LISTENING' in line:
+                parts = line.strip().split()
+                if len(parts) >= 5:
+                    pid = parts[-1]
+                    try:
+                        subprocess.run(['taskkill', '/F', '/PID', pid], 
+                                     capture_output=True)
+                        killed.append(pid)
+                    except:
+                        pass
+    except Exception as e:
+        log_warn(f"Could not kill port {port}: {e}")
+    
+    return killed
+
+def kill_python_processes():
+    """Kill all Python processes running trading apps"""
+    killed = []
+    try:
+        # Find Python processes
+        result = subprocess.run(
+            ['tasklist', '/FI', 'IMAGENAME eq python.exe', '/FO', 'CSV'],
+            capture_output=True,
+            text=True
+        )
+        
+        for line in result.stdout.split('\n')[1:]:  # Skip header
+            if 'python' in line.lower():
+                parts = line.split('","')
+                if len(parts) >= 2:
+                    pid = parts[1].replace('"', '')
+                    try:
+                        # Check if it's our trading app by looking at command line
+                        cmd_result = subprocess.run(
+                            ['wmic', 'process', 'where', f'processid={pid}', 
+                             'get', 'commandline', '/format:csv'],
+                            capture_output=True,
+                            text=True
+                        )
+                        cmd_line = cmd_result.stdout.lower()
+                        
+                        # Kill if it's our app
+                        if any(x in cmd_line for x in ['historyapp', 'cryptoapp', 
+                                                       'server.js', 'node_ui']):
+                            subprocess.run(['taskkill', '/F', '/PID', pid],
+                                         capture_output=True)
+                            killed.append(pid)
+                    except:
+                        pass
+    except Exception as e:
+        log_warn(f"Could not kill Python processes: {e}")
+    
+    return killed
+
+def kill_node_processes():
+    """Kill all Node processes running UI servers"""
+    killed = []
+    try:
+        # Find Node processes
+        result = subprocess.run(
+            ['tasklist', '/FI', 'IMAGENAME eq node.exe', '/FO', 'CSV'],
+            capture_output=True,
+            text=True
+        )
+        
+        for line in result.stdout.split('\n')[1:]:
+            if 'node' in line.lower():
+                parts = line.split('","')
+                if len(parts) >= 2:
+                    pid = parts[1].replace('"', '')
+                    try:
+                        # Check command line
+                        cmd_result = subprocess.run(
+                            ['wmic', 'process', 'where', f'processid={pid}',
+                             'get', 'commandline', '/format:csv'],
+                            capture_output=True,
+                            text=True
+                        )
+                        cmd_line = cmd_result.stdout.lower()
+                        
+                        if 'server.js' in cmd_line or 'crypto_ui' in cmd_line:
+                            subprocess.run(['taskkill', '/F', '/PID', pid],
+                                         capture_output=True)
+                            killed.append(pid)
+                    except:
+                        pass
+    except Exception as e:
+        log_warn(f"Could not kill Node processes: {e}")
+    
+    return killed
+
+def aggressive_cleanup():
+    """Kill all existing processes aggressively"""
+    log_step(1, "CLEANUP: Killing all existing processes...")
+    
+    # Kill ports
+    killed_8787 = kill_port_processes(SHOONYA_PORT)
+    if killed_8787:
+        log_ok(f"Killed {len(killed_8787)} process(es) on port {SHOONYA_PORT}")
+    
+    killed_8788 = kill_port_processes(CRYPTO_PORT)
+    if killed_8788:
+        log_ok(f"Killed {len(killed_8788)} process(es) on port {CRYPTO_PORT}")
+    
+    # Kill Python processes
+    py_killed = kill_python_processes()
+    if py_killed:
+        log_ok(f"Killed {len(py_killed)} Python trading process(es)")
+    
+    # Kill Node processes
+    node_killed = kill_node_processes()
+    if node_killed:
+        log_ok(f"Killed {len(node_killed)} Node UI process(es)")
+    
+    # Verify ports are free
+    time.sleep(1)
+    if is_port_in_use(SHOONYA_PORT):
+        log_warn(f"Port {SHOONYA_PORT} still in use, forcing...")
+        subprocess.run(['cmd', '/c', f'for /f "tokens=5" %a in (\'netstat -ano ^| findstr :{SHOONYA_PORT}\') do taskkill /F /PID %a'], 
+                      capture_output=True, shell=True)
+    
+    if is_port_in_use(CRYPTO_PORT):
+        log_warn(f"Port {CRYPTO_PORT} still in use, forcing...")
+        subprocess.run(['cmd', '/c', f'for /f "tokens=5" %a in (\'netstat -ano ^| findstr :{CRYPTO_PORT}\') do taskkill /F /PID %a'],
+                      capture_output=True, shell=True)
+    
+    time.sleep(1)
+    
+    # Final check
+    shoonya_free = not is_port_in_use(SHOONYA_PORT)
+    crypto_free = not is_port_in_use(CRYPTO_PORT)
+    
+    if shoonya_free and crypto_free:
+        log_ok("All ports are free")
+        return True
+    else:
+        if not shoonya_free:
+            log_err(f"Port {SHOONYA_PORT} still in use!")
+        if not crypto_free:
+            log_err(f"Port {CRYPTO_PORT} still in use!")
         return False
 
-def run_command(cmd, cwd=None, wait=True):
-    """Run a command and return result"""
-    try:
-        if wait:
-            result = subprocess.run(
-                cmd,
-                cwd=cwd,
-                capture_output=True,
-                text=True,
-                shell=True
-            )
-            return result.returncode == 0, result.stdout, result.stderr
-        else:
-            # Don't wait - background process
-            subprocess.Popen(
-                cmd,
-                cwd=cwd,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                shell=True
-            )
-            return True, "", ""
-    except Exception as e:
-        return False, "", str(e)
-
-def print_banner():
-    """Print unified launcher banner"""
-    print(f"""
-{Colors.BOLD}{Colors.HEADER}
-====================================================================
-             UNIFIED TRADING SYSTEM LAUNCHER
-====================================================================
-  Shoonya (NSE/BSE/MCX)  ->  http://127.0.0.1:8787/
-  Crypto (Delta India)   ->  http://127.0.0.1:8788/
-====================================================================
-{Colors.ENDC}
-""")
+# =============================================================================
+# STEP 2: START SHOONYA
+# =============================================================================
 
 def start_shoonya():
-    """Start Shoonya system"""
-    log_shoonya("Starting Shoonya trading system...")
+    """Start Shoonya system on port 8787"""
+    log_step(2, "STARTING: Shoonya (NSE/BSE/MCX) on port 8787...")
     
-    # Check if already running
-    if is_port_open(8787):
-        log_warning("Shoonya port 8787 already open")
+    # Check port is free
+    if is_port_in_use(SHOONYA_PORT):
+        log_err(f"Port {SHOONYA_PORT} is still in use!")
+        return False
+    
+    # Start backend
+    log_info("Starting Shoonya backend (historyapp.py)...")
+    backend_cmd = f'"{sys.executable}" "{ROOT / "historyapp.py"}"'
+    backend_proc = subprocess.Popen(
+        backend_cmd,
+        cwd=str(ROOT),
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
+    )
+    
+    log_info(f"Backend PID: {backend_proc.pid}")
+    time.sleep(2)
+    
+    # Start UI
+    log_info("Starting Shoonya UI (server.js) on port 8787...")
+    ui_cmd = f'"{"node"}" "{ROOT / "node_ui" / "server.js"}"'
+    ui_proc = subprocess.Popen(
+        ui_cmd,
+        cwd=str(ROOT),
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
+    )
+    
+    log_info(f"UI PID: {ui_proc.pid}")
+    time.sleep(3)
+    
+    # Wait for health check
+    for i in range(10):
+        if is_port_in_use(SHOONYA_PORT):
+            try:
+                urllib.request.urlopen(SHOONYA_HEALTH, timeout=2)
+                log_ok("Shoonya is running and healthy")
+                return True
+            except:
+                pass
+        time.sleep(1)
+    
+    if is_port_in_use(SHOONYA_PORT):
+        log_warn("Shoonya port is open but health check failed")
         return True
-    
-    # Run app_start.py for shoonya
-    cmd = f'"{sys.executable}" "{ROOT / "app_start.py"}" start'
-    success, stdout, stderr = run_command(cmd, cwd=ROOT)
-    
-    if success:
-        log_shoonya("Start command executed")
-        time.sleep(3)  # Wait for startup
-        
-        if check_health(SHOONYA_HEALTH):
-            log_success("Shoonya is running")
-            return True
-        else:
-            log_error("Shoonya health check failed")
-            return False
     else:
-        log_error(f"Failed to start Shoonya: {stderr}")
+        log_err("Shoonya failed to start")
         return False
 
+# =============================================================================
+# STEP 3: START CRYPTO
+# =============================================================================
+
 def start_crypto():
-    """Start Crypto system"""
-    log_crypto("Starting Crypto trading system...")
+    """Start Crypto system on port 8788"""
+    log_step(3, "STARTING: Crypto (Delta India) on port 8788...")
     
-    # Check if already running
-    if is_port_open(8788):
-        log_warning("Crypto port 8788 already open")
-        return True
+    # Check port is free
+    if is_port_in_use(CRYPTO_PORT):
+        log_err(f"Port {CRYPTO_PORT} is still in use!")
+        return False
     
     # Check credentials exist
     cred_file = CRYPTO_ROOT / "delta_cred.json"
     if not cred_file.exists():
-        log_error(f"Crypto credentials not found: {cred_file}")
-        log_crypto("Please create delta_cred.json with your API credentials")
-        return False
+        log_warn("delta_cred.json not found - Crypto will run in simulation mode")
     
-    # Run app_start.py for crypto
-    cmd = f'"{sys.executable}" "{CRYPTO_ROOT / "app_start.py"}" start'
-    success, stdout, stderr = run_command(cmd, cwd=CRYPTO_ROOT)
+    # Start backend
+    log_info("Starting Crypto backend (cryptoapp.py)...")
+    backend_cmd = f'"{sys.executable}" "{CRYPTO_ROOT / "cryptoapp.py"}"'
+    backend_proc = subprocess.Popen(
+        backend_cmd,
+        cwd=str(CRYPTO_ROOT),
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
+    )
     
-    if success:
-        log_crypto("Start command executed")
-        time.sleep(3)  # Wait for startup
-        
-        if check_health(CRYPTO_HEALTH):
-            log_success("Crypto is running")
-            return True
-        else:
-            log_error("Crypto health check failed")
-            return False
+    log_info(f"Backend PID: {backend_proc.pid}")
+    time.sleep(2)
+    
+    # Start UI
+    log_info("Starting Crypto UI (server.js) on port 8788...")
+    env = os.environ.copy()
+    env['CRYPTO_UI_PORT'] = str(CRYPTO_PORT)
+    
+    ui_cmd = f'"{"node"}" "{CRYPTO_ROOT / "crypto_ui" / "server.js"}"'
+    ui_proc = subprocess.Popen(
+        ui_cmd,
+        cwd=str(CRYPTO_ROOT),
+        env=env,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
+    )
+    
+    log_info(f"UI PID: {ui_proc.pid}")
+    time.sleep(3)
+    
+    # Wait for health check
+    for i in range(10):
+        if is_port_in_use(CRYPTO_PORT):
+            try:
+                urllib.request.urlopen(CRYPTO_HEALTH, timeout=2)
+                log_ok("Crypto is running and healthy")
+                return True
+            except:
+                pass
+        time.sleep(1)
+    
+    if is_port_in_use(CRYPTO_PORT):
+        log_warn("Crypto port is open but health check failed")
+        return True
     else:
-        log_error(f"Failed to start Crypto: {stderr}")
+        log_err("Crypto failed to start")
         return False
 
-def stop_shoonya():
-    """Stop Shoonya system"""
-    log_shoonya("Stopping Shoonya...")
-    cmd = f'"{sys.executable}" "{ROOT / "app_start.py"}" stop'
-    run_command(cmd, cwd=ROOT)
-    time.sleep(2)
-    log_success("Shoonya stopped")
+# =============================================================================
+# STEP 4: VERIFY BOTH RUNNING
+# =============================================================================
 
-def stop_crypto():
-    """Stop Crypto system"""
-    log_crypto("Stopping Crypto...")
-    cmd = f'"{sys.executable}" "{CRYPTO_ROOT / "app_start.py"}" stop'
-    run_command(cmd, cwd=CRYPTO_ROOT)
-    time.sleep(2)
-    log_success("Crypto stopped")
-
-def get_shoonya_status():
-    """Get detailed Shoonya status"""
-    port_open = is_port_open(8787)
-    healthy = check_health(SHOONYA_HEALTH) if port_open else False
+def verify_systems():
+    """Verify both systems are running"""
+    log_step(4, "VERIFYING: Both systems are running...")
     
-    return {
-        'name': 'Shoonya',
-        'port': 8787,
-        'port_open': port_open,
-        'healthy': healthy,
-        'url': SHOONYA_UI_URL,
-        'markets': 'NSE/BSE/MCX',
-        'time': '9:15 AM IST',
-        'status': 'RUNNING' if healthy else 'DOWN'
-    }
-
-def get_crypto_status():
-    """Get detailed Crypto status"""
-    port_open = is_port_open(8788)
-    healthy = check_health(CRYPTO_HEALTH) if port_open else False
+    shoonya_ok = is_port_in_use(SHOONYA_PORT)
+    crypto_ok = is_port_in_use(CRYPTO_PORT)
     
-    return {
-        'name': 'Crypto',
-        'port': 8788,
-        'port_open': port_open,
-        'healthy': healthy,
-        'url': CRYPTO_UI_URL,
-        'markets': 'Delta India',
-        'time': '00:00 UTC (5:30 AM IST)',
-        'status': 'RUNNING' if healthy else 'DOWN'
-    }
+    if shoonya_ok:
+        try:
+            urllib.request.urlopen(SHOONYA_HEALTH, timeout=2)
+            log_ok(f"Shoonya: {SHOONYA_URL} [HEALTHY]")
+        except:
+            log_warn(f"Shoonya: {SHOONYA_URL} [PORT OPEN]")
+    else:
+        log_err(f"Shoonya: NOT RUNNING")
+    
+    if crypto_ok:
+        try:
+            urllib.request.urlopen(CRYPTO_HEALTH, timeout=2)
+            log_ok(f"Crypto:  {CRYPTO_URL} [HEALTHY]")
+        except:
+            log_warn(f"Crypto:  {CRYPTO_URL} [PORT OPEN]")
+    else:
+        log_err(f"Crypto: NOT RUNNING")
+    
+    return shoonya_ok, crypto_ok
 
-def print_status():
-    """Print status table"""
-    shoonya = get_shoonya_status()
-    crypto = get_crypto_status()
+# =============================================================================
+# STEP 5: PRINT STATUS
+# =============================================================================
+
+def print_final_status(shoonya_ok, crypto_ok):
+    """Print final status"""
+    log_step(5, "STATUS: Final system status")
     
     print(f"""
-{Colors.BOLD}SYSTEM STATUS{Colors.ENDC}
-{'-' * 70}
-{Colors.BLUE}Shoonya (NSE/BSE/MCX){Colors.ENDC}
-  Port: {shoonya['port']} | Status: {Colors.GREEN if shoonya['healthy'] else Colors.RED}{shoonya['status']}{Colors.ENDC}
-  URL: {shoonya['url']}
-  Market Open: {shoonya['time']}
+{Colors.BOLD}================================================================
+                    SYSTEM STATUS
+================================================================{Colors.ENDC}
 
-{Colors.CYAN}Crypto (Delta India){Colors.ENDC}
-  Port: {crypto['port']} | Status: {Colors.GREEN if crypto['healthy'] else Colors.RED}{crypto['status']}{Colors.ENDC}
-  URL: {crypto['url']}
-  Market Open: {crypto['time']}
-{'-' * 70}
+{Colors.BLUE}SHOONYA (NSE/BSE/MCX){Colors.ENDC}
+  Status: {Colors.GREEN if shoonya_ok else Colors.RED}{'RUNNING' if shoonya_ok else 'DOWN'}{Colors.ENDC}
+  Port: {SHOONYA_PORT}
+  URL: {SHOONYA_URL}
+  Market: 9:15 AM IST
+
+{Colors.CYAN}CRYPTO (Delta India){Colors.ENDC}
+  Status: {Colors.GREEN if crypto_ok else Colors.RED}{'RUNNING' if crypto_ok else 'DOWN'}{Colors.ENDC}
+  Port: {CRYPTO_PORT}
+  URL: {CRYPTO_URL}
+  Market: 00:00 UTC (5:30 AM IST)
+
+{Colors.BOLD}================================================================
+{Colors.GREEN if (shoonya_ok and crypto_ok) else Colors.YELLOW}  {'ALL SYSTEMS OPERATIONAL' if (shoonya_ok and crypto_ok) else 'SOME SYSTEMS FAILED'}{Colors.ENDC}
+{Colors.BOLD}================================================================{Colors.ENDC}
 """)
     
-    return shoonya['healthy'], crypto['healthy']
+    if shoonya_ok and crypto_ok:
+        log("Access your dashboards:", Colors.GREEN)
+        log(f"  Shoonya: {SHOONYA_URL}", Colors.BLUE)
+        log(f"  Crypto:  {CRYPTO_URL}", Colors.CYAN)
 
-def show_logs(lines=20):
-    """Show recent logs from both systems"""
-    print(f"\n{Colors.BOLD}RECENT LOGS{Colors.ENDC}\n")
-    
-    # Shoonya logs
-    shoonya_log = ROOT / "runtime" / "logs" / "historyapp.log"
-    print(f"{Colors.BLUE}=== Shoonya Backend ==={Colors.ENDC}")
-    if shoonya_log.exists():
-        try:
-            with open(shoonya_log, 'r') as f:
-                log_lines = f.readlines()[-lines:]
-                for line in log_lines:
-                    print(line.rstrip())
-        except Exception as e:
-            print(f"Error reading log: {e}")
-    else:
-        print("Log file not found")
-    
-    print()
-    
-    # Crypto logs
-    crypto_log = CRYPTO_ROOT / "logs" / "cryptoapp.log"
-    print(f"{Colors.CYAN}=== Crypto Backend ==={Colors.ENDC}")
-    if crypto_log.exists():
-        try:
-            with open(crypto_log, 'r') as f:
-                log_lines = f.readlines()[-lines:]
-                for line in log_lines:
-                    print(line.rstrip())
-        except Exception as e:
-            print(f"Error reading log: {e}")
-    else:
-        print("Log file not found")
+# =============================================================================
+# MAIN
+# =============================================================================
 
-def cmd_start():
-    """Start both systems"""
-    print_banner()
+def main():
+    """Main entry point - no arguments needed"""
+    print(f"""
+{Colors.BOLD}{Colors.HEADER}
+================================================================
+        UNIFIED TRADING SYSTEM LAUNCHER
+        Shoonya + Crypto | Fixed Ports | Auto-Cleanup
+================================================================{Colors.ENDC}
+""")
+    
     log("Starting unified trading systems...", Colors.BOLD)
     print()
     
-    # Start Shoonya
-    shoonya_ok = start_shoonya()
-    print()
-    
-    # Start Crypto
-    crypto_ok = start_crypto()
-    print()
-    
-    # Final status
-    log("-" * 70, Colors.BOLD)
-    if shoonya_ok and crypto_ok:
-        log_success("ALL SYSTEMS RUNNING")
-        log(f"Shoonya: {SHOONYA_UI_URL}", Colors.BLUE)
-        log(f"Crypto:  {CRYPTO_UI_URL}", Colors.CYAN)
-    elif shoonya_ok:
-        log_warning("Shoonya running, Crypto failed")
-    elif crypto_ok:
-        log_warning("Crypto running, Shoonya failed")
-    else:
-        log_error("BOTH SYSTEMS FAILED")
-    log("-" * 70, Colors.BOLD)
-    
-    # Save state
-    save_state({
-        'shoonya': {'running': shoonya_ok, 'started_at': datetime.now().isoformat()},
-        'crypto': {'running': crypto_ok, 'started_at': datetime.now().isoformat()},
-        'started_at': datetime.now().isoformat()
-    })
-    
-    return 0 if (shoonya_ok or crypto_ok) else 1
-
-def cmd_stop():
-    """Stop both systems"""
-    print_banner()
-    log("Stopping unified trading systems...", Colors.BOLD)
-    print()
-    
-    stop_shoonya()
-    print()
-    stop_crypto()
-    print()
-    
-    log_success("All systems stopped")
-    
-    # Clear state
-    save_state({'shoonya': {}, 'crypto': {}})
-    
-    return 0
-
-def cmd_restart():
-    """Restart both systems"""
-    cmd_stop()
-    print("\n" + "=" * 70 + "\n")
-    time.sleep(2)
-    return cmd_start()
-
-def cmd_status():
-    """Show status of both systems"""
-    print_banner()
-    shoonya_ok, crypto_ok = print_status()
-    
-    if shoonya_ok and crypto_ok:
-        return 0
-    else:
-        return 1
-
-def cmd_logs():
-    """Show logs"""
-    print_banner()
-    show_logs(30)
-    return 0
-
-def cmd_dashboard():
-    """Open dashboards in browser"""
-    print_banner()
-    log("Opening dashboards...")
-    
-    try:
-        import webbrowser
-        
-        shoonya = get_shoonya_status()
-        crypto = get_crypto_status()
-        
-        if shoonya['healthy']:
-            webbrowser.open(SHOONYA_UI_URL)
-            log_shoonya("Dashboard opened in browser")
-        
-        if crypto['healthy']:
-            webbrowser.open(CRYPTO_UI_URL)
-            log_crypto("Dashboard opened in browser")
-        
-        if not shoonya['healthy'] and not crypto['healthy']:
-            log_error("No systems running! Start with: python start_all.py start")
-            return 1
-            
-    except Exception as e:
-        log_error(f"Error opening browser: {e}")
-        log(f"Shoonya: {SHOONYA_UI_URL}")
-        log(f"Crypto:  {CRYPTO_UI_URL}")
-    
-    return 0
-
-def main():
-    """Main entry point"""
-    if len(sys.argv) < 2:
-        print(f"""
-{Colors.BOLD}Unified Trading System Launcher{Colors.ENDC}
-
-Usage:
-    python start_all.py {Colors.GREEN}start{Colors.ENDC}      - Start both systems
-    python start_all.py {Colors.RED}stop{Colors.ENDC}       - Stop both systems
-    python start_all.py {Colors.YELLOW}restart{Colors.ENDC}   - Restart both systems
-    python start_all.py {Colors.BLUE}status{Colors.ENDC}     - Check status
-    python start_all.py {Colors.CYAN}logs{Colors.ENDC}       - Show recent logs
-    python start_all.py {Colors.HEADER}dashboard{Colors.ENDC} - Open dashboards
-
-Examples:
-    python start_all.py start
-    python start_all.py status
-    python start_all.py logs
-""")
+    # Step 1: Aggressive cleanup
+    if not aggressive_cleanup():
+        log_err("Cleanup failed - ports still in use")
+        print_final_status(False, False)
         return 1
     
-    command = sys.argv[1].lower()
+    print()
     
-    commands = {
-        'start': cmd_start,
-        'stop': cmd_stop,
-        'restart': cmd_restart,
-        'status': cmd_status,
-        'logs': cmd_logs,
-        'dashboard': cmd_dashboard,
-    }
+    # Step 2 & 3: Start both systems (can be parallel)
+    shoonya_thread = threading.Thread(target=start_shoonya)
+    crypto_thread = threading.Thread(target=start_crypto)
     
-    if command in commands:
-        try:
-            return commands[command]()
-        except KeyboardInterrupt:
-            print(f"\n\n{Colors.YELLOW}Interrupted by user{Colors.ENDC}")
-            return 1
-    else:
-        log_error(f"Unknown command: {command}")
-        log(f"Use: start, stop, restart, status, logs, dashboard")
-        return 1
+    shoonya_thread.start()
+    time.sleep(1)  # Slight delay to avoid resource conflict
+    crypto_thread.start()
+    
+    shoonya_thread.join()
+    crypto_thread.join()
+    
+    print()
+    
+    # Step 4: Verify
+    shoonya_ok, crypto_ok = verify_systems()
+    
+    print()
+    
+    # Step 5: Print status
+    print_final_status(shoonya_ok, crypto_ok)
+    
+    return 0 if (shoonya_ok and crypto_ok) else 1
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except KeyboardInterrupt:
+        print(f"\n\n{Colors.YELLOW}Interrupted by user{Colors.ENDC}")
+        sys.exit(1)
