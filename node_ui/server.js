@@ -14,11 +14,13 @@ const SYMBOL_CACHE_FILE = path.join(OUT_DIR, 'symbols_cache.json');
 const DB_FILE = path.join(OUT_DIR, 'first_closes.db');
 const TICKS_FILE = path.join(OUT_DIR, 'ticks.csv');
 const PAPER_DB_FILE = path.join(OUT_DIR, 'paper_trades.db');
+const EXPORT_DIR = path.join(OUT_DIR, 'exports');
 
+// B5 Factor - 0.2611% (26.11% as the lowest point for stocks)
 const FACTORS = {
-  micro: 0.002611,
-  mini: 0.0261,
-  mega: 0.2611,
+  micro: 0.002611,   // 0.2611% - for intraday
+  mini: 0.0261,      // 2.61% - for swing
+  mega: 0.2611,      // 26.11% - for long term investment (yearly)
 };
 
 const TF_CLOSE_FIELD = {
@@ -47,6 +49,22 @@ const MIN_VOLUME_ACCEL = Math.max(1, Number(process.env.MIN_VOLUME_ACCEL || 1.15
 const MIN_PROBABILITY_SCORE = Math.max(0, Math.min(100, Number(process.env.MIN_PROBABILITY_SCORE || 70)));
 const MAX_SPIKE_POINTS_MULT = Math.max(0.5, Number(process.env.MAX_SPIKE_POINTS_MULT || 2.5));
 
+// Broker Limits Configuration
+const BROKER_LIMITS = {
+  max_orders_per_day: Number(process.env.MAX_ORDERS_PER_DAY || 2000),
+  max_open_positions: Number(process.env.MAX_OPEN_POSITIONS || 100),
+  max_margin_used_pct: Number(process.env.MAX_MARGIN_USED_PCT || 80),
+};
+
+// Market Close Times (IST)
+const MARKET_CLOSE = {
+  NSE: { hour: 15, minute: 28, second: 30 },
+  BSE: { hour: 15, minute: 28, second: 30 },
+  NFO: { hour: 15, minute: 28, second: 30 },
+  BFO: { hour: 15, minute: 28, second: 30 },
+  MCX: { hour: 23, minute: 30, second: 0 }, // MCX closes at 11:30 PM
+};
+
 let snapshotCache = { mtimeMs: -1, data: { day: '-', updated_at: '-', row_count: 0, rows: [] } };
 let symbolCache = { mtimeMs: -1, count: 0 };
 let dbRead = null;
@@ -63,11 +81,25 @@ const paperState = {
   lastSnapshotMtime: -1,
   peakEquity: 0,
   maxDrawdown: 0,
+  dailyStats: {
+    ordersPlaced: 0,
+    day: '',
+  },
 };
 
 const signalState = {
   byConfig: new Map(),
 };
+
+// Voice Announcements State
+const voiceState = {
+  lastTopVolumeAnnounce: 0,
+  lastTopGainersAnnounce: 0,
+  lastLevelsPerformanceAnnounce: 0,
+  lastNoTradesIntro: 0,
+  announcementCooldownMs: 120000, // 2 minutes between announcements
+};
+
 function json(res, status, body) {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify(body));
@@ -95,6 +127,56 @@ function toMs(v) {
   const ms = Date.parse(String(v || ''));
   return Number.isFinite(ms) ? ms : null;
 }
+
+// Time helpers
+function getISTTime() {
+  const now = new Date();
+  const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
+  return new Date(now.getTime() + istOffset);
+}
+
+function formatISTTime(date = new Date()) {
+  return date.toLocaleTimeString('en-IN', { 
+    timeZone: 'Asia/Kolkata',
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+}
+
+function formatISTDateTime(date = new Date()) {
+  return date.toLocaleString('en-IN', { 
+    timeZone: 'Asia/Kolkata',
+    hour12: false,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+}
+
+// Check if market should be closed for a symbol
+function shouldAutoClose(exchange) {
+  const ex = String(exchange || '').toUpperCase();
+  const closeTime = MARKET_CLOSE[ex];
+  if (!closeTime) return false;
+  
+  const now = new Date();
+  const istNow = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+  
+  const currentHour = istNow.getHours();
+  const currentMinute = istNow.getMinutes();
+  const currentSecond = istNow.getSeconds();
+  
+  const closeSeconds = closeTime.hour * 3600 + closeTime.minute * 60 + closeTime.second;
+  const currentSeconds = currentHour * 3600 + currentMinute * 60 + currentSecond;
+  
+  return currentSeconds >= closeSeconds;
+}
+
 function getDbRead() {
   if (dbRead) return dbRead;
   if (!fs.existsSync(DB_FILE)) return null;
@@ -113,14 +195,18 @@ function getPaperDb() {
   paperDb = new DatabaseSync(PAPER_DB_FILE, { open: true, readOnly: false });
   paperDb.exec('PRAGMA journal_mode=WAL');
   paperDb.exec('PRAGMA synchronous=NORMAL');
+  
+  // Enhanced paper_trades table with SL, TP, TSL
   paperDb.exec(`
     CREATE TABLE IF NOT EXISTS paper_trades (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       symbol TEXT NOT NULL,
       tsym TEXT,
+      exchange TEXT,
       day TEXT NOT NULL,
       timeframe TEXT NOT NULL,
       factor TEXT NOT NULL,
+      instrument_type TEXT, -- EQUITY, OPTION, FUTURE, COMMODITY
       close_price REAL,
       points REAL,
       bu1 REAL,
@@ -128,10 +214,23 @@ function getPaperDb() {
       bu3 REAL,
       bu4 REAL,
       bu5 REAL,
+      be1 REAL,
+      be2 REAL,
+      be3 REAL,
+      be4 REAL,
+      be5 REAL,
       entry_ltp REAL NOT NULL,
       entry_ts TEXT NOT NULL,
       exit_ltp REAL,
       exit_ts TEXT,
+      -- SL/TP/TSL fields
+      sl_price REAL,          -- Stop Loss at BE1
+      tp_price REAL,          -- Target at BU5
+      tsl_trigger REAL,       -- TSL trigger price (BU3)
+      tsl_active BOOLEAN DEFAULT 0,
+      tsl_sl_price REAL,      -- Trailing SL price
+      max_profit_points REAL DEFAULT 0,
+      -- PnL tracking
       status TEXT NOT NULL,
       reason TEXT,
       last_ltp REAL,
@@ -141,11 +240,36 @@ function getPaperDb() {
       drawdown REAL,
       pnl REAL,
       pnl_pct REAL,
+      quantity INTEGER DEFAULT 1,
+      total_pnl REAL,         -- Real money calculation
+      brokerage REAL,         -- Brokerage charges
+      stt REAL,               -- STT charges
+      exchange_charges REAL,  -- Exchange charges
+      gst REAL,               -- GST charges
+      sebi_charges REAL,      -- SEBI charges
+      stamp_duty REAL,        -- Stamp duty
+      total_charges REAL,     -- Total charges
+      net_pnl REAL,           -- Net PnL after charges
       updated_at TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_paper_status ON paper_trades(status);
     CREATE INDEX IF NOT EXISTS idx_paper_symbol ON paper_trades(symbol);
+    CREATE INDEX IF NOT EXISTS idx_paper_day ON paper_trades(day);
   `);
+  
+  // Broker limits tracking table
+  paperDb.exec(`
+    CREATE TABLE IF NOT EXISTS broker_limits (
+      day TEXT PRIMARY KEY,
+      orders_placed INTEGER DEFAULT 0,
+      orders_rejected INTEGER DEFAULT 0,
+      open_positions INTEGER DEFAULT 0,
+      margin_used REAL DEFAULT 0,
+      margin_available REAL DEFAULT 0,
+      updated_at TEXT
+    );
+  `);
+  
   return paperDb;
 }
 
@@ -229,6 +353,98 @@ function ticksMeta() {
   }
 }
 
+// Broker Limit Functions
+function getBrokerLimitsStatus() {
+  const db = getPaperDb();
+  if (!db) return null;
+  
+  const today = new Date().toISOString().split('T')[0];
+  
+  // Get or create today's record
+  let record = db.prepare('SELECT * FROM broker_limits WHERE day = ?').get(today);
+  if (!record) {
+    db.prepare('INSERT INTO broker_limits (day, orders_placed, open_positions, updated_at) VALUES (?, 0, 0, ?)')
+      .run(today, isoNow());
+    record = { orders_placed: 0, open_positions: 0, margin_used: 0 };
+  }
+  
+  // Count actual open positions
+  const openPos = db.prepare("SELECT COUNT(1) as c FROM paper_trades WHERE status = 'OPEN' AND day = ?").get(today);
+  const openPositions = openPos?.c || 0;
+  
+  // Calculate margin used (simplified - in real scenario would be based on actual margin requirements)
+  const marginResult = db.prepare("SELECT SUM(entry_ltp * quantity) as margin FROM paper_trades WHERE status = 'OPEN' AND day = ?").get(today);
+  const marginUsed = marginResult?.margin || 0;
+  
+  // Update record
+  db.prepare('UPDATE broker_limits SET open_positions = ?, margin_used = ?, updated_at = ? WHERE day = ?')
+    .run(openPositions, marginUsed, isoNow(), today);
+  
+  const ordersPlaced = record.orders_placed || 0;
+  const ordersRemaining = Math.max(0, BROKER_LIMITS.max_orders_per_day - ordersPlaced);
+  const positionsRemaining = Math.max(0, BROKER_LIMITS.max_open_positions - openPositions);
+  
+  // Determine status color
+  let statusColor = 'green';
+  if (ordersRemaining < BROKER_LIMITS.max_orders_per_day * 0.2 || positionsRemaining < BROKER_LIMITS.max_open_positions * 0.2) {
+    statusColor = 'red';
+  } else if (ordersRemaining < BROKER_LIMITS.max_orders_per_day * 0.5 || positionsRemaining < BROKER_LIMITS.max_open_positions * 0.5) {
+    statusColor = 'yellow';
+  }
+  
+  return {
+    orders_placed: ordersPlaced,
+    orders_remaining: ordersRemaining,
+    orders_limit: BROKER_LIMITS.max_orders_per_day,
+    orders_pct_used: ((ordersPlaced / BROKER_LIMITS.max_orders_per_day) * 100).toFixed(1),
+    open_positions: openPositions,
+    positions_remaining: positionsRemaining,
+    positions_limit: BROKER_LIMITS.max_open_positions,
+    positions_pct_used: ((openPositions / BROKER_LIMITS.max_open_positions) * 100).toFixed(1),
+    margin_used: marginUsed.toFixed(2),
+    status_color: statusColor,
+    safe_to_trade: statusColor === 'green',
+    warning: statusColor === 'yellow',
+    danger: statusColor === 'red',
+    updated_at: formatISTDateTime(),
+  };
+}
+
+function incrementOrderCount() {
+  const db = getPaperDb();
+  if (!db) return;
+  
+  const today = new Date().toISOString().split('T')[0];
+  db.prepare('UPDATE broker_limits SET orders_placed = orders_placed + 1, updated_at = ? WHERE day = ?')
+    .run(isoNow(), today);
+}
+
+// Calculate brokerage charges for realistic PnL
+function calculateBrokerageCharges(entryPrice, exitPrice, quantity, exchange) {
+  const turnover = (entryPrice + exitPrice) * quantity;
+  const ex = String(exchange || '').toUpperCase();
+  
+  // Shoonya/Fyers like charges (approximate)
+  const brokerage = Math.min(turnover * 0.0001, 20); // Max Rs 20 per order
+  const stt = ex.includes('NSE') || ex.includes('BSE') ? turnover * 0.00025 : turnover * 0.0001; // 0.025% for equity
+  const exchangeCharges = turnover * 0.0000325; // Exchange charges
+  const sebiCharges = turnover * 0.000001; // SEBI charges
+  const stampDuty = entryPrice * quantity * 0.00015; // Stamp duty on buy side
+  const gst = (brokerage + exchangeCharges) * 0.18; // 18% GST on brokerage + exchange charges
+  
+  const totalCharges = brokerage + stt + exchangeCharges + sebiCharges + stampDuty + gst;
+  
+  return {
+    brokerage: Number(brokerage.toFixed(2)),
+    stt: Number(stt.toFixed(2)),
+    exchange_charges: Number(exchangeCharges.toFixed(2)),
+    sebi_charges: Number(sebiCharges.toFixed(2)),
+    stamp_duty: Number(stampDuty.toFixed(2)),
+    gst: Number(gst.toFixed(2)),
+    total_charges: Number(totalCharges.toFixed(2)),
+  };
+}
+
 function recomputeDerivedForConfig(baseRows, timeframe, factorName) {
   const closeField = TF_CLOSE_FIELD[timeframe];
   const factorVal = FACTORS[factorName];
@@ -264,6 +480,7 @@ function recomputeDerivedForConfig(baseRows, timeframe, factorName) {
       be5TouchVolume: 0,
     };
 
+    // B5 Factor calculations (0.2611%)
     const points = close * factorVal;
     const bu1 = close + points;
     const bu2 = close + points * 2;
@@ -305,9 +522,12 @@ function recomputeDerivedForConfig(baseRows, timeframe, factorName) {
 
     const nearPct = nearValue ? ((ltp - nearValue) / nearValue) * 100 : 0;
 
+    // Trading range: BU1-BU5 for longs (BE1-BE5 for shorts)
     const inRangeUp = ltp >= bu1 && ltp <= bu5;
     const inRangeDown = ltp <= be1 && ltp >= be5;
     const inRange = inRangeUp || inRangeDown;
+    
+    // Sideways: Between BE1 and BU1 (avoid this zone)
     const sideways = ltp > be1 && ltp < bu1;
 
     let trend = 'SIDEWAYS';
@@ -413,6 +633,9 @@ function recomputeDerivedForConfig(baseRows, timeframe, factorName) {
       below_be1: ltp <= be1,
       above_bu5: ltp > bu5,
       below_be5: ltp < be5,
+      // IST Time
+      ist_time: formatISTTime(),
+      ist_datetime: formatISTDateTime(),
     };
 
     prev.prevLtp = ltp;
@@ -421,7 +644,8 @@ function recomputeDerivedForConfig(baseRows, timeframe, factorName) {
     cfgState.set(symbol, prev);
 
     allRows.push(enriched);
-    if (inRange) triggerRows.push(enriched);
+    // Only add to trigger rows if in BU1-BU5 range (trending up) - ignore sideways
+    if (inRangeUp && !sideways) triggerRows.push(enriched);
   }
 
   for (const symbol of cfgState.keys()) {
@@ -493,6 +717,13 @@ function composeStatus(snapshot, tradeSummary) {
       mode: TRADE_MODE,
       live_enabled: ENABLE_LIVE_TRADING,
       engine_state: TRADE_MODE === 'live' ? (ENABLE_LIVE_TRADING ? 'live_ready' : 'live_blocked') : 'paper',
+    },
+    broker_limits: getBrokerLimitsStatus(),
+    market_time: {
+      ist_time: formatISTTime(),
+      ist_datetime: formatISTDateTime(),
+      auto_close_nse_bse: shouldAutoClose('NSE'),
+      auto_close_mcx: shouldAutoClose('MCX'),
     },
   };
 }
@@ -584,33 +815,70 @@ function tradeGuardLongRow(row, ltp) {
 
   return { ok: true, reason: 'be5_reversal_bu_range' };
 }
+
 function loadOpenTrades() {
   const db = getPaperDb();
   const cur = db.prepare('SELECT * FROM paper_trades WHERE status = ?').all('OPEN');
   for (const r of cur) paperState.openTrades.set(r.symbol, r);
 }
 
+function detectInstrumentType(exchange, tsym) {
+  const ex = String(exchange || '').toUpperCase();
+  const t = String(tsym || '').toUpperCase();
+  if (ex === 'MCX') return 'COMMODITY';
+  if (ex === 'NFO' || ex === 'BFO') {
+    if (/(CE|PE)/.test(t) || /[CP]\d{2,6}$/.test(t)) return 'OPTION';
+    if (/FUT/.test(t) || /\dF$/.test(t) || /\d{2}[A-Z]{3}\d{2}F/.test(t)) return 'FUTURE';
+    return 'DERIVATIVE';
+  }
+  return 'EQUITY';
+}
+
 function openTradeFromRow(row, day, reason = 'trend_rr_entry') {
   const ltp = toNum(row?.ltp);
   const guard = tradeGuardLongRow(row, ltp);
   if (!guard.ok) return false;
+  
+  // Check broker limits
+  const limits = getBrokerLimitsStatus();
+  if (limits && !limits.safe_to_trade) {
+    return false;
+  }
+  
   const db = getPaperDb();
   const now = isoNow();
+  const instrumentType = detectInstrumentType(row.exchange, row.tsym);
+  
+  // Calculate SL, TP, TSL
+  const slPrice = row.be1; // Stop Loss at BE1 (below BU1)
+  const tpPrice = row.bu5; // Target at BU5
+  const tslTrigger = row.bu3; // TSL activates at BU3
+  
+  // Determine quantity based on instrument type
+  let quantity = 1;
+  if (instrumentType === 'OPTION') quantity = 50; // Lot size for options
+  else if (instrumentType === 'FUTURE') quantity = 1;
+  else if (instrumentType === 'EQUITY') quantity = 1;
+  
   const stmt = db.prepare(`
     INSERT INTO paper_trades(
-      symbol, tsym, day, timeframe, factor,
-      close_price, points, bu1, bu2, bu3, bu4, bu5,
+      symbol, tsym, exchange, day, timeframe, factor, instrument_type,
+      close_price, points, bu1, bu2, bu3, bu4, bu5, be1, be2, be3, be4, be5,
       entry_ltp, entry_ts, status, reason,
+      sl_price, tp_price, tsl_trigger, tsl_active, tsl_sl_price,
       last_ltp, max_ltp, min_ltp, runup, drawdown,
-      pnl, pnl_pct, updated_at
-    ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      pnl, pnl_pct, quantity, updated_at
+    ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
+  
   stmt.run(
     row.symbol,
     row.tsym || '',
+    row.exchange || '',
     day,
     PAPER_TF,
     PAPER_FACTOR,
+    instrumentType,
     row.close,
     row.points,
     row.bu1,
@@ -618,10 +886,20 @@ function openTradeFromRow(row, day, reason = 'trend_rr_entry') {
     row.bu3,
     row.bu4,
     row.bu5,
+    row.be1,
+    row.be2,
+    row.be3,
+    row.be4,
+    row.be5,
     ltp,
     now,
     'OPEN',
     reason,
+    slPrice,
+    tpPrice,
+    tslTrigger,
+    0, // tsl_active
+    slPrice, // initial tsl_sl_price = sl
     ltp,
     ltp,
     ltp,
@@ -629,17 +907,22 @@ function openTradeFromRow(row, day, reason = 'trend_rr_entry') {
     0,
     0,
     0,
+    quantity,
     now
   );
 
+  incrementOrderCount();
+  
   const id = db.prepare('SELECT last_insert_rowid() AS id').get().id;
   const t = {
     id,
     symbol: row.symbol,
     tsym: row.tsym || '',
+    exchange: row.exchange || '',
     day,
     timeframe: PAPER_TF,
     factor: PAPER_FACTOR,
+    instrument_type: instrumentType,
     close_price: row.close,
     points: row.points,
     bu1: row.bu1,
@@ -647,10 +930,21 @@ function openTradeFromRow(row, day, reason = 'trend_rr_entry') {
     bu3: row.bu3,
     bu4: row.bu4,
     bu5: row.bu5,
+    be1: row.be1,
+    be2: row.be2,
+    be3: row.be3,
+    be4: row.be4,
+    be5: row.be5,
     entry_ltp: ltp,
     entry_ts: now,
     exit_ltp: null,
     exit_ts: null,
+    sl_price: slPrice,
+    tp_price: tpPrice,
+    tsl_trigger: tslTrigger,
+    tsl_active: 0,
+    tsl_sl_price: slPrice,
+    max_profit_points: 0,
     status: 'OPEN',
     reason,
     last_ltp: ltp,
@@ -660,6 +954,7 @@ function openTradeFromRow(row, day, reason = 'trend_rr_entry') {
     drawdown: 0,
     pnl: 0,
     pnl_pct: 0,
+    quantity,
     updated_at: now,
   };
   paperState.openTrades.set(row.symbol, t);
@@ -669,13 +964,20 @@ function openTradeFromRow(row, day, reason = 'trend_rr_entry') {
 function closeTrade(trade, ltp, reason) {
   const db = getPaperDb();
   const now = isoNow();
-  const pnl = ltp - Number(trade.entry_ltp);
-  const pnlPct = trade.entry_ltp ? (pnl / Number(trade.entry_ltp)) * 100 : 0;
+  
+  // Calculate charges
+  const charges = calculateBrokerageCharges(trade.entry_ltp, ltp, trade.quantity || 1, trade.exchange);
+  
+  const pnl = (ltp - Number(trade.entry_ltp)) * (trade.quantity || 1);
+  const pnlPct = trade.entry_ltp ? ((ltp - Number(trade.entry_ltp)) / Number(trade.entry_ltp)) * 100 : 0;
+  const netPnl = pnl - charges.total_charges;
 
   db.prepare(`
     UPDATE paper_trades
     SET exit_ltp=?, exit_ts=?, status='CLOSED', reason=?,
-        last_ltp=?, max_ltp=?, min_ltp=?, runup=?, drawdown=?, pnl=?, pnl_pct=?, updated_at=?
+        last_ltp=?, max_ltp=?, min_ltp=?, runup=?, drawdown=?, pnl=?, pnl_pct=?,
+        brokerage=?, stt=?, exchange_charges=?, sebi_charges=?, stamp_duty=?, gst=?,
+        total_charges=?, net_pnl=?, updated_at=?
     WHERE id=?
   `).run(
     ltp,
@@ -688,6 +990,14 @@ function closeTrade(trade, ltp, reason) {
     trade.drawdown,
     pnl,
     pnlPct,
+    charges.brokerage,
+    charges.stt,
+    charges.exchange_charges,
+    charges.sebi_charges,
+    charges.stamp_duty,
+    charges.gst,
+    charges.total_charges,
+    netPnl,
     now,
     trade.id
   );
@@ -700,18 +1010,48 @@ function updateOpenTrade(trade, ltp) {
   trade.last_ltp = ltp;
   trade.max_ltp = Math.max(Number(trade.max_ltp), ltp);
   trade.min_ltp = Math.min(Number(trade.min_ltp), ltp);
-  trade.runup = Math.max(Number(trade.runup), ltp - Number(trade.entry_ltp));
-  trade.drawdown = Math.max(Number(trade.drawdown), Number(trade.entry_ltp) - ltp);
-  trade.pnl = ltp - Number(trade.entry_ltp);
-  trade.pnl_pct = trade.entry_ltp ? (trade.pnl / Number(trade.entry_ltp)) * 100 : 0;
+  
+  const currentRunup = ltp - Number(trade.entry_ltp);
+  const currentDrawdown = Number(trade.entry_ltp) - ltp;
+  trade.runup = Math.max(Number(trade.runup), currentRunup);
+  trade.drawdown = Math.max(Number(trade.drawdown), currentDrawdown);
+  
+  // Calculate max profit points for TSL
+  const points = Number(trade.points);
+  const maxProfitPoints = Math.max(0, (trade.max_ltp - Number(trade.entry_ltp)));
+  trade.max_profit_points = maxProfitPoints;
+  
+  // TSL Logic: When price reaches BU3, move SL to BE1 (breakeven)
+  // When price reaches BU4, move SL to BU1
+  // When price reaches BU5, move SL to BU2
+  if (ltp >= Number(trade.tsl_trigger) && !trade.tsl_active) {
+    trade.tsl_active = 1;
+    trade.tsl_sl_price = trade.be1; // Move to breakeven
+  }
+  
+  if (trade.tsl_active) {
+    if (ltp >= Number(trade.bu4) && Number(trade.tsl_sl_price) < Number(trade.bu1)) {
+      trade.tsl_sl_price = trade.bu1;
+    }
+    if (ltp >= Number(trade.bu5) && Number(trade.tsl_sl_price) < Number(trade.bu2)) {
+      trade.tsl_sl_price = trade.bu2;
+    }
+  }
+  
+  // Calculate PnL with quantity
+  const grossPnl = (ltp - Number(trade.entry_ltp)) * (trade.quantity || 1);
+  trade.pnl = grossPnl;
+  trade.pnl_pct = trade.entry_ltp ? ((ltp - Number(trade.entry_ltp)) / Number(trade.entry_ltp)) * 100 : 0;
   trade.updated_at = isoNow();
 
   const db = getPaperDb();
   db.prepare(`
     UPDATE paper_trades
-    SET last_ltp=?, max_ltp=?, min_ltp=?, runup=?, drawdown=?, pnl=?, pnl_pct=?, updated_at=?
+    SET last_ltp=?, max_ltp=?, min_ltp=?, runup=?, drawdown=?, 
+        tsl_active=?, tsl_sl_price=?, max_profit_points=?, pnl=?, pnl_pct=?, updated_at=?
     WHERE id=?
-  `).run(trade.last_ltp, trade.max_ltp, trade.min_ltp, trade.runup, trade.drawdown, trade.pnl, trade.pnl_pct, trade.updated_at, trade.id);
+  `).run(trade.last_ltp, trade.max_ltp, trade.min_ltp, trade.runup, trade.drawdown, 
+       trade.tsl_active, trade.tsl_sl_price, trade.max_profit_points, trade.pnl, trade.pnl_pct, trade.updated_at, trade.id);
 }
 
 function runPaperCycle() {
@@ -728,7 +1068,9 @@ function runPaperCycle() {
   const rowMap = new Map();
   for (const r of item.allRows) rowMap.set(r.symbol, r);
 
-  // Update open trades first.
+  const day = snapshot.day || '-';
+  
+  // Check auto-close for all open trades first
   for (const t of Array.from(paperState.openTrades.values())) {
     const row = rowMap.get(t.symbol);
     if (!row) continue;
@@ -736,16 +1078,28 @@ function runPaperCycle() {
     if (ltp === null) continue;
 
     updateOpenTrade(t, ltp);
+    
+    // Auto-close at market close time
+    if (shouldAutoClose(t.exchange)) {
+      closeTrade(t, ltp, 'market_close_auto');
+      continue;
+    }
 
+    // Target hit - BU5
     if (ltp >= Number(t.bu5)) {
       closeTrade(t, ltp, 'target_bu5');
-    } else if (ltp < Number(t.bu1)) {
-      closeTrade(t, ltp, 'sl_below_bu1');
+    }
+    // Stop Loss - Below TSL if active, else below BU1
+    else if (ltp < Number(t.tsl_active ? t.tsl_sl_price : t.bu1)) {
+      closeTrade(t, ltp, t.tsl_active ? 'trailing_sl' : 'sl_below_bu1');
+    }
+    // Spike protection - close if sudden drop
+    else if (row.spike_flag && ltp < Number(t.entry_ltp)) {
+      closeTrade(t, ltp, 'spike_protection');
     }
   }
 
-  // New entries from in-range opportunities.
-  const day = snapshot.day || '-';
+  // New entries from in-range opportunities (only BU1-BU5, no sideways)
   for (const r of item.triggerRows) {
     if (!r.fetch_done) continue;
     if (paperState.openTrades.has(r.symbol)) continue;
@@ -755,8 +1109,9 @@ function runPaperCycle() {
     const ltp = toNum(r.ltp);
     if (ltp === null) continue;
 
-    // Trend-only execution: stay out during sideways BE1..BU1.
-    if (TREND_ONLY && r.sideways) continue;
+    // Only trade in BU1-BU5 range (trending up), avoid sideways
+    if (!r.in_range_up) continue;
+    if (r.sideways) continue; // Explicitly avoid sideways
     if (String(r.trend || '') !== 'UP') continue;
     if (Number(r.confirmation || 0) < MIN_CONFIRMATION) continue;
 
@@ -771,6 +1126,9 @@ function runPaperCycle() {
 
     const guard = tradeGuardLongRow(r, ltp);
     if (!guard.ok) continue;
+
+    // Don't open new trades near market close
+    if (shouldAutoClose(r.exchange)) continue;
 
     const reason = 'be5_reversal_guard_entry';
     openTradeFromRow(r, day, reason);
@@ -790,6 +1148,7 @@ function paperSummary() {
       realized_pnl: 0,
       open_pnl: 0,
       gross_pnl: 0,
+      net_pnl: 0,
       peak_equity: paperState.peakEquity,
       drawdown_now: 0,
       max_drawdown: paperState.maxDrawdown,
@@ -806,10 +1165,11 @@ function paperSummary() {
       COUNT(1) AS total,
       SUM(CASE WHEN status='CLOSED' THEN 1 ELSE 0 END) AS closed,
       SUM(CASE WHEN status='OPEN' THEN 1 ELSE 0 END) AS open,
-      SUM(CASE WHEN status='CLOSED' AND pnl > 0 THEN 1 ELSE 0 END) AS wins,
-      SUM(CASE WHEN status='CLOSED' AND pnl <= 0 THEN 1 ELSE 0 END) AS losses,
-      SUM(CASE WHEN status='CLOSED' THEN pnl ELSE 0 END) AS realized,
-      SUM(CASE WHEN status='OPEN' THEN pnl ELSE 0 END) AS open_pnl
+      SUM(CASE WHEN status='CLOSED' AND net_pnl > 0 THEN 1 ELSE 0 END) AS wins,
+      SUM(CASE WHEN status='CLOSED' AND net_pnl <= 0 THEN 1 ELSE 0 END) AS losses,
+      SUM(CASE WHEN status='CLOSED' THEN net_pnl ELSE 0 END) AS realized,
+      SUM(CASE WHEN status='OPEN' THEN pnl ELSE 0 END) AS open_pnl,
+      SUM(total_charges) AS total_charges
     FROM paper_trades
   `).get();
 
@@ -818,7 +1178,9 @@ function paperSummary() {
   const losses = Number(agg?.losses || 0);
   const realized = Number(agg?.realized || 0);
   const openPnl = Number(agg?.open_pnl || 0);
+  const totalCharges = Number(agg?.total_charges || 0);
   const gross = realized + openPnl;
+  const netPnl = gross - totalCharges;
 
   if (gross > paperState.peakEquity) paperState.peakEquity = gross;
   const dd = paperState.peakEquity - gross;
@@ -834,6 +1196,8 @@ function paperSummary() {
     realized_pnl: realized,
     open_pnl: openPnl,
     gross_pnl: gross,
+    total_charges: totalCharges,
+    net_pnl: netPnl,
     peak_equity: paperState.peakEquity,
     drawdown_now: dd,
     max_drawdown: paperState.maxDrawdown,
@@ -844,6 +1208,7 @@ function paperSummary() {
     engine_state: TRADE_MODE === 'live' ? (ENABLE_LIVE_TRADING ? 'live_ready' : 'live_blocked') : 'paper',
   };
 }
+
 function parseSymbolParts(symbol) {
   const s = String(symbol || '');
   const i = s.indexOf('|');
@@ -875,8 +1240,8 @@ function enrichTradeRows(rows, snapshotRows) {
 
     return {
       ...r,
-      exchange: parts.exchange || snap.exchange || '',
-      token: parts.token || snap.token || '',
+      exchange: parts.exchange || snap.exchange || r.exchange || '',
+      token: parts.token || snap.token || r.token || '',
       tsym: tsymRaw,
       display_symbol: display,
       ltp: toNum(snap.ltp),
@@ -884,6 +1249,7 @@ function enrichTradeRows(rows, snapshotRows) {
       first_1m_close: toNum(snap.first_1m_close),
       first_5m_close: toNum(snap.first_5m_close),
       first_15m_close: toNum(snap.first_15m_close),
+      ist_time: formatISTTime(),
     };
   });
 }
@@ -905,7 +1271,7 @@ function buildTradeAnalysis(openRows, closedRows, snapshotRows) {
       avg_pnl: 0,
     };
     prev.trades += 1;
-    const pnl = Number(r.pnl || 0);
+    const pnl = Number(r.net_pnl || r.pnl || 0);
     prev.pnl += pnl;
     if (pnl > 0) prev.wins += 1;
     else prev.losses += 1;
@@ -947,6 +1313,34 @@ function buildTradeAnalysis(openRows, closedRows, snapshotRows) {
       ...r,
       volume_vs_avg: avgVol > 0 ? r.volume / avgVol : 0,
     }));
+  
+  // Top gainers
+  const gainers = [];
+  for (const r of snapshotRows || []) {
+    const ltp = toNum(r.ltp);
+    const close = toNum(r.first_5m_close || r.first_1m_close);
+    if (ltp === null || close === null) continue;
+    const change = ((ltp - close) / close) * 100;
+    const tsymRaw = String(r.tsym || '').trim();
+    const display = tsymRaw && !isTokenLike(tsymRaw) ? tsymRaw : String(r.symbol || '');
+    const instType = detectInstrumentType(r.exchange, r.tsym);
+    gainers.push({
+      symbol: r.symbol,
+      display_symbol: display,
+      instrument_type: instType,
+      ltp,
+      close,
+      change_pct: change,
+    });
+  }
+  
+  const topGainers = gainers
+    .sort((a, b) => b.change_pct - a.change_pct)
+    .slice(0, 5);
+  
+  const topLosers = gainers
+    .sort((a, b) => a.change_pct - b.change_pct)
+    .slice(0, 5);
 
   const topPerformer = topClosed.length ? topClosed[0] : (topOpen.length ? topOpen[0] : null);
 
@@ -957,7 +1351,10 @@ function buildTradeAnalysis(openRows, closedRows, snapshotRows) {
     worst_closed: worstClosed,
     symbol_performance: symbolPerformance,
     volume_leaders: volumeLeaders,
+    top_gainers: topGainers,
+    top_losers: topLosers,
     average_volume: avgVol,
+    analysis_time: formatISTDateTime(),
   };
 }
 
@@ -979,6 +1376,7 @@ function tradesData(urlObj) {
       open_trades: [],
       recent_closed: [],
       as_of: isoNow(),
+      ist_time: formatISTTime(),
     };
   }
 
@@ -1001,14 +1399,62 @@ function tradesData(urlObj) {
     open_trades: openEnriched,
     recent_closed: closedEnriched,
     as_of: isoNow(),
+    ist_time: formatISTTime(),
+    ist_datetime: formatISTDateTime(),
   };
 }
+
+// Export trades to CSV
+function exportTrades(format = 'csv') {
+  const db = getPaperDb();
+  if (!db) return null;
+  
+  if (!fs.existsSync(EXPORT_DIR)) {
+    fs.mkdirSync(EXPORT_DIR, { recursive: true });
+  }
+  
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const filename = `trades_export_${timestamp}.${format}`;
+  const filepath = path.join(EXPORT_DIR, filename);
+  
+  const trades = db.prepare(`
+    SELECT * FROM paper_trades 
+    ORDER BY entry_ts DESC
+  `).all();
+  
+  if (format === 'csv') {
+    const headers = [
+      'ID', 'Symbol', 'TSym', 'Exchange', 'Day', 'Timeframe', 'Factor', 'Instrument Type',
+      'Entry Price', 'Exit Price', 'SL Price', 'TP Price', 'TSL Active', 'TSL SL Price',
+      'Quantity', 'Status', 'Reason', 'Entry Time', 'Exit Time',
+      'PnL', 'PnL %', 'Brokerage', 'STT', 'Exchange Charges', 'SEBI', 'Stamp Duty', 'GST',
+      'Total Charges', 'Net PnL', 'Max LTP', 'Min LTP', 'Runup', 'Drawdown', 'Updated At'
+    ].join(',');
+    
+    const rows = trades.map(t => [
+      t.id, t.symbol, t.tsym, t.exchange, t.day, t.timeframe, t.factor, t.instrument_type,
+      t.entry_ltp, t.exit_ltp || '', t.sl_price, t.tp_price, t.tsl_active ? 'Yes' : 'No', t.tsl_sl_price || '',
+      t.quantity, t.status, t.reason || '', t.entry_ts, t.exit_ts || '',
+      t.pnl || 0, t.pnl_pct || 0, t.brokerage || 0, t.stt || 0, t.exchange_charges || 0, 
+      t.sebi_charges || 0, t.stamp_duty || 0, t.gst || 0, t.total_charges || 0, t.net_pnl || 0,
+      t.max_ltp, t.min_ltp, t.runup, t.drawdown, t.updated_at
+    ].join(','));
+    
+    fs.writeFileSync(filepath, [headers, ...rows].join('\n'), 'utf8');
+  } else if (format === 'json') {
+    fs.writeFileSync(filepath, JSON.stringify(trades, null, 2), 'utf8');
+  }
+  
+  return { filename, filepath, count: trades.length };
+}
+
 function contentType(file) {
   const ext = path.extname(file).toLowerCase();
   if (ext === '.html') return 'text/html; charset=utf-8';
   if (ext === '.js') return 'text/javascript; charset=utf-8';
   if (ext === '.css') return 'text/css; charset=utf-8';
   if (ext === '.json') return 'application/json; charset=utf-8';
+  if (ext === '.csv') return 'text/csv; charset=utf-8';
   return 'text/plain; charset=utf-8';
 }
 
@@ -1032,16 +1478,51 @@ function serveStatic(reqPath, res) {
   });
 }
 
+// Serve export files
+function serveExportFile(filename, res) {
+  const filepath = path.join(EXPORT_DIR, filename);
+  if (!filepath.startsWith(EXPORT_DIR)) {
+    res.writeHead(403);
+    res.end('Forbidden');
+    return;
+  }
+  
+  fs.readFile(filepath, (err, data) => {
+    if (err) {
+      res.writeHead(404);
+      res.end('Not found');
+      return;
+    }
+    res.writeHead(200, { 
+      'Content-Type': contentType(filepath),
+      'Content-Disposition': `attachment; filename="${filename}"`
+    });
+    res.end(data);
+  });
+}
+
 function initPaperEngine() {
   getPaperDb();
   loadOpenTrades();
   setInterval(runPaperCycle, PAPER_CYCLE_MS);
+  
+  // Auto export trades every hour
+  setInterval(() => {
+    exportTrades('csv');
+  }, 3600000);
 }
 
 const server = http.createServer((req, res) => {
   const u = new URL(req.url, `http://${req.headers.host}`);
 
-  if (u.pathname === '/api/health') return json(res, 200, { ok: true, trade_mode: TRADE_MODE, live_enabled: ENABLE_LIVE_TRADING });
+  if (u.pathname === '/api/health') return json(res, 200, { 
+    ok: true, 
+    trade_mode: TRADE_MODE, 
+    live_enabled: ENABLE_LIVE_TRADING,
+    ist_time: formatISTTime(),
+    ist_datetime: formatISTDateTime(),
+  });
+  
   if (u.pathname === '/api/dashboard') {
     try {
       return json(res, 200, dashboardData(u));
@@ -1049,12 +1530,45 @@ const server = http.createServer((req, res) => {
       return json(res, 500, { error: String(e) });
     }
   }
+  
   if (u.pathname === '/api/trades') {
     try {
       return json(res, 200, tradesData(u));
     } catch (e) {
       return json(res, 500, { error: String(e) });
     }
+  }
+  
+  if (u.pathname === '/api/export') {
+    try {
+      const format = u.searchParams.get('format') || 'csv';
+      const result = exportTrades(format);
+      if (!result) {
+        return json(res, 500, { error: 'Failed to export trades' });
+      }
+      return json(res, 200, { 
+        success: true, 
+        filename: result.filename, 
+        count: result.count,
+        download_url: `/exports/${result.filename}`,
+        ist_time: formatISTTime(),
+      });
+    } catch (e) {
+      return json(res, 500, { error: String(e) });
+    }
+  }
+  
+  if (u.pathname === '/api/broker-limits') {
+    try {
+      return json(res, 200, getBrokerLimitsStatus());
+    } catch (e) {
+      return json(res, 500, { error: String(e) });
+    }
+  }
+  
+  if (u.pathname.startsWith('/exports/')) {
+    const filename = path.basename(u.pathname);
+    return serveExportFile(filename, res);
   }
 
   serveStatic(u.pathname, res);
@@ -1065,14 +1579,5 @@ initPaperEngine();
 server.listen(PORT, () => {
   console.log(`Node UI running: http://127.0.0.1:${PORT}`);
   console.log(`Trade report: http://127.0.0.1:${PORT}/trades.html`);
+  console.log(`IST Time: ${formatISTDateTime()}`);
 });
-
-
-
-
-
-
-
-
-
-
