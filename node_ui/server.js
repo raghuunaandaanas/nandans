@@ -934,56 +934,81 @@ function openTradeFromRow(row, day, reason = 'trend_rr_entry') {
   else if (instrumentType === 'FUTURE') quantity = 1;
   else if (instrumentType === 'EQUITY') quantity = 1;
   
-  const stmt = db.prepare(`
-    INSERT INTO paper_trades(
-      symbol, tsym, exchange, day, timeframe, factor, instrument_type,
-      close_price, points, bu1, bu2, bu3, bu4, bu5, be1, be2, be3, be4, be5,
-      entry_ltp, entry_ts, status, reason,
-      sl_price, tp_price, tsl_trigger, tsl_active, tsl_sl_price,
-      last_ltp, max_ltp, min_ltp, runup, drawdown,
-      pnl, pnl_pct, quantity, updated_at
-    ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  
-  stmt.run(
-    row.symbol,
-    row.tsym || '',
-    row.exchange || '',
-    day,
-    PAPER_TF,
-    PAPER_FACTOR,
-    instrumentType,
-    row.close,
-    row.points,
-    row.bu1,
-    row.bu2,
-    row.bu3,
-    row.bu4,
-    row.bu5,
-    row.be1,
-    row.be2,
-    row.be3,
-    row.be4,
-    row.be5,
-    ltp,
-    now,
-    'OPEN',
-    reason,
-    slPrice,
-    tpPrice,
-    tslTrigger,
-    0, // tsl_active
-    slPrice, // initial tsl_sl_price = sl
-    ltp,
-    ltp,
-    ltp,
-    0,
-    0,
-    0,
-    0,
-    quantity,
-    now
-  );
+  try {
+    const stmt = db.prepare(`
+      INSERT INTO paper_trades(
+        symbol, tsym, exchange, day, timeframe, factor, instrument_type,
+        close_price, points, bu1, bu2, bu3, bu4, bu5, be1, be2, be3, be4, be5,
+        entry_ltp, entry_ts, status, reason,
+        sl_price, tp_price, tsl_trigger, tsl_active, tsl_sl_price,
+        last_ltp, max_ltp, min_ltp, runup, drawdown,
+        pnl, pnl_pct, quantity, updated_at
+      ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    
+    stmt.run(
+      row.symbol,
+      row.tsym || '',
+      row.exchange || '',
+      day,
+      PAPER_TF,
+      PAPER_FACTOR,
+      instrumentType,
+      row.close,
+      row.points,
+      row.bu1,
+      row.bu2,
+      row.bu3,
+      row.bu4,
+      row.bu5,
+      row.be1,
+      row.be2,
+      row.be3,
+      row.be4,
+      row.be5,
+      ltp,
+      now,
+      'OPEN',
+      reason,
+      slPrice,
+      tpPrice,
+      tslTrigger,
+      0, // tsl_active
+      slPrice, // initial tsl_sl_price = sl
+      ltp,
+      ltp,
+      ltp,
+      0,
+      0,
+      0,
+      0,
+      quantity,
+      now
+    );
+  } catch (e) {
+    // If columns don't exist, run migration and try simpler insert
+    if (e.message && e.message.includes('no such column')) {
+      migratePaperDb(db);
+      // Fallback insert with just essential columns
+      const stmt = db.prepare(`
+        INSERT INTO paper_trades(
+          symbol, tsym, exchange, day, timeframe, factor, instrument_type,
+          close_price, points, bu1, bu2, bu3, bu4, bu5,
+          entry_ltp, entry_ts, status, reason,
+          last_ltp, max_ltp, min_ltp, runup, drawdown,
+          pnl, pnl_pct, quantity, updated_at
+        ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      stmt.run(
+        row.symbol, row.tsym || '', row.exchange || '', day, PAPER_TF, PAPER_FACTOR, instrumentType,
+        row.close, row.points, row.bu1, row.bu2, row.bu3, row.bu4, row.bu5,
+        ltp, now, 'OPEN', reason,
+        ltp, ltp, ltp, 0, 0, 0, 0, quantity, now
+      );
+    } else {
+      throw e;
+    }
+  }
 
   incrementOrderCount();
   
@@ -1046,35 +1071,81 @@ function closeTrade(trade, ltp, reason) {
   const pnlPct = trade.entry_ltp ? ((ltp - Number(trade.entry_ltp)) / Number(trade.entry_ltp)) * 100 : 0;
   const netPnl = pnl - charges.total_charges;
 
-  db.prepare(`
-    UPDATE paper_trades
-    SET exit_ltp=?, exit_ts=?, status='CLOSED', reason=?,
-        last_ltp=?, max_ltp=?, min_ltp=?, runup=?, drawdown=?, pnl=?, pnl_pct=?,
-        brokerage=?, stt=?, exchange_charges=?, sebi_charges=?, stamp_duty=?, gst=?,
-        total_charges=?, net_pnl=?, updated_at=?
-    WHERE id=?
-  `).run(
-    ltp,
-    now,
-    reason,
-    ltp,
-    trade.max_ltp,
-    trade.min_ltp,
-    trade.runup,
-    trade.drawdown,
-    pnl,
-    pnlPct,
-    charges.brokerage,
-    charges.stt,
-    charges.exchange_charges,
-    charges.sebi_charges,
-    charges.stamp_duty,
-    charges.gst,
-    charges.total_charges,
-    netPnl,
-    now,
-    trade.id
-  );
+  try {
+    db.prepare(`
+      UPDATE paper_trades
+      SET exit_ltp=?, exit_ts=?, status='CLOSED', reason=?,
+          last_ltp=?, max_ltp=?, min_ltp=?, runup=?, drawdown=?, pnl=?, pnl_pct=?,
+          brokerage=?, stt=?, exchange_charges=?, sebi_charges=?, stamp_duty=?, gst=?,
+          total_charges=?, net_pnl=?, updated_at=?
+      WHERE id=?
+    `).run(
+      ltp,
+      now,
+      reason,
+      ltp,
+      trade.max_ltp,
+      trade.min_ltp,
+      trade.runup,
+      trade.drawdown,
+      pnl,
+      pnlPct,
+      charges.brokerage,
+      charges.stt,
+      charges.exchange_charges,
+      charges.sebi_charges,
+      charges.stamp_duty,
+      charges.gst,
+      charges.total_charges,
+      netPnl,
+      now,
+      trade.id
+    );
+  } catch (e) {
+    // If columns don't exist, try to add them and retry
+    if (e.message && e.message.includes('no such column')) {
+      migratePaperDb(db);
+      try {
+        db.prepare(`
+          UPDATE paper_trades
+          SET exit_ltp=?, exit_ts=?, status='CLOSED', reason=?,
+              last_ltp=?, max_ltp=?, min_ltp=?, runup=?, drawdown=?, pnl=?, pnl_pct=?,
+              brokerage=?, stt=?, exchange_charges=?, sebi_charges=?, stamp_duty=?, gst=?,
+              total_charges=?, net_pnl=?, updated_at=?
+          WHERE id=?
+        `).run(
+          ltp,
+          now,
+          reason,
+          ltp,
+          trade.max_ltp,
+          trade.min_ltp,
+          trade.runup,
+          trade.drawdown,
+          pnl,
+          pnlPct,
+          charges.brokerage,
+          charges.stt,
+          charges.exchange_charges,
+          charges.sebi_charges,
+          charges.stamp_duty,
+          charges.gst,
+          charges.total_charges,
+          netPnl,
+          now,
+          trade.id
+        );
+      } catch (e2) {
+        // Fallback: basic update
+        db.prepare(`
+          UPDATE paper_trades
+          SET exit_ltp=?, exit_ts=?, status='CLOSED', reason=?,
+              last_ltp=?, max_ltp=?, min_ltp=?, runup=?, drawdown=?, pnl=?, pnl_pct=?, updated_at=?
+          WHERE id=?
+        `).run(ltp, now, reason, ltp, trade.max_ltp, trade.min_ltp, trade.runup, trade.drawdown, pnl, pnlPct, now, trade.id);
+      }
+    }
+  }
 
   paperState.openTrades.delete(trade.symbol);
   paperState.cooldownUntil.set(trade.symbol, Date.now() + PAPER_COOLDOWN_SEC * 1000);
@@ -1119,13 +1190,36 @@ function updateOpenTrade(trade, ltp) {
   trade.updated_at = isoNow();
 
   const db = getPaperDb();
-  db.prepare(`
-    UPDATE paper_trades
-    SET last_ltp=?, max_ltp=?, min_ltp=?, runup=?, drawdown=?, 
-        tsl_active=?, tsl_sl_price=?, max_profit_points=?, pnl=?, pnl_pct=?, updated_at=?
-    WHERE id=?
-  `).run(trade.last_ltp, trade.max_ltp, trade.min_ltp, trade.runup, trade.drawdown, 
-       trade.tsl_active, trade.tsl_sl_price, trade.max_profit_points, trade.pnl, trade.pnl_pct, trade.updated_at, trade.id);
+  try {
+    db.prepare(`
+      UPDATE paper_trades
+      SET last_ltp=?, max_ltp=?, min_ltp=?, runup=?, drawdown=?, 
+          tsl_active=?, tsl_sl_price=?, max_profit_points=?, pnl=?, pnl_pct=?, updated_at=?
+      WHERE id=?
+    `).run(trade.last_ltp, trade.max_ltp, trade.min_ltp, trade.runup, trade.drawdown, 
+         trade.tsl_active, trade.tsl_sl_price, trade.max_profit_points, trade.pnl, trade.pnl_pct, trade.updated_at, trade.id);
+  } catch (e) {
+    // If columns don't exist, try to add them and retry
+    if (e.message && e.message.includes('no such column')) {
+      migratePaperDb(db);
+      try {
+        db.prepare(`
+          UPDATE paper_trades
+          SET last_ltp=?, max_ltp=?, min_ltp=?, runup=?, drawdown=?, 
+              tsl_active=?, tsl_sl_price=?, max_profit_points=?, pnl=?, pnl_pct=?, updated_at=?
+          WHERE id=?
+        `).run(trade.last_ltp, trade.max_ltp, trade.min_ltp, trade.runup, trade.drawdown, 
+             trade.tsl_active, trade.tsl_sl_price, trade.max_profit_points, trade.pnl, trade.pnl_pct, trade.updated_at, trade.id);
+      } catch (e2) {
+        // Fallback: update only essential columns
+        db.prepare(`
+          UPDATE paper_trades
+          SET last_ltp=?, max_ltp=?, min_ltp=?, runup=?, drawdown=?, pnl=?, pnl_pct=?, updated_at=?
+          WHERE id=?
+        `).run(trade.last_ltp, trade.max_ltp, trade.min_ltp, trade.runup, trade.drawdown, trade.pnl, trade.pnl_pct, trade.updated_at, trade.id);
+      }
+    }
+  }
 }
 
 function runPaperCycle() {
