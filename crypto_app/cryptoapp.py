@@ -355,6 +355,8 @@ CREATE TABLE IF NOT EXISTS paper_trades (
     exit_price REAL,
     exit_time TEXT,
     status TEXT NOT NULL,  -- OPEN, CLOSED
+    sl_price REAL,
+    tp_price REAL,
     pnl REAL,
     pnl_pct REAL,
     strategy TEXT,
