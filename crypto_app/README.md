@@ -56,6 +56,39 @@ Universal zones that work for ALL instruments:
 ### 4. 24/7 Trading
 Crypto markets never sleep - no market close logic.
 
+## Quick Start (Unified Launcher)
+
+### Option 1: Use Unified Launcher (Recommended)
+```bash
+# From d:\history folder, start BOTH Shoonya + Crypto:
+python start_all.py start
+
+# Check status of both
+python start_all.py status
+
+# View logs from both
+python start_all.py logs
+
+# Stop both
+python start_all.py stop
+
+# Restart both
+python start_all.py restart
+```
+
+### Option 2: Start Crypto Only
+```bash
+# Start crypto app only
+cd crypto_app
+python app_start.py start
+
+# Check status
+python app_start.py status
+
+# Stop
+python app_start.py stop
+```
+
 ## Setup
 
 ### 1. Install Dependencies
@@ -78,29 +111,31 @@ Create `delta_cred.json`:
 
 Get credentials from: https://delta.exchange
 
-### 3. Start the App
-```bash
-# Start crypto app
-python app_start.py start
-
-# Check status
-python app_start.py status
-
-# View logs
-python app_start.py logs
-
-# Stop
-python app_start.py stop
-
-# Restart
-python app_start.py restart
-```
-
 ## Access
 
 - **Dashboard**: http://127.0.0.1:8788/
 - **API Health**: http://127.0.0.1:8788/api/health
 - **Data API**: http://127.0.0.1:8788/api/dashboard
+
+## Unified Launcher
+
+Use `start_all.py` from the parent folder to manage both systems:
+
+```bash
+cd d:\history
+
+# Start both Shoonya + Crypto
+python start_all.py start
+
+# Check status
+python start_all.py status
+
+# Show logs
+python start_all.py logs
+
+# Open dashboards in browser
+python start_all.py dashboard
+```
 
 ## Parallel Operation with Shoonya
 
