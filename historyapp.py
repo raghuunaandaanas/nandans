@@ -14,6 +14,12 @@ from threading import Lock, Thread
 import pyotp
 from NorenRestApiPy.NorenApi import NorenApi
 
+# Import Traderscope for micro-fibonacci analysis
+from traderscope import (
+    TraderscopeEngine, DigitAnalysis, RangeShift, PriceObservation,
+    MICRO_ZONES, SPECIAL_RULES
+)
+
 
 ROOT = Path(__file__).resolve().parent
 SYMBOL_DIR = ROOT / "symbols"
@@ -110,6 +116,11 @@ volume_map = {}
 socket_opened = False
 socket_opened_at = None
 last_tick_at = None
+
+# Traderscope - Micro-fibonacci analysis
+traderscope_engine = TraderscopeEngine()
+last_traderscope_analysis = {}  # symbol -> last analysis
+price_history = {}  # symbol -> list of prices for gamma detection
 
 login_status = {
     "ok": False,
@@ -1010,6 +1021,97 @@ def write_ui_snapshot():
         _ui_dirty = False
         _last_ui_snapshot_ts = now_t
 
+    # Helper function to add Traderscope analysis to a row
+    def enrich_with_traderscope(row_data, symbol):
+        """Add Traderscope micro-fibonacci analysis to row"""
+        ltp = row_data.get("ltp")
+        close = row_data.get("first_5m_close")
+        
+        if ltp is None or close is None:
+            return row_data
+        
+        try:
+            ltp_val = float(ltp)
+            close_val = float(close)
+            
+            # Run Traderscope analysis
+            digit_analyses = traderscope_engine.analyze_all_digits(ltp_val)
+            
+            # Select active digit based on price/volatility
+            volatility = abs((ltp_val - close_val) / close_val) * 100
+            selected_digit = traderscope_engine.select_active_digit(ltp_val, volatility=volatility)
+            selected_analysis = next((d for d in digit_analyses if d.digit == selected_digit), digit_analyses[0])
+            
+            # Detect range shifts
+            range_shifts = []
+            if symbol in last_traderscope_analysis:
+                prev = last_traderscope_analysis[symbol]
+                if 'digit_analyses' in prev:
+                    range_shifts = traderscope_engine.detect_range_shift(
+                        symbol, prev.get('ltp', ltp_val), ltp_val,
+                        prev.get('digit_analyses', []), digit_analyses
+                    )
+            
+            # Update price history for gamma detection
+            if symbol not in price_history:
+                price_history[symbol] = []
+            price_history[symbol].append(ltp_val)
+            if len(price_history[symbol]) > 20:
+                price_history[symbol] = price_history[symbol][-20:]
+            
+            # Detect gamma moves
+            gamma_move = traderscope_engine.detect_gamma_move(
+                symbol, price_history[symbol], digit_analyses
+            )
+            
+            # Store for next analysis
+            last_traderscope_analysis[symbol] = {
+                'ltp': ltp_val,
+                'digit_analyses': digit_analyses,
+                'timestamp': now_iso()
+            }
+            
+            # Add Traderscope data to row
+            row_data["digit_analyses"] = [
+                {
+                    "digit": d.digit,
+                    "magnitude": d.magnitude,
+                    "block_start": d.block_start,
+                    "block_end": d.block_end,
+                    "position": d.position,
+                    "zone_name": d.zone.get("name"),
+                    "zone_type": d.zone.get("type")
+                }
+                for d in digit_analyses
+            ]
+            row_data["selected_digit"] = selected_digit
+            row_data["selected_analysis"] = {
+                "digit": selected_analysis.digit,
+                "magnitude": selected_analysis.magnitude,
+                "block_start": selected_analysis.block_start,
+                "position": selected_analysis.position,
+                "zone_name": selected_analysis.zone.get("name"),
+                "zone_type": selected_analysis.zone.get("type")
+            }
+            row_data["range_shifts"] = [
+                {
+                    "timestamp": rs.timestamp,
+                    "digit": rs.digit,
+                    "direction": rs.direction,
+                    "from_block": rs.from_block,
+                    "to_block": rs.to_block
+                }
+                for rs in range_shifts
+            ]
+            row_data["gamma_move"] = gamma_move
+            row_data["traderscope_ready"] = True
+            
+        except Exception as e:
+            # Silently skip if analysis fails
+            pass
+        
+        return row_data
+
     rows = []
     max_rows = UI_MAX_ROWS if UI_MAX_ROWS > 0 else None
 
@@ -1022,8 +1124,31 @@ def write_ui_snapshot():
             break
         info = symbol_map.get(s, {})
         row = today_copy.get(s, {})
-        rows.append(
-            {
+        row_data = {
+            "symbol": s,
+            "exchange": info.get("exchange", row.get("exchange", "")),
+            "token": info.get("token", row.get("token", "")),
+            "tsym": info.get("tsym", row.get("tsym", "")),
+            "ltp": ltp_copy.get(s),
+            "volume": vol_copy.get(s),
+            "first_1m_close": row.get("first_1m_close"),
+            "first_5m_close": row.get("first_5m_close"),
+            "first_15m_close": row.get("first_15m_close"),
+            "fetch_done": bool(row.get("fetch_done", False)),
+            "updated_at": row.get("updated_at"),
+        }
+        # Add Traderscope analysis
+        row_data = enrich_with_traderscope(row_data, s)
+        rows.append(row_data)
+
+    if max_rows is None or len(rows) < max_rows:
+        extra = sorted((set(today_copy.keys()) | set(ltp_copy.keys()) | set(vol_copy.keys())) - seen)
+        for s in extra:
+            if max_rows is not None and len(rows) >= max_rows:
+                break
+            info = symbol_map.get(s, {})
+            row = today_copy.get(s, {})
+            row_data = {
                 "symbol": s,
                 "exchange": info.get("exchange", row.get("exchange", "")),
                 "token": info.get("token", row.get("token", "")),
@@ -1036,30 +1161,9 @@ def write_ui_snapshot():
                 "fetch_done": bool(row.get("fetch_done", False)),
                 "updated_at": row.get("updated_at"),
             }
-        )
-
-    if max_rows is None or len(rows) < max_rows:
-        extra = sorted((set(today_copy.keys()) | set(ltp_copy.keys()) | set(vol_copy.keys())) - seen)
-        for s in extra:
-            if max_rows is not None and len(rows) >= max_rows:
-                break
-            info = symbol_map.get(s, {})
-            row = today_copy.get(s, {})
-            rows.append(
-                {
-                    "symbol": s,
-                    "exchange": info.get("exchange", row.get("exchange", "")),
-                    "token": info.get("token", row.get("token", "")),
-                    "tsym": info.get("tsym", row.get("tsym", "")),
-                    "ltp": ltp_copy.get(s),
-                    "volume": vol_copy.get(s),
-                    "first_1m_close": row.get("first_1m_close"),
-                    "first_5m_close": row.get("first_5m_close"),
-                    "first_15m_close": row.get("first_15m_close"),
-                    "fetch_done": bool(row.get("fetch_done", False)),
-                    "updated_at": row.get("updated_at"),
-                }
-            )
+            # Add Traderscope analysis
+            row_data = enrich_with_traderscope(row_data, s)
+            rows.append(row_data)
 
     history_done = max(0, symbol_total - history_pending)
     history_pct = round((history_done * 100.0 / symbol_total), 2) if symbol_total > 0 else 0.0

@@ -236,6 +236,23 @@
     .factor-micro { background: #065f46; color: #6ee7b7; }  /* 0.2611% - green */
     .factor-mini { background: #92400e; color: #fcd34d; }   /* 2.61% - amber */
     .factor-mega { background: #7f1d1d; color: #fca5a5; }   /* 26.11% - red */
+    
+    /* Traderscope Zone Badges */
+    .zone-support { background: #1e3a5f; color: #7dd3fc; }
+    .zone-resistance { background: #7c2d12; color: #fdba74; }
+    .zone-accel { background: #14532d; color: #86efac; }
+    .zone-neutral { background: #374151; color: #d1d5db; }
+    
+    /* Gamma Move Badge */
+    .gamma-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      background: #dc2626;
+      color: #fef2f2;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 700;
+    }
   </style>
 </head>
 <body>
@@ -364,6 +381,10 @@
             <th>BU5</th>
             <th>RR(BU5)</th>
             <th>InRange</th>
+            <th>Digit</th>
+            <th>Position</th>
+            <th>Zone</th>
+            <th>Gamma</th>
             <th>Updated(IST)</th>
           </tr>
         </thead>
@@ -730,6 +751,17 @@
 
         const factorBadge = r.selected_factor ? `<span class="factor-badge factor-${r.selected_factor}">${r.selected_factor.toUpperCase()}</span>` : '-';
         
+        // Traderscope rendering
+        const digit = r.selected_digit ?? '-';
+        const position = r.position_pct ?? '-';
+        const zoneName = r.zone_name ?? '-';
+        const zoneType = r.zone_type ?? '-';
+        const zoneClass = zoneType === 'support' ? 'zone-support' : 
+                         zoneType === 'resistance' ? 'zone-resistance' : 
+                         zoneType === 'acceleration' ? 'zone-accel' : 'zone-neutral';
+        const gammaBadge = r.gamma_move?.detected ? 
+          `<span class="gamma-badge">🚀 ${r.gamma_move.score}</span>` : '-';
+        
         return `
           <tr>
             <td>${r.symbol ?? ''}</td>
@@ -753,6 +785,10 @@
             <td class="${bu5c}">${f2(r.bu5)}</td>
             <td>${f2(r.rr_to_bu5)}</td>
             <td class="${r.in_range_up ? 'ok' : 'pending'}">${r.in_range_up ? 'YES' : 'NO'}</td>
+            <td>${digit}</td>
+            <td>${position}%</td>
+            <td class="${zoneClass}">${zoneName}</td>
+            <td>${gammaBadge}</td>
             <td>${r.ist_time || formatISTTime()}</td>
           </tr>
         `;

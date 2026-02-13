@@ -713,6 +713,14 @@ function recomputeDerivedForConfig(baseRows, timeframe, factorName) {
     const jackpotLong = jackpotBe5Reversal;
     const jackpotShort = trend === 'DOWN' && nearName === 'BE1' && Math.abs(nearPct) <= 0.08;
 
+    // Traderscope data from backend
+    const digitAnalyses = row.digit_analyses || [];
+    const selectedDigit = row.selected_digit || 5;
+    const selectedAnalysis = row.selected_analysis || {};
+    const gammaMove = row.gamma_move || null;
+    const rangeShifts = row.range_shifts || [];
+    const traderscopeReady = row.traderscope_ready || false;
+
     const enriched = {
       ...row,
       close,
@@ -758,6 +766,16 @@ function recomputeDerivedForConfig(baseRows, timeframe, factorName) {
       below_be1: ltp <= be1,
       above_bu5: ltp > bu5,
       below_be5: ltp < be5,
+      // Traderscope data
+      digit_analyses: digitAnalyses,
+      selected_digit: selectedDigit,
+      selected_analysis: selectedAnalysis,
+      gamma_move: gammaMove,
+      range_shifts: rangeShifts,
+      traderscope_ready: traderscopeReady,
+      zone_name: selectedAnalysis.zone_name || '-',
+      zone_type: selectedAnalysis.zone_type || '-',
+      position_pct: selectedAnalysis.position?.toFixed(1) || '-',
       // IST Time
       ist_time: formatISTTime(),
       ist_datetime: formatISTDateTime(),
