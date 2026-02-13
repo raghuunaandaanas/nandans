@@ -244,8 +244,12 @@ class DeltaClient:
     
     def get_products(self) -> List[dict]:
         """Get all available trading products (symbols)"""
-        result = self._make_request("GET", "/products")
-        return result.get("result", [])
+        # Delta India API uses /v2/products for public products endpoint
+        result = self._make_request("GET", "/v2/products")
+        if "error" in result:
+            # Fallback: try /products
+            result = self._make_request("GET", "/products")
+        return result.get("result", result.get("products", []))
     
     def get_orderbook(self, symbol: str) -> dict:
         """Get current orderbook for symbol"""
@@ -879,6 +883,24 @@ class CryptoApp:
                 and p.get('quote_asset') == 'USDT'  # Focus on USDT pairs
             ][:200]  # Limit to top 200 pairs for performance
             log(f"Loaded {len(self.symbols)} trading symbols")
+        else:
+            # SIMULATION MODE: Use default crypto symbols
+            log("API failed - Using SIMULATION MODE with default symbols")
+            self.symbols = [
+                'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'ADAUSDT', 'DOTUSDT',
+                'LINKUSDT', 'MATICUSDT', 'UNIUSDT', 'LTCUSDT', 'BCHUSDT',
+                'XRPUSDT', 'DOGEUSDT', 'AVAXUSDT', 'ATOMUSDT', 'ETCUSDT'
+            ]
+            log(f"Loaded {len(self.symbols)} default symbols for simulation")
+            
+            # Save default products to database
+            default_products = [
+                {'symbol': s, 'underlying_asset': s.replace('USDT', ''), 
+                 'quote_asset': 'USDT', 'contract_type': 'perpetual',
+                 'contract_value': 1, 'tick_size': 0.01, 'lot_size': 1}
+                for s in self.symbols
+            ]
+            self.data_manager.save_products(default_products)
         
         return True
     

@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crypto Trade Monitor - Delta India</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0a0e1a;
+      color: #e2e8f0;
+      font-size: 13px;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, #1a1f2e 0%, #0f1419 100%);
+      padding: 16px 24px;
+      border-bottom: 1px solid #2d3748;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .header h1 {
+      font-size: 20px;
+      background: linear-gradient(90deg, #fbbf24, #f59e0b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .header .subtitle {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+    
+    .nav-links {
+      display: flex;
+      gap: 16px;
+    }
+    
+    .nav-links a {
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 4px;
+      background: #1e293b;
+    }
+    
+    .nav-links a:hover {
+      color: #fbbf24;
+      background: #334155;
+    }
+    
+    .stats-bar {
+      background: #0f1419;
+      padding: 12px 24px;
+      border-bottom: 1px solid #2d3748;
+      display: flex;
+      gap: 32px;
+    }
+    
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .stat-item .label {
+      font-size: 10px;
+      color: #64748b;
+      text-transform: uppercase;
+    }
+    
+    .stat-item .value {
+      font-size: 16px;
+      font-weight: 600;
+    }
+    
+    .value.positive { color: #22c55e; }
+    .value.negative { color: #ef4444; }
+    .value.neutral { color: #fbbf24; }
+    
+    .controls {
+      background: #111827;
+      padding: 12px 24px;
+      border-bottom: 1px solid #2d3748;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+    
+    .controls button {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #e2e8f0;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    
+    .controls button:hover {
+      background: #334155;
+    }
+    
+    .table-container {
+      padding: 16px 24px;
+      overflow-x: auto;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    
+    thead {
+      position: sticky;
+      top: 0;
+      background: #1a1f2e;
+    }
+    
+    th {
+      padding: 12px 8px;
+      text-align: left;
+      font-weight: 600;
+      color: #94a3b8;
+      border-bottom: 2px solid #334155;
+      white-space: nowrap;
+    }
+    
+    td {
+      padding: 10px 8px;
+      border-bottom: 1px solid #1e293b;
+      white-space: nowrap;
+    }
+    
+    tr:hover {
+      background: #1e293b;
+    }
+    
+    .status-open { color: #22c55e; font-weight: 600; }
+    .status-closed { color: #64748b; }
+    .status-sl { color: #ef4444; }
+    .status-tp { color: #22c55e; }
+    
+    .pnl-positive { color: #22c55e; }
+    .pnl-negative { color: #ef4444; }
+    
+    .section-title {
+      padding: 16px 24px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #fbbf24;
+      border-bottom: 1px solid #2d3748;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>Crypto Trade Monitor | Delta India</h1>
+      <div class="subtitle">Paper Trading Dashboard | 24/7 Crypto Markets</div>
+    </div>
+    <div class="nav-links">
+      <a href="/">Dashboard</a>
+      <a href="/trades.html" style="color: #fbbf24;">Trades</a>
+    </div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat-item">
+      <span class="label">Total Trades</span>
+      <span class="value neutral" id="totalTrades">-</span>
+    </div>
+    <div class="stat-item">
+      <span class="label">Open Trades</span>
+      <span class="value neutral" id="openTrades">-</span>
+    </div>
+    <div class="stat-item">
+      <span class="label">Win Rate</span>
+      <span class="value neutral" id="winRate">-</span>
+    </div>
+    <div class="stat-item">
+      <span class="label">Total PnL</span>
+      <span class="value" id="totalPnl">-</span>
+    </div>
+  </div>
+
+  <div class="section-title">Open Trades</div>
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Symbol</th>
+          <th>Side</th>
+          <th>Entry</th>
+          <th>Current</th>
+          <th>SL</th>
+          <th>TP</th>
+          <th>PnL</th>
+          <th>PnL %</th>
+          <th>Entry Time</th>
+        </tr>
+      </thead>
+      <tbody id="openTradesTable">
+        <tr><td colspan="9" class="empty-state">No open trades</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section-title">Closed Trades</div>
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Symbol</th>
+          <th>Side</th>
+          <th>Entry</th>
+          <th>Exit</th>
+          <th>PnL</th>
+          <th>PnL %</th>
+          <th>Duration</th>
+          <th>Exit Reason</th>
+        </tr>
+      </thead>
+      <tbody id="closedTradesTable">
+        <tr><td colspan="8" class="empty-state">No closed trades</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    const API_URL = '/api/trades';
+    const REFRESH_INTERVAL = 2000;
+
+    const formatNumber = (n) => Number(n).toFixed(2);
+    const formatPct = (n) => Number(n).toFixed(2) + '%';
+    
+    function formatDuration(start, end) {
+      const diff = new Date(end) - new Date(start);
+      const mins = Math.floor(diff / 60000);
+      const hours = Math.floor(mins / 60);
+      if (hours > 0) return `${hours}h ${mins % 60}m`;
+      return `${mins}m`;
+    }
+
+    function renderOpenTrades(trades) {
+      const tbody = document.getElementById('openTradesTable');
+      if (!trades || trades.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="empty-state">No open trades</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = trades.map(t => {
+        const pnlClass = t.pnl > 0 ? 'pnl-positive' : t.pnl < 0 ? 'pnl-negative' : '';
+        return `
+          <tr>
+            <td><strong>${t.symbol}</strong></td>
+            <td class="status-open">${t.side}</td>
+            <td>${formatNumber(t.entry_price)}</td>
+            <td>${formatNumber(t.last_ltp || t.entry_price)}</td>
+            <td>${formatNumber(t.sl_price)}</td>
+            <td>${formatNumber(t.tp_price)}</td>
+            <td class="${pnlClass}">${formatNumber(t.pnl || 0)}</td>
+            <td class="${pnlClass}">${formatPct(t.pnl_pct || 0)}</td>
+            <td>${new Date(t.entry_time).toLocaleString()}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderClosedTrades(trades) {
+      const tbody = document.getElementById('closedTradesTable');
+      if (!trades || trades.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No closed trades</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = trades.slice(-20).reverse().map(t => {
+        const pnlClass = t.pnl > 0 ? 'pnl-positive' : 'pnl-negative';
+        const exitReason = t.pnl >= (t.tp_price - t.entry_price) * 0.8 ? 'TARGET' : 
+                          t.pnl <= (t.sl_price - t.entry_price) * 0.8 ? 'STOP LOSS' : 'EXIT';
+        return `
+          <tr>
+            <td><strong>${t.symbol}</strong></td>
+            <td>${t.side}</td>
+            <td>${formatNumber(t.entry_price)}</td>
+            <td>${formatNumber(t.exit_price)}</td>
+            <td class="${pnlClass}">${formatNumber(t.pnl)}</td>
+            <td class="${pnlClass}">${formatPct(t.pnl_pct)}</td>
+            <td>${formatDuration(t.entry_time, t.exit_time)}</td>
+            <td class="${pnlClass}">${exitReason}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function updateStats(summary) {
+      document.getElementById('totalTrades').textContent = summary.total_trades || 0;
+      document.getElementById('openTrades').textContent = summary.open_trades || 0;
+      document.getElementById('winRate').textContent = 
+        summary.win_rate ? formatPct(summary.win_rate) : '0%';
+      
+      const totalPnl = summary.net_pnl || 0;
+      const pnlEl = document.getElementById('totalPnl');
+      pnlEl.textContent = formatNumber(totalPnl);
+      pnlEl.className = 'value ' + (totalPnl > 0 ? 'positive' : totalPnl < 0 ? 'negative' : 'neutral');
+    }
+
+    async function fetchTrades() {
+      try {
+        const res = await fetch(API_URL);
+        const data = await res.json();
+        
+        renderOpenTrades(data.open_trades);
+        renderClosedTrades(data.closed_trades);
+        updateStats(data.summary || {});
+      } catch (err) {
+        console.error('Fetch error:', err);
+      }
+    }
+
+    // Initial load
+    fetchTrades();
+    
+    // Auto refresh
+    setInterval(fetchTrades, REFRESH_INTERVAL);
+  </script>
+</body>
+</html>

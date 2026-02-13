@@ -325,6 +325,23 @@ function handleHealth(res) {
   res.end(JSON.stringify(response));
 }
 
+function handleTrades(res) {
+  // Mock trades data for now - in production this would query the database
+  const response = {
+    open_trades: [],
+    closed_trades: [],
+    summary: {
+      total_trades: 0,
+      open_trades: 0,
+      win_rate: 0,
+      gross_pnl: 0,
+      net_pnl: 0,
+    }
+  };
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(response));
+}
+
 function serveStaticFile(filePath, res) {
   const ext = path.extname(filePath);
   const contentTypes = {
@@ -370,6 +387,11 @@ const server = http.createServer((req, res) => {
   
   if (url.pathname === '/api/dashboard') {
     handleDashboard(url, res);
+    return;
+  }
+  
+  if (url.pathname === '/api/trades') {
+    handleTrades(res);
     return;
   }
   

@@ -7,3 +7,141 @@
 [2026-02-13 23:50:06,534] ============================================================
 [2026-02-13 23:50:06,534] Failed to load credentials: [Errno 2] No such file or directory: 'D:\\history\\crypto_app\\delta_cred.json'
 [2026-02-13 23:50:06,534] Initialization failed!
+[2026-02-13 23:52:40,709] ======================================================================
+[2026-02-13 23:52:40,710] CRYPTO TRADING APP - Delta India Exchange
+[2026-02-13 23:52:40,710] Market Open: 00:00 UTC (5:30 AM IST) | 24/7 Trading
+[2026-02-13 23:52:40,710] ======================================================================
+[2026-02-13 23:52:40,710] ============================================================
+[2026-02-13 23:52:40,710] CRYPTO APP - Delta India Exchange
+[2026-02-13 23:52:40,710] ============================================================
+[2026-02-13 23:52:40,710] Credentials loaded successfully
+[2026-02-13 23:52:40,757] Fetching available products...
+[2026-02-13 23:52:41,341] HTTP Error 404: Not Found
+[2026-02-13 23:52:41,341] Starting WebSocket for real-time data...
+[2026-02-13 23:52:42,288] Websocket connected
+[2026-02-13 23:52:42,289] WebSocket Connected - Subscribing to channels...
+[2026-02-13 23:52:44,342] Fetching first closes (00:00 UTC / 5:30 AM IST)...
+[2026-02-13 23:52:44,342] Fetching crypto first closes (00:00 UTC / 5:30 AM IST)...
+[2026-02-13 23:52:44,343] Crypto session: 2026-02-13 | Market open (UTC): 1770921000 | Now: 1771006964
+[2026-02-13 23:52:44,343] Main loop started - Running 24/7
+[2026-02-13 23:52:49,350] Snapshot generated: 0 rows
+[2026-02-13 23:52:54,689] Snapshot generated: 0 rows
+[2026-02-13 23:53:00,364] Snapshot generated: 0 rows
+[2026-02-13 23:53:06,297] Snapshot generated: 0 rows
+[2026-02-13 23:53:11,671] Snapshot generated: 0 rows
+[2026-02-13 23:53:18,010] Snapshot generated: 0 rows
+[2026-02-13 23:53:24,326] Snapshot generated: 0 rows
+[2026-02-13 23:53:29,769] Snapshot generated: 0 rows
+[2026-02-13 23:53:35,858] Snapshot generated: 0 rows
+[2026-02-13 23:53:41,508] Snapshot generated: 0 rows
+[2026-02-13 23:53:46,814] Snapshot generated: 0 rows
+[2026-02-13 23:53:51,822] Snapshot generated: 0 rows
+[2026-02-13 23:53:57,367] Snapshot generated: 0 rows
+[2026-02-13 23:54:02,641] Snapshot generated: 0 rows
+[2026-02-13 23:54:08,292] Snapshot generated: 0 rows
+[2026-02-13 23:54:13,659] Snapshot generated: 0 rows
+[2026-02-13 23:54:18,666] Snapshot generated: 0 rows
+[2026-02-13 23:54:23,677] Snapshot generated: 0 rows
+[2026-02-13 23:54:28,943] Snapshot generated: 0 rows
+[2026-02-13 23:54:34,255] Snapshot generated: 0 rows
+[2026-02-13 23:54:39,275] Snapshot generated: 0 rows
+[2026-02-13 23:54:44,453] Snapshot generated: 0 rows
+[2026-02-13 23:54:49,873] Snapshot generated: 0 rows
+[2026-02-13 23:54:55,369] Snapshot generated: 0 rows
+[2026-02-13 23:55:00,384] Snapshot generated: 0 rows
+[2026-02-13 23:55:06,061] Snapshot generated: 0 rows
+[2026-02-13 23:55:11,630] Snapshot generated: 0 rows
+[2026-02-13 23:55:17,115] Snapshot generated: 0 rows
+[2026-02-13 23:55:22,253] Snapshot generated: 0 rows
+[2026-02-13 23:55:27,726] Snapshot generated: 0 rows
+[2026-02-13 23:55:33,267] Snapshot generated: 0 rows
+[2026-02-13 23:55:38,540] Snapshot generated: 0 rows
+[2026-02-13 23:55:44,026] Snapshot generated: 0 rows
+[2026-02-13 23:55:49,701] Snapshot generated: 0 rows
+[2026-02-13 23:55:54,717] Snapshot generated: 0 rows
+[2026-02-13 23:55:59,774] Snapshot generated: 0 rows
+[2026-02-13 23:56:05,294] Snapshot generated: 0 rows
+[2026-02-13 23:56:11,073] Snapshot generated: 0 rows
+[2026-02-13 23:56:17,050] Snapshot generated: 0 rows
+[2026-02-13 23:56:22,223] Snapshot generated: 0 rows
+[2026-02-13 23:56:27,230] Snapshot generated: 0 rows
+[2026-02-13 23:56:32,793] Snapshot generated: 0 rows
+[2026-02-13 23:56:38,493] Snapshot generated: 0 rows
+[2026-02-13 23:56:43,775] Snapshot generated: 0 rows
+[2026-02-13 23:56:49,623] Snapshot generated: 0 rows
+[2026-02-13 23:56:55,664] Snapshot generated: 0 rows
+[2026-02-13 23:57:01,181] Snapshot generated: 0 rows
+[2026-02-13 23:57:07,192] Snapshot generated: 0 rows
+[2026-02-13 23:57:12,427] Snapshot generated: 0 rows
+[2026-02-13 23:57:17,434] Snapshot generated: 0 rows
+[2026-02-13 23:57:22,701] Snapshot generated: 0 rows
+[2026-02-13 23:57:28,678] Snapshot generated: 0 rows
+[2026-02-13 23:57:33,724] Snapshot generated: 0 rows
+[2026-02-13 23:57:39,227] Snapshot generated: 0 rows
+[2026-02-13 23:57:45,397] Snapshot generated: 0 rows
+[2026-02-13 23:57:50,964] Snapshot generated: 0 rows
+[2026-02-13 23:57:56,773] Snapshot generated: 0 rows
+[2026-02-13 23:58:02,264] Snapshot generated: 0 rows
+[2026-02-13 23:58:07,302] Snapshot generated: 0 rows
+[2026-02-13 23:58:12,309] Snapshot generated: 0 rows
+[2026-02-13 23:58:18,024] Snapshot generated: 0 rows
+[2026-02-13 23:58:23,528] Snapshot generated: 0 rows
+[2026-02-13 23:58:29,594] Snapshot generated: 0 rows
+[2026-02-13 23:58:35,076] Snapshot generated: 0 rows
+[2026-02-13 23:58:44,213] ======================================================================
+[2026-02-13 23:58:44,213] CRYPTO TRADING APP - Delta India Exchange
+[2026-02-13 23:58:44,213] Market Open: 00:00 UTC (5:30 AM IST) | 24/7 Trading
+[2026-02-13 23:58:44,213] ======================================================================
+[2026-02-13 23:58:44,213] ============================================================
+[2026-02-13 23:58:44,213] CRYPTO APP - Delta India Exchange
+[2026-02-13 23:58:44,213] ============================================================
+[2026-02-13 23:58:44,214] Credentials loaded successfully
+[2026-02-13 23:58:44,215] Fetching available products...
+[2026-02-13 23:58:44,580] HTTP Error 404: Not Found
+[2026-02-13 23:58:44,580] Starting WebSocket for real-time data...
+[2026-02-13 23:58:45,679] Websocket connected
+[2026-02-13 23:58:45,679] WebSocket Connected - Subscribing to channels...
+[2026-02-13 23:58:47,581] Fetching first closes (00:00 UTC / 5:30 AM IST)...
+[2026-02-13 23:58:47,582] Fetching crypto first closes (00:00 UTC / 5:30 AM IST)...
+[2026-02-13 23:58:47,583] Crypto session: 2026-02-13 | Market open (UTC): 1770921000 | Now: 1771007327
+[2026-02-13 23:58:47,583] Main loop started - Running 24/7
+[2026-02-13 23:58:52,609] Snapshot generated: 0 rows
+[2026-02-13 23:58:57,843] Snapshot generated: 0 rows
+[2026-02-13 23:59:03,629] Snapshot generated: 0 rows
+[2026-02-13 23:59:09,417] Snapshot generated: 0 rows
+[2026-02-13 23:59:14,940] Snapshot generated: 0 rows
+[2026-02-13 23:59:19,946] Snapshot generated: 0 rows
+[2026-02-13 23:59:24,952] Snapshot generated: 0 rows
+[2026-02-13 23:59:30,379] Snapshot generated: 0 rows
+[2026-02-13 23:59:36,059] Snapshot generated: 0 rows
+[2026-02-13 23:59:41,749] Snapshot generated: 0 rows
+[2026-02-13 23:59:47,545] Snapshot generated: 0 rows
+[2026-02-13 23:59:53,253] Snapshot generated: 0 rows
+[2026-02-13 23:59:58,806] Snapshot generated: 0 rows
+[2026-02-14 00:00:04,587] Snapshot generated: 0 rows
+[2026-02-14 00:00:09,805] Snapshot generated: 0 rows
+[2026-02-14 00:00:15,068] Snapshot generated: 0 rows
+[2026-02-14 00:00:20,354] Snapshot generated: 0 rows
+[2026-02-14 00:00:25,360] Snapshot generated: 0 rows
+[2026-02-14 00:00:30,372] Snapshot generated: 0 rows
+[2026-02-14 00:00:35,379] Snapshot generated: 0 rows
+[2026-02-14 00:00:40,768] Snapshot generated: 0 rows
+[2026-02-14 00:00:46,005] Snapshot generated: 0 rows
+[2026-02-14 00:00:51,011] Snapshot generated: 0 rows
+[2026-02-14 00:00:56,052] Snapshot generated: 0 rows
+[2026-02-14 00:01:01,605] Snapshot generated: 0 rows
+[2026-02-14 00:01:06,799] Snapshot generated: 0 rows
+[2026-02-14 00:01:12,061] Snapshot generated: 0 rows
+[2026-02-14 00:01:17,077] Snapshot generated: 0 rows
+[2026-02-14 00:01:22,084] Snapshot generated: 0 rows
+[2026-02-14 00:01:27,804] Snapshot generated: 0 rows
+[2026-02-14 00:01:32,897] Snapshot generated: 0 rows
+[2026-02-14 00:01:38,203] Snapshot generated: 0 rows
+[2026-02-14 00:01:43,356] Snapshot generated: 0 rows
+[2026-02-14 00:01:48,362] Snapshot generated: 0 rows
+[2026-02-14 00:01:53,368] Snapshot generated: 0 rows
+[2026-02-14 00:01:58,435] Snapshot generated: 0 rows
+[2026-02-14 00:02:03,445] Snapshot generated: 0 rows
+[2026-02-14 00:02:08,452] Snapshot generated: 0 rows
+[2026-02-14 00:02:13,817] Snapshot generated: 0 rows
+[2026-02-14 00:02:18,976] Snapshot generated: 0 rows
