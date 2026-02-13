@@ -409,6 +409,12 @@
       return Number.isFinite(n) ? n.toFixed(2) : String(v);
     }
 
+    function f4(v) {
+      if (v === null || v === undefined || v === '') return '-';
+      const n = Number(v);
+      return Number.isFinite(n) ? n.toFixed(4) : String(v);
+    }
+
     function i0(v) {
       const n = Number(v);
       return Number.isFinite(n) ? Math.round(n).toString() : '-';
@@ -507,7 +513,14 @@
 
     function humanSymbol(r) {
       const ts = String(r.tsym || '').trim();
-      if (ts && !/^\d+$/.test(ts)) return ts;
+      if (ts && !/^\d+$/.test(ts)) {
+        // Clean up symbol for voice - remove month codes and make readable
+        return ts.replace(/(\d{2})([A-Z]{3})(\d{2})/, ' $2 $1 ')  // Format: 24FEB26 -> FEB 24
+                 .replace(/(CE|PE)$/, ' $1')  // Separate CE/PE
+                 .replace(/FUT$/, ' Future')
+                 .replace(/([A-Z])(\d)/g, '$1 $2')  // Add space between letters and numbers
+                 .replace(/(\d)([A-Z])/g, '$1 $2'); // Add space between numbers and letters
+      }
       return String(r.symbol || '');
     }
 
@@ -705,14 +718,52 @@
       return selected;
     }
 
+    // Phonetic spellings for problematic words
+    const PHONETIC_MAP = {
+      'either': 'ee-ther',
+      'neither': 'nee-ther',
+      'option': 'op-shun',
+      'CE': 'C E',  // Call Option
+      'PE': 'P E',  // Put Option
+      'FUT': 'Future',
+      'BANKEX': 'Bankex',
+      'SENSEX': 'Sensex',
+      'NIFTY': 'Nifty',
+      'BANKNIFTY': 'Bank Nifty',
+      'FINNIFTY': 'Fin Nifty',
+      'MCX': 'M C X',
+      'NSE': 'N S E',
+      'BSE': 'B S E',
+      'NFO': 'N F O',
+      'BFO': 'B F O',
+      'SILVERMIC': 'Silver Micro',
+      'GOLDMIC': 'Gold Micro',
+      'CRUDEOIL': 'Crude Oil',
+      'NATURALGAS': 'Natural Gas',
+    };
+    
+    function phoneticFix(text) {
+      let result = text;
+      // Replace problematic words with phonetic spellings
+      for (const [word, phonetic] of Object.entries(PHONETIC_MAP)) {
+        result = result.replace(new RegExp('\\b' + word + '\\b', 'gi'), phonetic);
+      }
+      // Add slight pauses for better readability
+      result = result.replace(/\./g, '. ').replace(/  /g, ' ');
+      return result;
+    }
+
     function speakText(text, onend, onerror) {
-      const utter = new SpeechSynthesisUtterance(text);
+      // Fix pronunciation issues
+      const fixedText = phoneticFix(text);
+      const utter = new SpeechSynthesisUtterance(fixedText);
       const selected = voiceState.selectedVoice || pickVoice();
       if (selected) utter.voice = selected;
       utter.lang = selected?.lang || 'en-IN';
-      utter.rate = 1.0;
+      utter.rate = 0.95;  // Slightly slower for clarity
       utter.pitch = 1.0;
       utter.volume = 1.0;
+      // Add slight pause between sentences for news-reader style
       utter.onend = onend;
       utter.onerror = onerror;
       window.speechSynthesis.speak(utter);
@@ -844,7 +895,7 @@
             priority: 4,
             cooldownMs: 90000,
             score: 70,
-            text: `${symbolName} early setup near BU1 ${bu1.toFixed(2)} with rising volume. Wait price close confirmation before entry.`,
+            text: `${symbolName}. Early setup forming near B U 1, level ${bu1.toFixed(2)}. Volume is rising. Wait for price confirmation before entry.`,
           });
         }
 
@@ -854,7 +905,7 @@
             priority: 1,
             cooldownMs: 180000,
             score: 100,
-            text: `${symbolName} high probability BE5 reversal confirmed. Entry zone between BU1 ${bu1.toFixed(2)} and BU5 ${bu5.toFixed(2)} is valid now. Risk reward ratio ${rr.toFixed(1)} to 1.`,
+            text: `Attention. ${symbolName}. High probability B E 5 reversal setup confirmed. Entry zone is between B U 1 at ${bu1.toFixed(2)} and B U 5 at ${bu5.toFixed(2)}. Risk reward ratio is ${rr.toFixed(1)} to 1. Good setup.`,
           });
         }
 
@@ -864,7 +915,7 @@
             priority: 2,
             cooldownMs: 90000,
             score: 90,
-            text: `${symbolName} near BU5 target ${bu5.toFixed(2)}. Book profits or tighten trailing stop now.`,
+            text: `${symbolName}. Price approaching B U 5 target at ${bu5.toFixed(2)}. Consider booking profits or tightening trailing stop loss.`,
           });
         }
       }
@@ -915,7 +966,7 @@
       const vTxt = topVol.map((x) => `${x.name} volume ${i0(x.volume)}`).join(', ');
       const gTxt = topGain.map((x) => `${x.name} up ${x.gain.toFixed(2)} percent`).join(', ');
 
-      return `Namaskar. Market bulletin from Superalgo. Top volume symbols: ${vTxt || 'not available'}. Top five gainers: ${gTxt || 'not available'}. Trend status: ${up} stocks trending up, ${down} down, ${side} sideways. Levels performance: ${hitBu1} stocks above BU1, ${hitBu3} above BU3, ${hitBu5} above BU5. B5 Factor strategy active with 0.2611 percent levels. Trade only in BU1 to BU5 range for highest probability setups.`;
+      return `Namaskar. This is Superalgo market update. Top volume leaders are: ${vTxt || 'not available'}. Top gainers today: ${gTxt || 'not available'}. Market trend shows ${up} stocks moving up, ${down} moving down, and ${side} moving sideways. ${hitBu1} stocks are now trading above B U 1 level, ${hitBu3} above B U 3, and ${hitBu5} above B U 5. The B 5 Factor strategy remains active. Remember to trade only in the B U 1 to B U 5 range for highest probability setups.`;
     }
     
     function buildNoTradesIntro() {
@@ -924,11 +975,12 @@
       
       voiceState.lastNoTradesIntro = now;
       
+      const timeStr = formatISTTime();
       const intros = [
-        "Superalgo monitoring markets. Waiting for high probability setups in BU1 to BU5 range. Current time is " + formatISTTime() + ".",
-        "Namaskar. Superalgo is active. B5 Factor levels calculated. Scanning for BE5 reversal candidates with strong confirmation.",
-        "Superalgo trading engine running. Remember, we only trade trending stocks between BU1 and BU5. Sideways markets are avoided.",
-        "Market watch continues. Auto close at 3:28 PM for NSE BSE. MCX closes at 11:30 PM. All times IST.",
+        `Superalgo monitoring markets. Waiting for high probability setups in B U 1 to B U 5 range. Current time is ${timeStr}.`,
+        `Namaskar. Superalgo is active. B 5 Factor levels calculated. Scanning for B E 5 reversal candidates with strong confirmation.`,
+        `Superalgo trading engine running. Remember, we only trade trending stocks between B U 1 and B U 5. Sideways markets are avoided.`,
+        `Market watch continues. Auto close at 3:28 PM for N S E and B S E. M C X closes at 11:30 PM. All times I S T.`,
       ];
       
       return intros[Math.floor(Math.random() * intros.length)];
@@ -971,7 +1023,7 @@
           voiceState.openTradeSeen.add(id);
           const type = instrumentType(t.exchange, t.tsym || t.display_symbol);
           const sym = String(t.display_symbol || t.symbol || 'symbol');
-          const msg = `${type} ${sym} trade opened at ${t.entry_ltp?.toFixed(2) || 'price'}. Stop loss at ${t.sl_price?.toFixed(2) || 'BE1'}, target at BU5 ${t.tp_price?.toFixed(2) || 'level'}. Quantity ${t.quantity || 1}.`;
+          const msg = `${type}. ${sym}. Trade opened at price ${t.entry_ltp?.toFixed(2) || 'market'}. Stop loss at ${t.sl_price?.toFixed(2) || 'B E 1'}. Target at B U 5, level ${t.tp_price?.toFixed(2) || 'target'}. Quantity: ${t.quantity || 1} units.`;
           enqueueVoice(`trade-open:${id}`, msg, 2, 15000);
         }
 
@@ -984,7 +1036,7 @@
           const type = instrumentType(t.exchange, t.tsym || t.display_symbol);
           const sym = String(t.display_symbol || t.symbol || 'symbol');
           const netPnl = toNum(t.net_pnl, toNum(t.pnl, 0));
-          const msg = `${type} ${sym} trade closed. Net profit loss ${netPnl >= 0 ? 'plus' : 'minus'} ${Math.abs(netPnl).toFixed(2)} rupees. Reason: ${String(t.reason || 'update')}.`;
+          const msg = `${type}. ${sym}. Trade closed. Net P and L is ${netPnl >= 0 ? 'profit of' : 'loss of'} ${Math.abs(netPnl).toFixed(2)} rupees. Exit reason: ${String(t.reason || 'normal exit')}.`;
           enqueueVoice(`trade-close:${id}`, msg, 2, 10000);
         }
       } catch {
@@ -1099,7 +1151,7 @@
       }
       pickVoice();
       const vn = voiceState.selectedVoice ? voiceState.selectedVoice.name : 'default';
-      enqueueVoice('manual:test', `Namaskar. Superalgo announcer is now live with ${vn}. B5 Factor trading strategy is active with 0.2611 percent levels. Trade safe.`, 1, 1000);
+      enqueueVoice('manual:test', `Namaskar. This is Superalgo trading system. Voice set to ${vn}. The B 5 Factor strategy is now active. Levels are set at 0.2611 percent. Trade safely.`, 1, 1000);
     });
     
     exportCsvEl.addEventListener('click', exportTrades);
