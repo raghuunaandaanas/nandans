@@ -1143,7 +1143,7 @@ class CryptoApp:
                 in_range = levels['bu1'] <= ltp <= levels['bu5']
                 near_range = abs(ltp - levels['bu1']) < levels['points'] * 2  # Within 2 points of BU1
                 
-                if (in_range or near_range) and ltp > first_close * 0.99:
+                if (in_range or near_range) and ltp > close * 0.99:
                         
                         # Check if not already in open trade
                         with sqlite3.connect(DB_FILE) as conn:

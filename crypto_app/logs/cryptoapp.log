@@ -210,3 +210,185 @@
 [2026-02-14 00:10:27,454] ============================================================
 [2026-02-14 00:10:27,454] Credentials loaded successfully
 [2026-02-14 00:10:27,455] Fetching available products...
+[2026-02-14 00:11:58,694] ======================================================================
+[2026-02-14 00:11:58,695] CRYPTO TRADING APP - Delta India Exchange
+[2026-02-14 00:11:58,695] Market Open: 00:00 UTC (5:30 AM IST) | 24/7 Trading
+[2026-02-14 00:11:58,695] ======================================================================
+[2026-02-14 00:11:58,695] ============================================================
+[2026-02-14 00:11:58,695] CRYPTO APP - Delta India Exchange
+[2026-02-14 00:11:58,695] ============================================================
+[2026-02-14 00:11:58,695] Credentials loaded successfully
+[2026-02-14 00:11:58,697] Using SIMULATION MODE for crypto trading...
+[2026-02-14 00:11:58,697] Loaded 15 symbols for simulation
+[2026-02-14 00:11:58,704] SIMULATION: Generating first 5m closes for all symbols...
+[2026-02-14 00:11:58,950] SIMULATION: Generated first 5m closes for 15 symbols
+[2026-02-14 00:11:58,950] Starting WebSocket for real-time data...
+[2026-02-14 00:11:59,624] Websocket connected
+[2026-02-14 00:11:59,624] WebSocket Connected - Subscribing to channels...
+[2026-02-14 00:12:02,012] Fetching first closes (00:00 UTC / 5:30 AM IST)...
+[2026-02-14 00:12:02,012] Fetching crypto first closes (00:00 UTC / 5:30 AM IST)...
+[2026-02-14 00:12:02,012] Crypto session: 2026-02-13 | Market open (UTC): 1770921000 | Now: 1771008122
+[2026-02-14 00:12:02,364] HTTP Error 404: Not Found
+[2026-02-14 00:12:02,678] HTTP Error 404: Not Found
+[2026-02-14 00:12:03,004] HTTP Error 404: Not Found
+[2026-02-14 00:12:03,326] HTTP Error 404: Not Found
+[2026-02-14 00:12:03,684] HTTP Error 404: Not Found
+[2026-02-14 00:12:04,000] HTTP Error 404: Not Found
+[2026-02-14 00:12:04,304] HTTP Error 404: Not Found
+[2026-02-14 00:12:04,682] HTTP Error 404: Not Found
+[2026-02-14 00:12:05,014] HTTP Error 404: Not Found
+[2026-02-14 00:12:05,359] HTTP Error 404: Not Found
+[2026-02-14 00:12:05,734] HTTP Error 404: Not Found
+[2026-02-14 00:12:06,063] HTTP Error 404: Not Found
+[2026-02-14 00:12:06,419] HTTP Error 404: Not Found
+[2026-02-14 00:12:06,737] HTTP Error 404: Not Found
+[2026-02-14 00:12:07,149] HTTP Error 404: Not Found
+[2026-02-14 00:12:07,200] Main loop started - Running 24/7
+[2026-02-14 00:12:07,200] SIMULATION MODE: Prices are simulated for testing
+[2026-02-14 00:12:10,349] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:12:12,593] Snapshot error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:12:13,731] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:12:16,875] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:12:18,025] Snapshot error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:12:20,161] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:12:23,304] Snapshot error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:12:23,305] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:12:26,627] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:12:28,772] Snapshot error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:12:29,774] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:12:33,155] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:12:34,158] Snapshot error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:12:36,298] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:12:39,653] Snapshot error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:12:39,655] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:12:42,801] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:12:44,980] Snapshot error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:12:46,130] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:12:49,296] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:12:50,713] Snapshot error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:12:52,854] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:12:56,037] Snapshot error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:12:56,039] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:12:59,679] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:13:01,822] Snapshot error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:13:02,825] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:13:06,140] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:13:07,143] Snapshot error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:13:09,298] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:13:12,764] Snapshot error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:13:12,766] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:13:16,260] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:13:18,406] Snapshot error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:13:19,539] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:13:22,950] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:13:24,117] Snapshot error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:13:26,264] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:13:29,536] Snapshot error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:13:29,539] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:13:32,815] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:13:34,963] Snapshot error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:13:35,970] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:13:39,306] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:13:40,308] Snapshot error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:13:50,514] ======================================================================
+[2026-02-14 00:13:50,514] CRYPTO TRADING APP - Delta India Exchange
+[2026-02-14 00:13:50,514] Market Open: 00:00 UTC (5:30 AM IST) | 24/7 Trading
+[2026-02-14 00:13:50,514] ======================================================================
+[2026-02-14 00:13:50,514] ============================================================
+[2026-02-14 00:13:50,514] CRYPTO APP - Delta India Exchange
+[2026-02-14 00:13:50,514] ============================================================
+[2026-02-14 00:13:50,515] Credentials loaded successfully
+[2026-02-14 00:13:50,516] Using SIMULATION MODE for crypto trading...
+[2026-02-14 00:13:50,516] Loaded 15 symbols for simulation
+[2026-02-14 00:13:50,523] SIMULATION: Generating first 5m closes for all symbols...
+[2026-02-14 00:13:50,767] SIMULATION: Generated first 5m closes for 15 symbols
+[2026-02-14 00:13:50,767] Starting WebSocket for real-time data...
+[2026-02-14 00:13:51,560] Websocket connected
+[2026-02-14 00:13:51,560] WebSocket Connected - Subscribing to channels...
+[2026-02-14 00:13:53,768] Fetching first closes (00:00 UTC / 5:30 AM IST)...
+[2026-02-14 00:13:53,769] Fetching crypto first closes (00:00 UTC / 5:30 AM IST)...
+[2026-02-14 00:13:53,769] Crypto session: 2026-02-13 | Market open (UTC): 1770921000 | Now: 1771008233
+[2026-02-14 00:13:54,104] HTTP Error 404: Not Found
+[2026-02-14 00:13:54,420] HTTP Error 404: Not Found
+[2026-02-14 00:13:54,743] HTTP Error 404: Not Found
+[2026-02-14 00:13:55,041] HTTP Error 404: Not Found
+[2026-02-14 00:13:55,363] HTTP Error 404: Not Found
+[2026-02-14 00:13:55,699] HTTP Error 404: Not Found
+[2026-02-14 00:13:56,120] HTTP Error 404: Not Found
+[2026-02-14 00:13:56,441] HTTP Error 404: Not Found
+[2026-02-14 00:13:56,814] HTTP Error 404: Not Found
+[2026-02-14 00:13:57,136] HTTP Error 404: Not Found
+[2026-02-14 00:13:57,455] HTTP Error 404: Not Found
+[2026-02-14 00:13:57,750] HTTP Error 404: Not Found
+[2026-02-14 00:13:58,081] HTTP Error 404: Not Found
+[2026-02-14 00:13:58,419] HTTP Error 404: Not Found
+[2026-02-14 00:13:58,771] HTTP Error 404: Not Found
+[2026-02-14 00:13:58,823] Main loop started - Running 24/7
+[2026-02-14 00:13:58,823] SIMULATION MODE: Prices are simulated for testing
+[2026-02-14 00:14:01,977] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:14:04,117] Snapshot error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:14:05,256] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:14:08,413] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:14:09,563] Snapshot error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:14:11,706] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:14:14,852] Snapshot error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:14:14,855] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:14:18,139] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:14:20,284] Snapshot error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:14:21,289] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:14:24,597] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:14:25,772] Snapshot error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:14:27,917] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:14:31,239] Snapshot error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:14:31,242] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:14:34,676] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:14:36,825] Snapshot error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:14:37,973] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:14:41,219] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:14:42,828] Snapshot error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:14:45,036] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:14:48,294] Snapshot error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:14:48,297] Paper cycle error: PriceObservation.__init__() missing 1 required positional argument: 'entry_signal'
+[2026-02-14 00:14:59,240] ======================================================================
+[2026-02-14 00:14:59,240] CRYPTO TRADING APP - Delta India Exchange
+[2026-02-14 00:14:59,240] Market Open: 00:00 UTC (5:30 AM IST) | 24/7 Trading
+[2026-02-14 00:14:59,240] ======================================================================
+[2026-02-14 00:14:59,240] ============================================================
+[2026-02-14 00:14:59,241] CRYPTO APP - Delta India Exchange
+[2026-02-14 00:14:59,241] ============================================================
+[2026-02-14 00:14:59,241] Credentials loaded successfully
+[2026-02-14 00:14:59,242] Using SIMULATION MODE for crypto trading...
+[2026-02-14 00:14:59,242] Loaded 15 symbols for simulation
+[2026-02-14 00:14:59,249] SIMULATION: Generating first 5m closes for all symbols...
+[2026-02-14 00:14:59,499] SIMULATION: Generated first 5m closes for 15 symbols
+[2026-02-14 00:14:59,499] Starting WebSocket for real-time data...
+[2026-02-14 00:15:00,340] Websocket connected
+[2026-02-14 00:15:00,340] WebSocket Connected - Subscribing to channels...
+[2026-02-14 00:15:02,503] Fetching first closes (00:00 UTC / 5:30 AM IST)...
+[2026-02-14 00:15:02,504] Fetching crypto first closes (00:00 UTC / 5:30 AM IST)...
+[2026-02-14 00:15:02,504] Crypto session: 2026-02-13 | Market open (UTC): 1770921000 | Now: 1771008302
+[2026-02-14 00:15:02,818] HTTP Error 404: Not Found
+[2026-02-14 00:15:03,146] HTTP Error 404: Not Found
+[2026-02-14 00:15:03,444] HTTP Error 404: Not Found
+[2026-02-14 00:15:03,794] HTTP Error 404: Not Found
+[2026-02-14 00:15:04,198] HTTP Error 404: Not Found
+[2026-02-14 00:15:04,505] HTTP Error 404: Not Found
+[2026-02-14 00:15:04,902] HTTP Error 404: Not Found
+[2026-02-14 00:15:05,260] HTTP Error 404: Not Found
+[2026-02-14 00:15:05,610] HTTP Error 404: Not Found
+[2026-02-14 00:15:05,909] HTTP Error 404: Not Found
+[2026-02-14 00:15:06,208] HTTP Error 404: Not Found
+[2026-02-14 00:15:06,502] HTTP Error 404: Not Found
+[2026-02-14 00:15:06,804] HTTP Error 404: Not Found
+[2026-02-14 00:15:07,126] HTTP Error 404: Not Found
+[2026-02-14 00:15:07,465] HTTP Error 404: Not Found
+[2026-02-14 00:15:07,516] Main loop started - Running 24/7
+[2026-02-14 00:15:07,516] SIMULATION MODE: Prices are simulated for testing
+[2026-02-14 00:15:10,703] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:15:12,880] Snapshot generated: 15 rows
+[2026-02-14 00:15:14,030] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:15:17,186] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:15:18,348] Snapshot generated: 15 rows
+[2026-02-14 00:15:20,497] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:15:23,674] Snapshot generated: 15 rows
+[2026-02-14 00:15:23,678] Paper cycle error: name 'first_close' is not defined

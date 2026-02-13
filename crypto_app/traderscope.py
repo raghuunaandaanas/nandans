@@ -261,9 +261,9 @@ class PriceObservation:
     block_start: float
     position: float
     zone_name: str
-    b5_level: str                 # BU1, BU2, etc.
-    volume: float
-    entry_signal: str
+    b5_level: str = ''            # BU1, BU2, etc.
+    volume: float = 0
+    entry_signal: str = ''
     outcome: Optional[str] = None
     exit_price: Optional[float] = None
     pnl: Optional[float] = None
