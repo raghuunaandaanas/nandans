@@ -511,17 +511,100 @@
       }
     }
 
+    // Make company names readable for voice
     function humanSymbol(r) {
       const ts = String(r.tsym || '').trim();
-      if (ts && !/^\d+$/.test(ts)) {
-        // Clean up symbol for voice - remove month codes and make readable
-        return ts.replace(/(\d{2})([A-Z]{3})(\d{2})/, ' $2 $1 ')  // Format: 24FEB26 -> FEB 24
-                 .replace(/(CE|PE)$/, ' $1')  // Separate CE/PE
-                 .replace(/FUT$/, ' Future')
-                 .replace(/([A-Z])(\d)/g, '$1 $2')  // Add space between letters and numbers
-                 .replace(/(\d)([A-Z])/g, '$1 $2'); // Add space between numbers and letters
+      if (!ts || /^\d+$/.test(ts)) return String(r.symbol || '');
+      
+      // Extract company name and format for speech
+      let name = ts;
+      
+      // Remove date part (20FEB26, 24FEB26, etc)
+      name = name.replace(/\d{2}[A-Z]{3}\d{2,4}/, '');
+      
+      // Remove strike price and option type for voice
+      name = name.replace(/\d+(CE|PE)$/i, '');
+      name = name.replace(/FUT$/i, '');
+      
+      // Clean up and return
+      name = name.replace(/([a-z])([A-Z])/g, '$1 $2'); // Split camelCase
+      name = name.replace(/([A-Z]{2,})([A-Z][a-z])/g, '$1 $2'); // Split ALLCAPS followed by Title
+      
+      // Specific company pronunciations
+      const companyMap = {
+        'WIPRO': 'Wipro',
+        'RELIANCE': 'Reliance',
+        'TCS': 'T C S',
+        'INFY': 'Infosys',
+        'HDFC': 'H D F C',
+        'ICICI': 'I C I C I',
+        'SBIN': 'S B I',
+        'AXIS': 'Axis',
+        'KOTAK': 'Kotak',
+        'MARUTI': 'Maruti',
+        'TATA': 'Tata',
+        'BAJAJ': 'Bajaj',
+        'SUNPHARMA': 'Sun Pharma',
+        'DRREDDY': 'D R Reddy',
+        'CIPLA': 'Cipla',
+        'ITC': 'I T C',
+        'HCL': 'H C L',
+        'TECHM': 'Tech Mahindra',
+        'ONGC': 'O N G C',
+        'NTPC': 'N T P C',
+        'POWERGRID': 'Power Grid',
+        'COAL': 'Coal',
+        'HINDALCO': 'Hindalco',
+        'VEDL': 'Vedanta',
+        'JSW': 'J S W',
+        'ADANI': 'Adani',
+        'TATAMOTORS': 'Tata Motors',
+        'M&M': 'M and M',
+        'HEROMOTOCO': 'Hero Moto',
+        'EICHERMOT': 'Eicher Motors',
+        'TVSMOTOR': 'T V S Motor',
+        'BAJAJAUTO': 'Bajaj Auto',
+        'GODREJCP': 'Godrej Consumer',
+        'DABUR': 'Dabur',
+        'NESTLE': 'Nestle',
+        'HINDUNILVR': 'Hindustan Unilever',
+        'BRITANNIA': 'Britannia',
+        'TITAN': 'Titan',
+        'ASIANPAINT': 'Asian Paints',
+        'BERGEPAINT': 'Berger Paints',
+        'ULTRACEMCO': 'UltraTech Cement',
+        'SHREECEM': 'Shree Cement',
+        'GRASIM': 'Grasim',
+        'AMBUJACEM': 'Ambuja Cement',
+        'ACC': 'A C C',
+        'DLF': 'D L F',
+        'OBEROIRLTY': 'Oberoi Realty',
+        'PHOENIXLTD': 'Phoenix Limited',
+        'SBILIFE': 'S B I Life',
+        'HDFCLIFE': 'H D F C Life',
+        'ICICIPRULI': 'I C I C I Pru Life',
+        'BAJAJFINSV': 'Bajaj Finserv',
+        'BAJFINANCE': 'Bajaj Finance',
+        'CHOLAFIN': 'Chola Finance',
+        'MUTHOOTFIN': 'Muthoot Finance',
+        'PFC': 'P F C',
+        'RECLTD': 'R E C Limited',
+        'LICHSGFIN': 'L I C Housing',
+        'CANFINHOME': 'Can Fin Homes',
+        'NATURALGAS': 'Natural Gas',
+        'SILVER': 'Silver',
+        'GOLD': 'Gold',
+        'CRUDEOIL': 'Crude Oil',
+      };
+      
+      // Check direct match
+      for (const [code, pronounce] of Object.entries(companyMap)) {
+        if (name.includes(code)) {
+          return pronounce;
+        }
       }
-      return String(r.symbol || '');
+      
+      return name.trim() || ts;
     }
 
     function instrumentType(exchange, tsym) {
@@ -692,14 +775,17 @@
     function voiceMatch(preset, v) {
       const name = String(v.name || '').toLowerCase();
       const lang = String(v.lang || '').toLowerCase();
-      const isIn = lang.includes('en-in') || lang.includes('hi-in') || lang.includes('bn-in') || lang.includes('ta-in') || lang.includes('te-in');
-      const maleHint = /male|rahul|ravi|vivek|hemant|aditya|aarav|guy/.test(name);
-      const femaleHint = /female|woman|sangeeta|karen|zira|susan|raveena|siri/.test(name);
+      // Indian languages
+      const isIn = lang.includes('en-in') || lang.includes('hi-in') || lang.includes('bn-in') || lang.includes('ta-in') || lang.includes('te-in') || lang.includes('mr-in') || lang.includes('gu-in');
+      // Strict male/female detection
+      const maleHint = /\bmale\b|\bman\b|rahul|ravi|vivek|hemant|aditya|aarav|arjun|karan|raj/.test(name);
+      const femaleHint = /\bfemale\b|\bwoman\b|sangeeta|karen|zira|susan|raveena|siri|lisa|mary/.test(name);
       const isEn = lang.startsWith('en');
-      if (preset === 'indian_male') return isIn && (maleHint || true);
-      if (preset === 'indian_female') return isIn && (femaleHint || true);
-      if (preset === 'english_male') return isEn && maleHint;
-      if (preset === 'english_female') return isEn && femaleHint;
+      
+      if (preset === 'indian_male') return isIn && maleHint;
+      if (preset === 'indian_female') return isIn && femaleHint;
+      if (preset === 'english_male') return isEn && maleHint && !isIn;
+      if (preset === 'english_female') return isEn && femaleHint && !isIn;
       return true;
     }
 
@@ -710,67 +796,136 @@
       if (!voices.length) return null;
       const preset = String(voicePresetEl.value || 'indian_male');
 
-      let selected = voices.find((v) => voiceMatch(preset, v));
-      if (!selected && preset.startsWith('indian')) selected = voices.find((v) => /en-in|hi-in/i.test(String(v.lang || '')));
-      if (!selected) selected = voices.find((v) => /^en/i.test(String(v.lang || '')));
+      let selected = null;
+      
+      // Try exact match first
+      selected = voices.find((v) => voiceMatch(preset, v));
+      
+      // Fallback: any Indian voice for indian presets
+      if (!selected && preset.startsWith('indian')) {
+        selected = voices.find((v) => /en-in|hi-in/i.test(String(v.lang || '')));
+      }
+      
+      // Fallback: any English voice
+      if (!selected) {
+        selected = voices.find((v) => /^en/i.test(String(v.lang || '')));
+      }
+      
+      // Last resort: first available
       if (!selected) selected = voices[0];
+      
       voiceState.selectedVoice = selected;
+      console.log('Selected voice:', selected?.name, 'lang:', selected?.lang, 'for preset:', preset);
       return selected;
     }
 
-    // Phonetic spellings for problematic words
+    // Phonetic spellings - make words sound natural
     const PHONETIC_MAP = {
+      // Common words
       'either': 'ee-ther',
       'neither': 'nee-ther',
-      'option': 'op-shun',
-      'CE': 'C E',  // Call Option
-      'PE': 'P E',  // Put Option
-      'FUT': 'Future',
-      'BANKEX': 'Bankex',
-      'SENSEX': 'Sensex',
+      // Option types - say as words not letters
+      ' CE': ' Call',
+      ' PE': ' Put',
+      ' FUT': ' Future',
+      // Indices
       'NIFTY': 'Nifty',
       'BANKNIFTY': 'Bank Nifty',
       'FINNIFTY': 'Fin Nifty',
-      'MCX': 'M C X',
-      'NSE': 'N S E',
-      'BSE': 'B S E',
-      'NFO': 'N F O',
-      'BFO': 'B F O',
+      'SENSEX': 'Sensex',
+      'BANKEX': 'Bankex',
+      // Exchanges
+      'MCX': 'MCX',
+      'NSE': 'NSE',
+      'BSE': 'BSE',
+      'NFO': 'NFO',
+      'BFO': 'BFO',
+      // Commodities
       'SILVERMIC': 'Silver Micro',
       'GOLDMIC': 'Gold Micro',
+      'GOLDTEN': 'Gold Tenth',
       'CRUDEOIL': 'Crude Oil',
       'NATURALGAS': 'Natural Gas',
+      'COTTONOIL': 'Cotton Oil',
+      'ALUMINIUM': 'Aluminium',
+      'COPPER': 'Copper',
+      'ZINC': 'Zinc',
+      'NICKEL': 'Nickel',
+      'LEAD': 'Lead',
+      // Price levels
+      'BU1': 'Buy One',
+      'BU2': 'Buy Two',
+      'BU3': 'Buy Three',
+      'BU4': 'Buy Four',
+      'BU5': 'Buy Five',
+      'BE1': 'Below One',
+      'BE2': 'Below Two',
+      'BE3': 'Below Three',
+      'BE4': 'Below Four',
+      'BE5': 'Below Five',
     };
     
     function phoneticFix(text) {
       let result = text;
-      // Replace problematic words with phonetic spellings
+      // Replace words with natural pronunciations
       for (const [word, phonetic] of Object.entries(PHONETIC_MAP)) {
-        result = result.replace(new RegExp('\\b' + word + '\\b', 'gi'), phonetic);
+        result = result.replace(new RegExp(word, 'g'), phonetic);
       }
-      // Add slight pauses for better readability
-      result = result.replace(/\./g, '. ').replace(/  /g, ' ');
+      // Clean up multiple spaces
+      result = result.replace(/\s+/g, ' ').trim();
       return result;
     }
 
-    function speakText(text, onend, onerror) {
-      // Fix pronunciation issues
+    function speakText(text, onend, onerror, priority = 5) {
+      // Fix pronunciation
       const fixedText = phoneticFix(text);
       const utter = new SpeechSynthesisUtterance(fixedText);
       const selected = voiceState.selectedVoice || pickVoice();
       if (selected) utter.voice = selected;
       utter.lang = selected?.lang || 'en-IN';
-      utter.rate = 0.95;  // Slightly slower for clarity
+      // Indian news anchor style
+      utter.rate = 0.9;
       utter.pitch = 1.0;
       utter.volume = 1.0;
-      // Add slight pause between sentences for news-reader style
       utter.onend = onend;
       utter.onerror = onerror;
+      
+      // Priority 1 = interrupt current speech (for trades)
+      if (priority === 1 && voiceState.speaking) {
+        window.speechSynthesis.cancel();
+        voiceState.speaking = false;
+      }
+      
       window.speechSynthesis.speak(utter);
+    }
+
+    // For immediate trade announcements - bypass queue
+    function speakImmediate(text, priority = 1) {
+      if (!voiceOnEl.checked || !voiceSupported()) return;
+      
+      // Cancel any current speech for priority 1 (trade alerts)
+      if (priority === 1) {
+        window.speechSynthesis.cancel();
+        voiceState.speaking = false;
+      }
+      
+      voiceState.speaking = true;
+      speakText(text, 
+        () => { voiceState.speaking = false; },
+        () => { voiceState.speaking = false; },
+        priority
+      );
     }
 
     function enqueueVoice(key, text, priority = 5, cooldownMs = 45000) {
       if (!voiceOnEl.checked || !voiceSupported()) return;
+      
+      // Priority 1 = immediate (trades), don't queue
+      if (priority === 1) {
+        speakImmediate(text, priority);
+        return;
+      }
+      
       const now = Date.now();
       const last = voiceState.announcedAt.get(key) || 0;
       if (now - last < cooldownMs) return;
@@ -813,7 +968,8 @@
         () => {
           voiceState.speaking = false;
           setTimeout(pumpVoiceQueue, 600);
-        }
+        },
+        next.priority
       );
     }
 
@@ -895,27 +1051,27 @@
             priority: 4,
             cooldownMs: 90000,
             score: 70,
-            text: `${symbolName}. Early setup forming near B U 1, level ${bu1.toFixed(2)}. Volume is rising. Wait for price confirmation before entry.`,
+            text: `${symbolName}. Setup near Buy One level ${bu1.toFixed(2)}. Rising volume. Wait for confirmation.`,
           });
         }
 
         if (!r.spike_flag && r.in_range_up && r.jackpot_be5_reversal && be5Recent && prob >= minProb && conf >= jackpotMinConf && rr >= jackpotMinRR && (crossedBu1 || nearBu1)) {
           out.push({
             key: `jackpot:${symbol}`,
-            priority: 1,
+            priority: 2,
             cooldownMs: 180000,
             score: 100,
-            text: `Attention. ${symbolName}. High probability B E 5 reversal setup confirmed. Entry zone is between B U 1 at ${bu1.toFixed(2)} and B U 5 at ${bu5.toFixed(2)}. Risk reward ratio is ${rr.toFixed(1)} to 1. Good setup.`,
+            text: `Jackpot Alert. ${symbolName}. High probability reversal. Entry between Buy One ${bu1.toFixed(2)} and Buy Five ${bu5.toFixed(2)}. Risk reward ${rr.toFixed(1)} to 1.`,
           });
         }
 
         if (trend === 'UP' && ltp >= (bu5 * 0.997) && prob >= minProb) {
           out.push({
             key: `exit:${symbol}`,
-            priority: 2,
+            priority: 3,
             cooldownMs: 90000,
             score: 90,
-            text: `${symbolName}. Price approaching B U 5 target at ${bu5.toFixed(2)}. Consider booking profits or tightening trailing stop loss.`,
+            text: `${symbolName}. Approaching target Buy Five at ${bu5.toFixed(2)}. Book profits or move stop loss.`,
           });
         }
       }
@@ -966,21 +1122,19 @@
       const vTxt = topVol.map((x) => `${x.name} volume ${i0(x.volume)}`).join(', ');
       const gTxt = topGain.map((x) => `${x.name} up ${x.gain.toFixed(2)} percent`).join(', ');
 
-      return `Namaskar. This is Superalgo market update. Top volume leaders are: ${vTxt || 'not available'}. Top gainers today: ${gTxt || 'not available'}. Market trend shows ${up} stocks moving up, ${down} moving down, and ${side} moving sideways. ${hitBu1} stocks are now trading above B U 1 level, ${hitBu3} above B U 3, and ${hitBu5} above B U 5. The B 5 Factor strategy remains active. Remember to trade only in the B U 1 to B U 5 range for highest probability setups.`;
+      return `Namaskar. Superalgo market update. Top volume: ${vTxt || 'not available'}. Top gainers: ${gTxt || 'not available'}. Trend: ${up} up, ${down} down, ${side} sideways. ${hitBu1} above Buy One, ${hitBu3} above Buy Three, ${hitBu5} above Buy Five. Trade Buy One to Buy Five range for best setups.`;
     }
     
     function buildNoTradesIntro() {
       const now = Date.now();
-      if ((now - voiceState.lastNoTradesIntro) < 300000) return null; // Max once per 5 min
+      if ((now - voiceState.lastNoTradesIntro) < 300000) return null;
       
       voiceState.lastNoTradesIntro = now;
       
-      const timeStr = formatISTTime();
       const intros = [
-        `Superalgo monitoring markets. Waiting for high probability setups in B U 1 to B U 5 range. Current time is ${timeStr}.`,
-        `Namaskar. Superalgo is active. B 5 Factor levels calculated. Scanning for B E 5 reversal candidates with strong confirmation.`,
-        `Superalgo trading engine running. Remember, we only trade trending stocks between B U 1 and B U 5. Sideways markets are avoided.`,
-        `Market watch continues. Auto close at 3:28 PM for N S E and B S E. M C X closes at 11:30 PM. All times I S T.`,
+        `Superalgo monitoring. Waiting for Buy One to Buy Five setups.`,
+        `Namaskar. Superalgo active. Scanning for reversal candidates.`,
+        `Market watch on. Trading Buy One to Buy Five range only.`,
       ];
       
       return intros[Math.floor(Math.random() * intros.length)];
@@ -1022,9 +1176,10 @@
           if (ts && (Date.now() - ts) > fresh) continue;
           voiceState.openTradeSeen.add(id);
           const type = instrumentType(t.exchange, t.tsym || t.display_symbol);
-          const sym = String(t.display_symbol || t.symbol || 'symbol');
-          const msg = `${type}. ${sym}. Trade opened at price ${t.entry_ltp?.toFixed(2) || 'market'}. Stop loss at ${t.sl_price?.toFixed(2) || 'B E 1'}. Target at B U 5, level ${t.tp_price?.toFixed(2) || 'target'}. Quantity: ${t.quantity || 1} units.`;
-          enqueueVoice(`trade-open:${id}`, msg, 2, 15000);
+          const sym = humanSymbol({tsym: t.display_symbol || t.tsym || t.symbol});
+          const msg = `Trade Alert. ${sym} ${type}. Entry at ${t.entry_ltp?.toFixed(2)}. Stop ${t.sl_price?.toFixed(2)}. Target ${t.tp_price?.toFixed(2)}.`;
+          // Priority 1 = immediate, interrupts current speech
+          enqueueVoice(`trade-open:${id}`, msg, 1, 15000);
         }
 
         for (const t of (data.recent_closed || [])) {
@@ -1034,10 +1189,12 @@
           if (ts && (Date.now() - ts) > fresh) continue;
           voiceState.closedTradeSeen.add(id);
           const type = instrumentType(t.exchange, t.tsym || t.display_symbol);
-          const sym = String(t.display_symbol || t.symbol || 'symbol');
+          const sym = humanSymbol({tsym: t.display_symbol || t.tsym || t.symbol});
           const netPnl = toNum(t.net_pnl, toNum(t.pnl, 0));
-          const msg = `${type}. ${sym}. Trade closed. Net P and L is ${netPnl >= 0 ? 'profit of' : 'loss of'} ${Math.abs(netPnl).toFixed(2)} rupees. Exit reason: ${String(t.reason || 'normal exit')}.`;
-          enqueueVoice(`trade-close:${id}`, msg, 2, 10000);
+          const pnlText = netPnl >= 0 ? `profit ${netPnl.toFixed(2)}` : `loss ${Math.abs(netPnl).toFixed(2)}`;
+          const msg = `Trade Closed. ${sym}. ${pnlText} rupees.`;
+          // Priority 1 = immediate
+          enqueueVoice(`trade-close:${id}`, msg, 1, 10000);
         }
       } catch {
       }
@@ -1151,7 +1308,9 @@
       }
       pickVoice();
       const vn = voiceState.selectedVoice ? voiceState.selectedVoice.name : 'default';
-      enqueueVoice('manual:test', `Namaskar. This is Superalgo trading system. Voice set to ${vn}. The B 5 Factor strategy is now active. Levels are set at 0.2611 percent. Trade safely.`, 1, 1000);
+      console.log('Testing voice:', vn);
+      // Immediate test with priority 1
+      enqueueVoice('manual:test', `Namaskar. Superalgo trading system active. Voice ready.`, 1, 1000);
     });
     
     exportCsvEl.addEventListener('click', exportTrades);
