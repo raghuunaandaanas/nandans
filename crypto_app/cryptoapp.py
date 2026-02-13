@@ -1196,7 +1196,7 @@ class CryptoApp:
                 """, (symbol, entry_price, now, sl_price, tp_price, day, now))
                 conn.commit()
             
-            log(f"🚀 PAPER TRADE OPENED: {symbol} @ {entry_price:.2f} | SL: {sl_price:.2f} | TP: {tp_price:.2f} | Zone: {zone_name}")
+            log(f"[PAPER OPEN] {symbol} @ {entry_price:.2f} | SL: {sl_price:.2f} | TP: {tp_price:.2f} | Zone: {zone_name}")
             
         except Exception as e:
             log(f"Error opening paper trade: {e}")
@@ -1244,7 +1244,7 @@ class CryptoApp:
                         """, (current_price, now, pnl, pnl_pct, now, trade['id']))
                         conn.commit()
                         
-                        log(f"🔴 STOP LOSS: {symbol} @ {current_price:.2f} | PnL: {pnl:.2f} ({pnl_pct:.2f}%)")
+                        log(f"[STOP LOSS] {symbol} @ {current_price:.2f} | PnL: {pnl:.2f} ({pnl_pct:.2f}%)")
                     
                     # Check TP
                     elif current_price >= tp_price:
@@ -1260,7 +1260,7 @@ class CryptoApp:
                         """, (current_price, now, pnl, pnl_pct, now, trade['id']))
                         conn.commit()
                         
-                        log(f"🎯 TARGET HIT: {symbol} @ {current_price:.2f} | PnL: {pnl:.2f} ({pnl_pct:.2f}%)")
+                        log(f"[TARGET HIT] {symbol} @ {current_price:.2f} | PnL: {pnl:.2f} ({pnl_pct:.2f}%)")
                         
         except Exception as e:
             log(f"Error updating trades: {e}")

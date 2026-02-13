@@ -1,27 +1,258 @@
 {
   "day": "2026-02-13",
-  "updated_at": "2026-02-13T18:48:12.177406Z",
+  "updated_at": "2026-02-13T18:51:16.721738Z",
   "row_count": 15,
   "rows": [
     {
       "symbol": "BTCUSDT",
-      "ltp": 68236.67616679448,
-      "close": 66573.15,
-      "factor": "mini",
-      "factor_reason": "crypto_high_vol",
-      "points": 1737.559215,
-      "bu1": 68310.709215,
-      "bu2": 70048.26843,
-      "bu3": 71785.827645,
-      "bu4": 73523.38686,
-      "bu5": 75260.946075,
-      "be1": 64835.59078499999,
-      "be5": 57885.353924999996,
+      "ltp": 67722.66449851371,
+      "close": 67854.7,
+      "factor": "micro",
+      "factor_reason": "standard",
+      "points": 177.1686217,
+      "bu1": 68031.86862169999,
+      "bu2": 68209.0372434,
+      "bu3": 68386.2058651,
+      "bu4": 68563.37448679999,
+      "bu5": 68740.5431085,
+      "be1": 67677.5313783,
+      "be5": 66968.85689149999,
       "signals": [
         {
-          "level_name": "bu1",
-          "level_price": 68310.709215,
-          "distance": 74.0330482055142,
+          "level_name": "be1",
+          "level_price": 67677.5313783,
+          "distance": 45.133120213708025,
+          "micro_zone": {
+            "name": "midpoint",
+            "type": "neutral",
+            "priority": 8,
+            "description": "Midpoint - trend confirmation",
+            "action": "ABOVE_50_BULLISH",
+            "risk": "MEDIUM",
+            "lower": 50.0,
+            "upper": 61.8,
+            "progress": 0.2659177966267897
+          },
+          "traderscope_signal": {
+            "action": "TARGET_REACHED",
+            "strength": "NEUTRAL",
+            "confidence": 0.6,
+            "zone": "fib_major",
+            "reason": "Major fibonacci target",
+            "special_rules": [],
+            "b5_boost": 1
+          },
+          "signal": {
+            "score": 10,
+            "strength": "LOW",
+            "action": "WATCH"
+          }
+        }
+      ],
+      "primary_signal": {
+        "level_name": "be1",
+        "level_price": 67677.5313783,
+        "distance": 45.133120213708025,
+        "micro_zone": {
+          "name": "midpoint",
+          "type": "neutral",
+          "priority": 8,
+          "description": "Midpoint - trend confirmation",
+          "action": "ABOVE_50_BULLISH",
+          "risk": "MEDIUM",
+          "lower": 50.0,
+          "upper": 61.8,
+          "progress": 0.2659177966267897
+        },
+        "traderscope_signal": {
+          "action": "TARGET_REACHED",
+          "strength": "NEUTRAL",
+          "confidence": 0.6,
+          "zone": "fib_major",
+          "reason": "Major fibonacci target",
+          "special_rules": [],
+          "b5_boost": 1
+        },
+        "signal": {
+          "score": 10,
+          "strength": "LOW",
+          "action": "WATCH"
+        }
+      }
+    },
+    {
+      "symbol": "ETHUSDT",
+      "ltp": 3469.254341515644,
+      "close": 3429.3,
+      "factor": "micro",
+      "factor_reason": "standard",
+      "points": 8.953902300000001,
+      "bu1": 3438.2539023000004,
+      "bu2": 3447.2078046,
+      "bu3": 3456.1617069000004,
+      "bu4": 3465.1156092,
+      "bu5": 3474.0695115000003,
+      "be1": 3420.3460977,
+      "be5": 3384.5304885,
+      "signals": [
+        {
+          "level_name": "bu4",
+          "level_price": 3465.1156092,
+          "distance": 4.138732315643665,
+          "micro_zone": {
+            "name": "midpoint",
+            "type": "neutral",
+            "priority": 8,
+            "description": "Midpoint - trend confirmation",
+            "action": "ABOVE_50_BULLISH",
+            "risk": "MEDIUM",
+            "lower": 50.0,
+            "upper": 61.8,
+            "progress": 0.09797389830517698
+          },
+          "traderscope_signal": {
+            "action": "TIGHTEN_STOPS",
+            "strength": "CAUTION",
+            "confidence": 0.9,
+            "zone": "decision",
+            "reason": "Decision point - continue or reverse",
+            "special_rules": [],
+            "b5_boost": 4
+          },
+          "signal": {
+            "score": 80,
+            "strength": "MEDIUM",
+            "action": "WATCH"
+          }
+        }
+      ],
+      "primary_signal": {
+        "level_name": "bu4",
+        "level_price": 3465.1156092,
+        "distance": 4.138732315643665,
+        "micro_zone": {
+          "name": "midpoint",
+          "type": "neutral",
+          "priority": 8,
+          "description": "Midpoint - trend confirmation",
+          "action": "ABOVE_50_BULLISH",
+          "risk": "MEDIUM",
+          "lower": 50.0,
+          "upper": 61.8,
+          "progress": 0.09797389830517698
+        },
+        "traderscope_signal": {
+          "action": "TIGHTEN_STOPS",
+          "strength": "CAUTION",
+          "confidence": 0.9,
+          "zone": "decision",
+          "reason": "Decision point - continue or reverse",
+          "special_rules": [],
+          "b5_boost": 4
+        },
+        "signal": {
+          "score": 80,
+          "strength": "MEDIUM",
+          "action": "WATCH"
+        }
+      }
+    },
+    {
+      "symbol": "SOLUSDT",
+      "ltp": 146.30527627310738,
+      "close": 146.80949999999999,
+      "factor": "micro",
+      "factor_reason": "standard",
+      "points": 0.38331960449999997,
+      "bu1": 147.1928196045,
+      "bu2": 147.576139209,
+      "bu3": 147.9594588135,
+      "bu4": 148.342778418,
+      "bu5": 148.7260980225,
+      "be1": 146.42618039549998,
+      "be5": 144.89290197749997,
+      "signals": [
+        {
+          "level_name": "be1",
+          "level_price": 146.42618039549998,
+          "distance": 0.12090412239260218,
+          "micro_zone": {
+            "name": "retracement_1",
+            "type": "resistance",
+            "priority": 6,
+            "description": "1st retracement zone",
+            "action": "CAUTION",
+            "risk": "MEDIUM",
+            "lower": 38.2,
+            "upper": 45.0,
+            "progress": 0.649711698529168
+          },
+          "traderscope_signal": {
+            "action": "WATCH_3_TESTS",
+            "strength": "NEUTRAL",
+            "confidence": 0.6,
+            "zone": "support_test",
+            "reason": "Support test zone",
+            "special_rules": [],
+            "b5_boost": 1
+          },
+          "signal": {
+            "score": -20,
+            "strength": "LOW",
+            "action": "WATCH"
+          }
+        }
+      ],
+      "primary_signal": {
+        "level_name": "be1",
+        "level_price": 146.42618039549998,
+        "distance": 0.12090412239260218,
+        "micro_zone": {
+          "name": "retracement_1",
+          "type": "resistance",
+          "priority": 6,
+          "description": "1st retracement zone",
+          "action": "CAUTION",
+          "risk": "MEDIUM",
+          "lower": 38.2,
+          "upper": 45.0,
+          "progress": 0.649711698529168
+        },
+        "traderscope_signal": {
+          "action": "WATCH_3_TESTS",
+          "strength": "NEUTRAL",
+          "confidence": 0.6,
+          "zone": "support_test",
+          "reason": "Support test zone",
+          "special_rules": [],
+          "b5_boost": 1
+        },
+        "signal": {
+          "score": -20,
+          "strength": "LOW",
+          "action": "WATCH"
+        }
+      }
+    },
+    {
+      "symbol": "ADAUSDT",
+      "ltp": 0.45032721866082187,
+      "close": 0.4527,
+      "factor": "micro",
+      "factor_reason": "standard",
+      "points": 0.0011819997,
+      "bu1": 0.4538819997,
+      "bu2": 0.4550639994,
+      "bu3": 0.45624599909999997,
+      "bu4": 0.4574279988,
+      "bu5": 0.4586099985,
+      "be1": 0.4515180003,
+      "be5": 0.4467900015,
+      "signals": [
+        {
+          "level_name": "be2",
+          "level_price": 0.4503360006,
+          "distance": 8.78193917813741e-06,
           "micro_zone": {
             "name": "start",
             "type": "support",
@@ -31,272 +262,14 @@
             "risk": "LOW",
             "lower": 0.0,
             "upper": 11.8,
-            "progress": 0.9075605932199415
+            "progress": 0.3816406784745762
           },
           "traderscope_signal": {
-            "action": "CONFIRMATION",
-            "strength": "NEUTRAL",
-            "confidence": 0.6,
-            "zone": "confirmation",
-            "reason": "Confirmation level",
-            "special_rules": [],
-            "b5_boost": 1
-          },
-          "signal": {
-            "score": 60,
-            "strength": "LOW",
-            "action": "BUY"
-          }
-        }
-      ],
-      "primary_signal": {
-        "level_name": "bu1",
-        "level_price": 68310.709215,
-        "distance": 74.0330482055142,
-        "micro_zone": {
-          "name": "start",
-          "type": "support",
-          "priority": 1,
-          "description": "Block start / major support",
-          "action": "WATCH_FOR_BOUNCE",
-          "risk": "LOW",
-          "lower": 0.0,
-          "upper": 11.8,
-          "progress": 0.9075605932199415
-        },
-        "traderscope_signal": {
-          "action": "CONFIRMATION",
-          "strength": "NEUTRAL",
-          "confidence": 0.6,
-          "zone": "confirmation",
-          "reason": "Confirmation level",
-          "special_rules": [],
-          "b5_boost": 1
-        },
-        "signal": {
-          "score": 60,
-          "strength": "LOW",
-          "action": "BUY"
-        }
-      }
-    },
-    {
-      "symbol": "ETHUSDT",
-      "ltp": 3439.2990180950223,
-      "close": 3439.65,
-      "factor": "micro",
-      "factor_reason": "standard",
-      "points": 8.98092615,
-      "bu1": 3448.63092615,
-      "bu2": 3457.6118523,
-      "bu3": 3466.59277845,
-      "bu4": 3475.5737046,
-      "bu5": 3484.55463075,
-      "be1": 3430.66907385,
-      "be5": 3394.7453692500003,
-      "signals": [],
-      "primary_signal": null
-    },
-    {
-      "symbol": "SOLUSDT",
-      "ltp": 153.28482428406414,
-      "close": 147.537,
-      "factor": "micro",
-      "factor_reason": "standard",
-      "points": 0.385219107,
-      "bu1": 147.92221910700002,
-      "bu2": 148.307438214,
-      "bu3": 148.692657321,
-      "bu4": 149.077876428,
-      "bu5": 149.463095535,
-      "be1": 147.151780893,
-      "be5": 145.610904465,
-      "signals": [],
-      "primary_signal": null
-    },
-    {
-      "symbol": "ADAUSDT",
-      "ltp": 0.4584232293965173,
-      "close": 0.44685,
-      "factor": "micro",
-      "factor_reason": "standard",
-      "points": 0.00116672535,
-      "bu1": 0.44801672535000003,
-      "bu2": 0.44918345070000004,
-      "bu3": 0.45035017605000005,
-      "bu4": 0.4515169014,
-      "bu5": 0.45268362675,
-      "be1": 0.44568327465,
-      "be5": 0.44101637325000004,
-      "signals": [],
-      "primary_signal": null
-    },
-    {
-      "symbol": "DOTUSDT",
-      "ltp": 7.537786820973973,
-      "close": 7.2576,
-      "factor": "micro",
-      "factor_reason": "standard",
-      "points": 0.018949593600000002,
-      "bu1": 7.2765495936,
-      "bu2": 7.2954991872,
-      "bu3": 7.3144487808,
-      "bu4": 7.3333983744,
-      "bu5": 7.352347968,
-      "be1": 7.2386504064,
-      "be5": 7.162852032,
-      "signals": [],
-      "primary_signal": null
-    },
-    {
-      "symbol": "LINKUSDT",
-      "ltp": 18.20365982224523,
-      "close": 18.3732,
-      "factor": "micro",
-      "factor_reason": "standard",
-      "points": 0.0479724252,
-      "bu1": 18.4211724252,
-      "bu2": 18.4691448504,
-      "bu3": 18.5171172756,
-      "bu4": 18.5650897008,
-      "bu5": 18.613062126,
-      "be1": 18.3252275748,
-      "be5": 18.133337874000002,
-      "signals": [
-        {
-          "level_name": "be4",
-          "level_price": 18.1813102992,
-          "distance": 0.022349523045228636,
-          "micro_zone": {
-            "name": "trend_fast",
-            "type": "acceleration",
-            "priority": 10,
-            "description": "Trend acceleration zone",
-            "action": "ADD_POSITION",
-            "risk": "LOW",
-            "special": "FAST_MOVE",
-            "lower": 78.0,
-            "upper": 88.0,
-            "progress": 0.38131029919999976
-          },
-          "traderscope_signal": {
-            "action": "ADD_POSITION",
-            "strength": "STRONG",
-            "confidence": 0.9,
-            "zone": "trend_fast",
-            "reason": "Trend acceleration zone",
-            "special_rules": [],
-            "b5_boost": 4
-          },
-          "signal": {
-            "score": 125,
-            "strength": "HIGH",
-            "action": "WATCH"
-          }
-        }
-      ],
-      "primary_signal": {
-        "level_name": "be4",
-        "level_price": 18.1813102992,
-        "distance": 0.022349523045228636,
-        "micro_zone": {
-          "name": "trend_fast",
-          "type": "acceleration",
-          "priority": 10,
-          "description": "Trend acceleration zone",
-          "action": "ADD_POSITION",
-          "risk": "LOW",
-          "special": "FAST_MOVE",
-          "lower": 78.0,
-          "upper": 88.0,
-          "progress": 0.38131029919999976
-        },
-        "traderscope_signal": {
-          "action": "ADD_POSITION",
-          "strength": "STRONG",
-          "confidence": 0.9,
-          "zone": "trend_fast",
-          "reason": "Trend acceleration zone",
-          "special_rules": [],
-          "b5_boost": 4
-        },
-        "signal": {
-          "score": 125,
-          "strength": "HIGH",
-          "action": "WATCH"
-        }
-      }
-    },
-    {
-      "symbol": "MATICUSDT",
-      "ltp": 0.676264207051711,
-      "close": 0.6610499999999999,
-      "factor": "micro",
-      "factor_reason": "standard",
-      "points": 0.0017260015499999998,
-      "bu1": 0.6627760015499999,
-      "bu2": 0.6645020031,
-      "bu3": 0.6662280046499999,
-      "bu4": 0.6679540061999999,
-      "bu5": 0.6696800077499999,
-      "be1": 0.6593239984499999,
-      "be5": 0.6524199922499999,
-      "signals": [],
-      "primary_signal": null
-    },
-    {
-      "symbol": "UNIUSDT",
-      "ltp": 9.44632206241727,
-      "close": 9.7902,
-      "factor": "micro",
-      "factor_reason": "standard",
-      "points": 0.0255622122,
-      "bu1": 9.815762212200001,
-      "bu2": 9.8413244244,
-      "bu3": 9.8668866366,
-      "bu4": 9.8924488488,
-      "bu5": 9.918011061,
-      "be1": 9.7646377878,
-      "be5": 9.662388939000001,
-      "signals": [],
-      "primary_signal": null
-    },
-    {
-      "symbol": "LTCUSDT",
-      "ltp": 71.75599280509495,
-      "close": 72.21,
-      "factor": "micro",
-      "factor_reason": "standard",
-      "points": 0.18854031,
-      "bu1": 72.39854030999999,
-      "bu2": 72.58708062,
-      "bu3": 72.77562092999999,
-      "bu4": 72.96416124,
-      "bu5": 73.15270154999999,
-      "be1": 72.02145969,
-      "be5": 71.26729845,
-      "signals": [
-        {
-          "level_name": "be2",
-          "level_price": 71.83291937999999,
-          "distance": 0.07692657490504473,
-          "micro_zone": {
-            "name": "support_time",
-            "type": "support",
-            "priority": 2,
-            "description": "Major time-based support",
-            "action": "BOUNCE_EXPECTED",
-            "risk": "LOW",
-            "lower": 11.8,
-            "upper": 22.0,
-            "progress": 0.6401170392156792
-          },
-          "traderscope_signal": {
-            "action": "BOUNCE_EXPECTED",
+            "action": "WATCH_FOR_BOUNCE",
             "strength": "NEUTRAL",
             "confidence": 0.7,
-            "zone": "support_time",
-            "reason": "Major time-based support",
+            "zone": "start",
+            "reason": "Block start / major support",
             "special_rules": [],
             "b5_boost": 2
           },
@@ -309,25 +282,25 @@
       ],
       "primary_signal": {
         "level_name": "be2",
-        "level_price": 71.83291937999999,
-        "distance": 0.07692657490504473,
+        "level_price": 0.4503360006,
+        "distance": 8.78193917813741e-06,
         "micro_zone": {
-          "name": "support_time",
+          "name": "start",
           "type": "support",
-          "priority": 2,
-          "description": "Major time-based support",
-          "action": "BOUNCE_EXPECTED",
+          "priority": 1,
+          "description": "Block start / major support",
+          "action": "WATCH_FOR_BOUNCE",
           "risk": "LOW",
-          "lower": 11.8,
-          "upper": 22.0,
-          "progress": 0.6401170392156792
+          "lower": 0.0,
+          "upper": 11.8,
+          "progress": 0.3816406784745762
         },
         "traderscope_signal": {
-          "action": "BOUNCE_EXPECTED",
+          "action": "WATCH_FOR_BOUNCE",
           "strength": "NEUTRAL",
           "confidence": 0.7,
-          "zone": "support_time",
-          "reason": "Major time-based support",
+          "zone": "start",
+          "reason": "Block start / major support",
           "special_rules": [],
           "b5_boost": 2
         },
@@ -339,118 +312,327 @@
       }
     },
     {
-      "symbol": "BCHUSDT",
-      "ltp": 312.68109779161904,
-      "close": 321.1,
+      "symbol": "DOTUSDT",
+      "ltp": 7.217432757445889,
+      "close": 7.2216,
       "factor": "micro",
       "factor_reason": "standard",
-      "points": 0.8383921000000001,
-      "bu1": 321.93839210000004,
-      "bu2": 322.7767842,
-      "bu3": 323.61517630000003,
-      "bu4": 324.4535684,
-      "bu5": 325.2919605,
-      "be1": 320.2616079,
-      "be5": 316.90803950000003,
+      "points": 0.0188555976,
+      "bu1": 7.2404555976,
+      "bu2": 7.2593111952,
+      "bu3": 7.2781667928,
+      "bu4": 7.2970223904,
+      "bu5": 7.3158779879999996,
+      "be1": 7.2027444024,
+      "be5": 7.127322012,
       "signals": [],
       "primary_signal": null
     },
     {
-      "symbol": "XRPUSDT",
-      "ltp": 0.5765249212461809,
-      "close": 0.5840599999999999,
+      "symbol": "LINKUSDT",
+      "ltp": 17.772599214262737,
+      "close": 18.1536,
       "factor": "micro",
       "factor_reason": "standard",
-      "points": 0.0015249806599999997,
-      "bu1": 0.5855849806599999,
-      "bu2": 0.5871099613199999,
-      "bu3": 0.5886349419799999,
-      "bu4": 0.59015992264,
-      "bu5": 0.5916849032999999,
-      "be1": 0.58253501934,
-      "be5": 0.5764350966999999,
+      "points": 0.0473990496,
+      "bu1": 18.2009990496,
+      "bu2": 18.2483980992,
+      "bu3": 18.295797148800002,
+      "bu4": 18.3431961984,
+      "bu5": 18.390595248,
+      "be1": 18.1062009504,
+      "be5": 17.916604752,
+      "signals": [],
+      "primary_signal": null
+    },
+    {
+      "symbol": "MATICUSDT",
+      "ltp": 0.6562336723483343,
+      "close": 0.6565000000000001,
+      "factor": "micro",
+      "factor_reason": "standard",
+      "points": 0.0017141215000000003,
+      "bu1": 0.6582141215000001,
+      "bu2": 0.6599282430000001,
+      "bu3": 0.6616423645000001,
+      "bu4": 0.6633564860000001,
+      "bu5": 0.6650706075000001,
+      "be1": 0.6547858785,
+      "be5": 0.6479293925,
+      "signals": [],
+      "primary_signal": null
+    },
+    {
+      "symbol": "UNIUSDT",
+      "ltp": 9.847456011204057,
+      "close": 9.8098,
+      "factor": "micro",
+      "factor_reason": "standard",
+      "points": 0.025613387799999998,
+      "bu1": 9.8354133878,
+      "bu2": 9.8610267756,
+      "bu3": 9.8866401634,
+      "bu4": 9.9122535512,
+      "bu5": 9.937866939,
+      "be1": 9.7841866122,
+      "be5": 9.681733061,
       "signals": [
         {
-          "level_name": "be5",
-          "level_price": 0.5764350966999999,
-          "distance": 8.982454618100544e-05,
+          "level_name": "bu1",
+          "level_price": 9.8354133878,
+          "distance": 0.012042623404058261,
           "micro_zone": {
-            "name": "start",
-            "type": "support",
-            "priority": 1,
-            "description": "Block start / major support",
-            "action": "WATCH_FOR_BOUNCE",
+            "name": "trend_fast",
+            "type": "acceleration",
+            "priority": 10,
+            "description": "Trend acceleration zone",
+            "action": "ADD_POSITION",
             "risk": "LOW",
-            "lower": 0.0,
-            "upper": 11.8,
-            "progress": 0.48850431923728804
+            "special": "FAST_MOVE",
+            "lower": 78.0,
+            "upper": 88.0,
+            "progress": 0.5541338779999918
+          },
+          "traderscope_signal": {
+            "action": "ADD_POSITION",
+            "strength": "STRONG",
+            "confidence": 0.6,
+            "zone": "trend_fast",
+            "reason": "Trend acceleration zone",
+            "special_rules": [],
+            "b5_boost": 1
+          },
+          "signal": {
+            "score": 105,
+            "strength": "MEDIUM",
+            "action": "ADD_POSITION"
+          }
+        }
+      ],
+      "primary_signal": {
+        "level_name": "bu1",
+        "level_price": 9.8354133878,
+        "distance": 0.012042623404058261,
+        "micro_zone": {
+          "name": "trend_fast",
+          "type": "acceleration",
+          "priority": 10,
+          "description": "Trend acceleration zone",
+          "action": "ADD_POSITION",
+          "risk": "LOW",
+          "special": "FAST_MOVE",
+          "lower": 78.0,
+          "upper": 88.0,
+          "progress": 0.5541338779999918
+        },
+        "traderscope_signal": {
+          "action": "ADD_POSITION",
+          "strength": "STRONG",
+          "confidence": 0.6,
+          "zone": "trend_fast",
+          "reason": "Trend acceleration zone",
+          "special_rules": [],
+          "b5_boost": 1
+        },
+        "signal": {
+          "score": 105,
+          "strength": "MEDIUM",
+          "action": "ADD_POSITION"
+        }
+      }
+    },
+    {
+      "symbol": "LTCUSDT",
+      "ltp": 73.33098572660454,
+      "close": 72.8625,
+      "factor": "micro",
+      "factor_reason": "standard",
+      "points": 0.1902439875,
+      "bu1": 73.0527439875,
+      "bu2": 73.24298797499999,
+      "bu3": 73.4332319625,
+      "bu4": 73.62347595,
+      "bu5": 73.8137199375,
+      "be1": 72.6722560125,
+      "be5": 71.9112800625,
+      "signals": [
+        {
+          "level_name": "bu2",
+          "level_price": 73.24298797499999,
+          "distance": 0.08799775160454715,
+          "micro_zone": {
+            "name": "support_test",
+            "type": "support",
+            "priority": 4,
+            "description": "Support test zone",
+            "action": "WATCH_3_TESTS",
+            "risk": "MEDIUM",
+            "special": "3_TESTS_TO_35",
+            "lower": 28.0,
+            "upper": 35.0,
+            "progress": 0.6328399642857018
+          },
+          "traderscope_signal": {
+            "action": "WATCH_3_TESTS",
+            "strength": "NEUTRAL",
+            "confidence": 0.7,
+            "zone": "support_test",
+            "reason": "Support test zone",
+            "special_rules": [],
+            "b5_boost": 2
+          },
+          "signal": {
+            "score": 80,
+            "strength": "MEDIUM",
+            "action": "BUY"
+          }
+        }
+      ],
+      "primary_signal": {
+        "level_name": "bu2",
+        "level_price": 73.24298797499999,
+        "distance": 0.08799775160454715,
+        "micro_zone": {
+          "name": "support_test",
+          "type": "support",
+          "priority": 4,
+          "description": "Support test zone",
+          "action": "WATCH_3_TESTS",
+          "risk": "MEDIUM",
+          "special": "3_TESTS_TO_35",
+          "lower": 28.0,
+          "upper": 35.0,
+          "progress": 0.6328399642857018
+        },
+        "traderscope_signal": {
+          "action": "WATCH_3_TESTS",
+          "strength": "NEUTRAL",
+          "confidence": 0.7,
+          "zone": "support_test",
+          "reason": "Support test zone",
+          "special_rules": [],
+          "b5_boost": 2
+        },
+        "signal": {
+          "score": 80,
+          "strength": "MEDIUM",
+          "action": "BUY"
+        }
+      }
+    },
+    {
+      "symbol": "BCHUSDT",
+      "ltp": 321.12626695975786,
+      "close": 324.675,
+      "factor": "micro",
+      "factor_reason": "standard",
+      "points": 0.8477264250000001,
+      "bu1": 325.52272642500003,
+      "bu2": 326.37045285,
+      "bu3": 327.218179275,
+      "bu4": 328.06590570000003,
+      "bu5": 328.913632125,
+      "be1": 323.827273575,
+      "be5": 320.43636787500003,
+      "signals": [
+        {
+          "level_name": "be4",
+          "level_price": 321.2840943,
+          "distance": 0.15782734024213596,
+          "micro_zone": {
+            "name": "support_time",
+            "type": "support",
+            "priority": 2,
+            "description": "Major time-based support",
+            "action": "BOUNCE_EXPECTED",
+            "risk": "LOW",
+            "lower": 11.8,
+            "upper": 22.0,
+            "progress": 0.1020532352941102
           },
           "traderscope_signal": {
             "action": "WATCH_FOR_BOUNCE",
             "strength": "NEUTRAL",
-            "confidence": 0.95,
+            "confidence": 0.9,
             "zone": "start",
             "reason": "Block start / major support",
             "special_rules": [],
-            "b5_boost": 5
+            "b5_boost": 4
           },
           "signal": {
-            "score": 90,
+            "score": 80,
             "strength": "MEDIUM",
             "action": "REVERSAL_BUY"
           }
         }
       ],
       "primary_signal": {
-        "level_name": "be5",
-        "level_price": 0.5764350966999999,
-        "distance": 8.982454618100544e-05,
+        "level_name": "be4",
+        "level_price": 321.2840943,
+        "distance": 0.15782734024213596,
         "micro_zone": {
-          "name": "start",
+          "name": "support_time",
           "type": "support",
-          "priority": 1,
-          "description": "Block start / major support",
-          "action": "WATCH_FOR_BOUNCE",
+          "priority": 2,
+          "description": "Major time-based support",
+          "action": "BOUNCE_EXPECTED",
           "risk": "LOW",
-          "lower": 0.0,
-          "upper": 11.8,
-          "progress": 0.48850431923728804
+          "lower": 11.8,
+          "upper": 22.0,
+          "progress": 0.1020532352941102
         },
         "traderscope_signal": {
           "action": "WATCH_FOR_BOUNCE",
           "strength": "NEUTRAL",
-          "confidence": 0.95,
+          "confidence": 0.9,
           "zone": "start",
           "reason": "Block start / major support",
           "special_rules": [],
-          "b5_boost": 5
+          "b5_boost": 4
         },
         "signal": {
-          "score": 90,
+          "score": 80,
           "strength": "MEDIUM",
           "action": "REVERSAL_BUY"
         }
       }
     },
     {
-      "symbol": "DOGEUSDT",
-      "ltp": 0.08111570332688069,
-      "close": 0.081836,
+      "symbol": "XRPUSDT",
+      "ltp": 0.5713205321863694,
+      "close": 0.5712999999999999,
       "factor": "micro",
       "factor_reason": "standard",
-      "points": 0.00021367379600000002,
-      "bu1": 0.082049673796,
-      "bu2": 0.082263347592,
-      "bu3": 0.082477021388,
-      "bu4": 0.082690695184,
-      "bu5": 0.08290436898,
-      "be1": 0.081622326204,
-      "be5": 0.08076763102000001,
+      "points": 0.0014916642999999999,
+      "bu1": 0.5727916643,
+      "bu2": 0.5742833285999999,
+      "bu3": 0.5757749928999999,
+      "bu4": 0.5772666571999999,
+      "bu5": 0.5787583215,
+      "be1": 0.5698083356999999,
+      "be5": 0.5638416784999999,
+      "signals": [],
+      "primary_signal": null
+    },
+    {
+      "symbol": "DOGEUSDT",
+      "ltp": 0.08318649262742436,
+      "close": 0.083066,
+      "factor": "micro",
+      "factor_reason": "standard",
+      "points": 0.000216885326,
+      "bu1": 0.083282885326,
+      "bu2": 0.083499770652,
+      "bu3": 0.083716655978,
+      "bu4": 0.083933541304,
+      "bu5": 0.08415042663,
+      "be1": 0.082849114674,
+      "be5": 0.08198157337,
       "signals": [
         {
-          "level_name": "be3",
-          "level_price": 0.08119497861200001,
-          "distance": 7.927528511932069e-05,
+          "level_name": "bu1",
+          "level_price": 0.083282885326,
+          "distance": 9.639269857564248e-05,
           "micro_zone": {
             "name": "start",
             "type": "support",
@@ -460,28 +642,28 @@
             "risk": "LOW",
             "lower": 0.0,
             "upper": 11.8,
-            "progress": 0.06880930390847458
+            "progress": 0.705787163779661
           },
           "traderscope_signal": {
             "action": "WATCH_FOR_BOUNCE",
             "strength": "NEUTRAL",
-            "confidence": 0.8,
+            "confidence": 0.6,
             "zone": "start",
             "reason": "Block start / major support",
             "special_rules": [],
-            "b5_boost": 3
+            "b5_boost": 1
           },
           "signal": {
-            "score": 70,
+            "score": 60,
             "strength": "LOW",
-            "action": "REVERSAL_BUY"
+            "action": "BUY"
           }
         }
       ],
       "primary_signal": {
-        "level_name": "be3",
-        "level_price": 0.08119497861200001,
-        "distance": 7.927528511932069e-05,
+        "level_name": "bu1",
+        "level_price": 0.083282885326,
+        "distance": 9.639269857564248e-05,
         "micro_zone": {
           "name": "start",
           "type": "support",
@@ -491,96 +673,62 @@
           "risk": "LOW",
           "lower": 0.0,
           "upper": 11.8,
-          "progress": 0.06880930390847458
+          "progress": 0.705787163779661
         },
         "traderscope_signal": {
           "action": "WATCH_FOR_BOUNCE",
           "strength": "NEUTRAL",
-          "confidence": 0.8,
+          "confidence": 0.6,
           "zone": "start",
           "reason": "Block start / major support",
           "special_rules": [],
-          "b5_boost": 3
+          "b5_boost": 1
         },
         "signal": {
-          "score": 70,
+          "score": 60,
           "strength": "LOW",
-          "action": "REVERSAL_BUY"
+          "action": "BUY"
         }
       }
     },
     {
       "symbol": "AVAXUSDT",
-      "ltp": 35.96616399017483,
-      "close": 34.672000000000004,
+      "ltp": 35.58505102191782,
+      "close": 35.4816,
       "factor": "micro",
       "factor_reason": "standard",
-      "points": 0.09052859200000002,
-      "bu1": 34.762528592,
-      "bu2": 34.853057184,
-      "bu3": 34.943585776000006,
-      "bu4": 35.034114368000004,
-      "bu5": 35.12464296,
-      "be1": 34.581471408000006,
-      "be5": 34.219357040000006,
-      "signals": [],
-      "primary_signal": null
-    },
-    {
-      "symbol": "ATOMUSDT",
-      "ltp": 9.132096255172229,
-      "close": 8.926699999999999,
-      "factor": "micro",
-      "factor_reason": "standard",
-      "points": 0.023307613699999997,
-      "bu1": 8.950007613699999,
-      "bu2": 8.973315227399999,
-      "bu3": 8.996622841099999,
-      "bu4": 9.019930454799999,
-      "bu5": 9.0432380685,
-      "be1": 8.903392386299998,
-      "be5": 8.810161931499998,
-      "signals": [],
-      "primary_signal": null
-    },
-    {
-      "symbol": "ETCUSDT",
-      "ltp": 23.863921477482197,
-      "close": 24.157,
-      "factor": "micro",
-      "factor_reason": "standard",
-      "points": 0.063073927,
-      "bu1": 24.220073927,
-      "bu2": 24.283147854,
-      "bu3": 24.346221781,
-      "bu4": 24.409295708,
-      "bu5": 24.472369635,
-      "be1": 24.093926073,
-      "be5": 23.841630365,
+      "points": 0.0926424576,
+      "bu1": 35.5742424576,
+      "bu2": 35.6668849152,
+      "bu3": 35.7595273728,
+      "bu4": 35.8521698304,
+      "bu5": 35.944812288,
+      "be1": 35.3889575424,
+      "be5": 35.018387712,
       "signals": [
         {
-          "level_name": "be5",
-          "level_price": 23.841630365,
-          "distance": 0.02229111248219695,
+          "level_name": "bu1",
+          "level_price": 35.5742424576,
+          "distance": 0.010808564317819958,
           "micro_zone": {
-            "name": "retracement_1",
-            "type": "resistance",
-            "priority": 6,
-            "description": "1st retracement zone",
-            "action": "CAUTION",
+            "name": "midpoint",
+            "type": "neutral",
+            "priority": 8,
+            "description": "Midpoint - trend confirmation",
+            "action": "ABOVE_50_BULLISH",
             "risk": "MEDIUM",
-            "lower": 38.2,
-            "upper": 45.0,
-            "progress": 0.03180936029411772
+            "lower": 50.0,
+            "upper": 61.8,
+            "progress": 0.6291733694915296
           },
           "traderscope_signal": {
-            "action": "CAUTION",
+            "action": "ABOVE_50_BULLISH",
             "strength": "NEUTRAL",
-            "confidence": 0.95,
-            "zone": "retracement_1",
-            "reason": "1st retracement zone",
+            "confidence": 0.6,
+            "zone": "midpoint",
+            "reason": "Midpoint - trend confirmation",
             "special_rules": [],
-            "b5_boost": 5
+            "b5_boost": 1
           },
           "signal": {
             "score": 20,
@@ -590,28 +738,28 @@
         }
       ],
       "primary_signal": {
-        "level_name": "be5",
-        "level_price": 23.841630365,
-        "distance": 0.02229111248219695,
+        "level_name": "bu1",
+        "level_price": 35.5742424576,
+        "distance": 0.010808564317819958,
         "micro_zone": {
-          "name": "retracement_1",
-          "type": "resistance",
-          "priority": 6,
-          "description": "1st retracement zone",
-          "action": "CAUTION",
+          "name": "midpoint",
+          "type": "neutral",
+          "priority": 8,
+          "description": "Midpoint - trend confirmation",
+          "action": "ABOVE_50_BULLISH",
           "risk": "MEDIUM",
-          "lower": 38.2,
-          "upper": 45.0,
-          "progress": 0.03180936029411772
+          "lower": 50.0,
+          "upper": 61.8,
+          "progress": 0.6291733694915296
         },
         "traderscope_signal": {
-          "action": "CAUTION",
+          "action": "ABOVE_50_BULLISH",
           "strength": "NEUTRAL",
-          "confidence": 0.95,
-          "zone": "retracement_1",
-          "reason": "1st retracement zone",
+          "confidence": 0.6,
+          "zone": "midpoint",
+          "reason": "Midpoint - trend confirmation",
           "special_rules": [],
-          "b5_boost": 5
+          "b5_boost": 1
         },
         "signal": {
           "score": 20,
@@ -619,8 +767,164 @@
           "action": "WATCH"
         }
       }
+    },
+    {
+      "symbol": "ATOMUSDT",
+      "ltp": 8.759466099216189,
+      "close": 8.802100000000001,
+      "factor": "micro",
+      "factor_reason": "standard",
+      "points": 0.022982283100000004,
+      "bu1": 8.8250822831,
+      "bu2": 8.848064566200001,
+      "bu3": 8.8710468493,
+      "bu4": 8.894029132400002,
+      "bu5": 8.917011415500001,
+      "be1": 8.779117716900002,
+      "be5": 8.687188584500001,
+      "signals": [
+        {
+          "level_name": "be2",
+          "level_price": 8.7561354338,
+          "distance": 0.0033306654161879834,
+          "micro_zone": {
+            "name": "fib_major",
+            "type": "target",
+            "priority": 9,
+            "description": "Major fibonacci target",
+            "action": "TARGET_REACHED",
+            "risk": "LOW",
+            "lower": 61.8,
+            "upper": 78.0,
+            "progress": 0.852687862962968
+          },
+          "traderscope_signal": {
+            "action": "TARGET_REACHED",
+            "strength": "NEUTRAL",
+            "confidence": 0.7,
+            "zone": "fib_major",
+            "reason": "Major fibonacci target",
+            "special_rules": [],
+            "b5_boost": 2
+          },
+          "signal": {
+            "score": 20,
+            "strength": "LOW",
+            "action": "WATCH"
+          }
+        }
+      ],
+      "primary_signal": {
+        "level_name": "be2",
+        "level_price": 8.7561354338,
+        "distance": 0.0033306654161879834,
+        "micro_zone": {
+          "name": "fib_major",
+          "type": "target",
+          "priority": 9,
+          "description": "Major fibonacci target",
+          "action": "TARGET_REACHED",
+          "risk": "LOW",
+          "lower": 61.8,
+          "upper": 78.0,
+          "progress": 0.852687862962968
+        },
+        "traderscope_signal": {
+          "action": "TARGET_REACHED",
+          "strength": "NEUTRAL",
+          "confidence": 0.7,
+          "zone": "fib_major",
+          "reason": "Major fibonacci target",
+          "special_rules": [],
+          "b5_boost": 2
+        },
+        "signal": {
+          "score": 20,
+          "strength": "LOW",
+          "action": "WATCH"
+        }
+      }
+    },
+    {
+      "symbol": "ETCUSDT",
+      "ltp": 24.23369208024138,
+      "close": 24.353,
+      "factor": "micro",
+      "factor_reason": "standard",
+      "points": 0.063585683,
+      "bu1": 24.416585683,
+      "bu2": 24.480171366,
+      "bu3": 24.543757049,
+      "bu4": 24.607342732000003,
+      "bu5": 24.670928415000002,
+      "be1": 24.289414317000002,
+      "be5": 24.035071585,
+      "signals": [
+        {
+          "level_name": "be2",
+          "level_price": 24.225828634000003,
+          "distance": 0.007863446241376693,
+          "micro_zone": {
+            "name": "floor",
+            "type": "support",
+            "priority": 3,
+            "description": "Floor level - must hold",
+            "action": "CRITICAL_SUPPORT",
+            "risk": "MEDIUM",
+            "special": "TEST_3X_RULE",
+            "lower": 22.0,
+            "upper": 28.0,
+            "progress": 0.09714390000004396
+          },
+          "traderscope_signal": {
+            "action": "CRITICAL_SUPPORT",
+            "strength": "NEUTRAL",
+            "confidence": 0.7,
+            "zone": "floor",
+            "reason": "Floor level - must hold",
+            "special_rules": [],
+            "b5_boost": 2
+          },
+          "signal": {
+            "score": 60,
+            "strength": "LOW",
+            "action": "REVERSAL_BUY"
+          }
+        }
+      ],
+      "primary_signal": {
+        "level_name": "be2",
+        "level_price": 24.225828634000003,
+        "distance": 0.007863446241376693,
+        "micro_zone": {
+          "name": "floor",
+          "type": "support",
+          "priority": 3,
+          "description": "Floor level - must hold",
+          "action": "CRITICAL_SUPPORT",
+          "risk": "MEDIUM",
+          "special": "TEST_3X_RULE",
+          "lower": 22.0,
+          "upper": 28.0,
+          "progress": 0.09714390000004396
+        },
+        "traderscope_signal": {
+          "action": "CRITICAL_SUPPORT",
+          "strength": "NEUTRAL",
+          "confidence": 0.7,
+          "zone": "floor",
+          "reason": "Floor level - must hold",
+          "special_rules": [],
+          "b5_boost": 2
+        },
+        "signal": {
+          "score": 60,
+          "strength": "LOW",
+          "action": "REVERSAL_BUY"
+        }
+      }
     }
   ],
   "market_open_utc": 1770921000,
-  "ist_time": "2026-02-14T00:18:12.177420"
+  "ist_time": "2026-02-14T00:21:16.721752"
 }

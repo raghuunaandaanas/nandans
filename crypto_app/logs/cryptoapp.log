@@ -434,3 +434,938 @@
 [2026-02-14 00:16:45,386] Paper cycle error: name 'first_close' is not defined
 [2026-02-14 00:16:48,560] Paper cycle error: name 'first_close' is not defined
 [2026-02-14 00:16:50,759] Snapshot generated: 15 rows
+[2026-02-14 00:16:51,904] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:16:55,051] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:16:56,225] Snapshot generated: 15 rows
+[2026-02-14 00:16:56,849] ======================================================================
+[2026-02-14 00:16:56,849] CRYPTO TRADING APP - Delta India Exchange
+[2026-02-14 00:16:56,849] Market Open: 00:00 UTC (5:30 AM IST) | 24/7 Trading
+[2026-02-14 00:16:56,849] ======================================================================
+[2026-02-14 00:16:56,849] ============================================================
+[2026-02-14 00:16:56,849] CRYPTO APP - Delta India Exchange
+[2026-02-14 00:16:56,849] ============================================================
+[2026-02-14 00:16:56,850] Credentials loaded successfully
+[2026-02-14 00:16:56,851] Using SIMULATION MODE for crypto trading...
+[2026-02-14 00:16:56,851] Loaded 15 symbols for simulation
+[2026-02-14 00:16:56,858] SIMULATION: Generating first 5m closes for all symbols...
+[2026-02-14 00:16:57,089] SIMULATION: Generated first 5m closes for 15 symbols
+[2026-02-14 00:16:57,090] Starting WebSocket for real-time data...
+[2026-02-14 00:16:57,972] Websocket connected
+[2026-02-14 00:16:57,972] WebSocket Connected - Subscribing to channels...
+[2026-02-14 00:16:58,375] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:17:00,090] Fetching first closes (00:00 UTC / 5:30 AM IST)...
+[2026-02-14 00:17:00,091] Fetching crypto first closes (00:00 UTC / 5:30 AM IST)...
+[2026-02-14 00:17:00,091] Crypto session: 2026-02-13 | Market open (UTC): 1770921000 | Now: 1771008420
+[2026-02-14 00:17:00,435] HTTP Error 404: Not Found
+[2026-02-14 00:17:00,735] HTTP Error 404: Not Found
+[2026-02-14 00:17:01,076] HTTP Error 404: Not Found
+[2026-02-14 00:17:01,376] HTTP Error 404: Not Found
+[2026-02-14 00:17:01,561] Snapshot generated: 15 rows
+[2026-02-14 00:17:01,566] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:17:01,803] HTTP Error 404: Not Found
+[2026-02-14 00:17:02,106] HTTP Error 404: Not Found
+[2026-02-14 00:17:02,439] HTTP Error 404: Not Found
+[2026-02-14 00:17:02,821] HTTP Error 404: Not Found
+[2026-02-14 00:17:03,134] HTTP Error 404: Not Found
+[2026-02-14 00:17:03,441] HTTP Error 404: Not Found
+[2026-02-14 00:17:03,770] HTTP Error 404: Not Found
+[2026-02-14 00:17:04,076] HTTP Error 404: Not Found
+[2026-02-14 00:17:04,395] HTTP Error 404: Not Found
+[2026-02-14 00:17:04,742] HTTP Error 404: Not Found
+[2026-02-14 00:17:04,948] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:17:05,061] HTTP Error 404: Not Found
+[2026-02-14 00:17:05,112] Main loop started - Running 24/7
+[2026-02-14 00:17:05,112] SIMULATION MODE: Prices are simulated for testing
+[2026-02-14 00:17:07,131] Snapshot generated: 15 rows
+[2026-02-14 00:17:08,139] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:17:08,282] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:08,283] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:08,285] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:08,287] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:08,288] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:08,289] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:08,290] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:08,291] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:08,293] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:08,293] Paper cycle: 9 new trades opened
+[2026-02-14 00:17:10,472] Snapshot generated: 15 rows
+[2026-02-14 00:17:11,425] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:17:11,615] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:11,616] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:11,618] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:11,620] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:11,621] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:11,622] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:11,624] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:11,625] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:11,626] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:11,627] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:11,627] Paper cycle: 10 new trades opened
+[2026-02-14 00:17:12,455] Snapshot generated: 15 rows
+[2026-02-14 00:17:14,620] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:17:14,782] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:14,785] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:14,788] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:14,790] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:14,793] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:14,796] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:14,798] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:14,800] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:14,802] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:14,803] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:14,803] Paper cycle: 10 new trades opened
+[2026-02-14 00:17:15,975] Snapshot generated: 15 rows
+[2026-02-14 00:17:17,929] Snapshot generated: 15 rows
+[2026-02-14 00:17:17,936] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:17:18,145] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:18,147] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:18,148] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:18,149] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:18,150] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:18,153] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:18,154] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:18,154] Paper cycle: 7 new trades opened
+[2026-02-14 00:17:21,096] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:17:21,330] Snapshot generated: 15 rows
+[2026-02-14 00:17:21,338] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:21,339] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:21,341] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:21,342] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:21,343] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:21,345] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:21,346] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:21,346] Paper cycle: 7 new trades opened
+[2026-02-14 00:17:23,279] Snapshot generated: 15 rows
+[2026-02-14 00:17:24,436] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:17:24,664] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:24,665] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:24,667] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:24,668] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:24,671] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:24,672] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:24,672] Paper cycle: 6 new trades opened
+[2026-02-14 00:17:26,857] Snapshot generated: 15 rows
+[2026-02-14 00:17:27,592] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:17:27,866] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:27,867] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:27,869] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:27,870] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:27,872] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:27,873] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:27,873] Paper cycle: 6 new trades opened
+[2026-02-14 00:17:28,761] Snapshot generated: 15 rows
+[2026-02-14 00:17:30,923] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:17:31,157] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:31,158] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:31,159] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:31,161] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:31,162] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:31,163] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:31,163] Paper cycle: 6 new trades opened
+[2026-02-14 00:17:32,193] Snapshot generated: 15 rows
+[2026-02-14 00:17:34,112] Snapshot generated: 15 rows
+[2026-02-14 00:17:34,121] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:17:34,356] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:34,357] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:34,359] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:34,360] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:34,361] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:34,361] Paper cycle: 5 new trades opened
+[2026-02-14 00:17:37,427] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:17:37,678] Snapshot generated: 15 rows
+[2026-02-14 00:17:37,687] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:37,689] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:37,689] Paper cycle: 2 new trades opened
+[2026-02-14 00:17:39,599] Snapshot generated: 15 rows
+[2026-02-14 00:17:40,609] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:17:40,846] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:40,847] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:40,848] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:40,850] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:40,851] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:40,852] Paper cycle: 5 new trades opened
+[2026-02-14 00:17:43,041] Snapshot generated: 15 rows
+[2026-02-14 00:17:43,928] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:17:44,196] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:44,197] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:44,198] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:44,199] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:44,200] Paper cycle: 4 new trades opened
+[2026-02-14 00:17:44,956] Snapshot generated: 15 rows
+[2026-02-14 00:17:47,109] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:17:47,354] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:47,355] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:47,356] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:47,358] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:47,359] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:47,359] Paper cycle: 5 new trades opened
+[2026-02-14 00:17:48,545] Snapshot generated: 15 rows
+[2026-02-14 00:17:50,441] Snapshot generated: 15 rows
+[2026-02-14 00:17:50,448] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:17:50,707] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:50,708] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:50,709] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:50,711] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:50,712] Paper cycle: 4 new trades opened
+[2026-02-14 00:17:53,618] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:17:53,892] Snapshot generated: 15 rows
+[2026-02-14 00:17:53,900] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:53,902] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:53,903] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:53,905] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:53,906] Paper cycle: 4 new trades opened
+[2026-02-14 00:17:55,794] Snapshot generated: 15 rows
+[2026-02-14 00:17:56,949] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:17:57,203] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:57,204] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:57,206] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:17:57,207] Paper cycle: 3 new trades opened
+[2026-02-14 00:17:59,676] Snapshot generated: 15 rows
+[2026-02-14 00:18:00,121] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:18:00,686] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:00,687] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:00,689] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:00,690] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:00,691] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:00,692] Paper cycle: 5 new trades opened
+[2026-02-14 00:18:01,311] Snapshot generated: 15 rows
+[2026-02-14 00:18:03,458] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:18:03,998] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:04,000] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:04,002] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:04,004] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:04,005] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:04,005] Paper cycle: 5 new trades opened
+[2026-02-14 00:18:05,037] Snapshot generated: 15 rows
+[2026-02-14 00:18:06,637] Snapshot generated: 15 rows
+[2026-02-14 00:18:06,644] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:18:07,215] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:07,216] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:07,219] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:07,219] Paper cycle: 3 new trades opened
+[2026-02-14 00:18:09,959] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:18:10,554] Snapshot generated: 15 rows
+[2026-02-14 00:18:10,562] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:10,563] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:10,565] Paper cycle: 2 new trades opened
+[2026-02-14 00:18:12,180] Snapshot generated: 15 rows
+[2026-02-14 00:18:13,191] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:18:13,736] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:13,737] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:13,745] Paper cycle: 2 new trades opened
+[2026-02-14 00:18:15,941] Snapshot generated: 15 rows
+[2026-02-14 00:18:16,499] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:18:17,107] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:17,108] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:17,110] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:17,111] Paper cycle: 3 new trades opened
+[2026-02-14 00:18:17,529] Snapshot generated: 15 rows
+[2026-02-14 00:18:19,705] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:18:20,272] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:20,274] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:20,275] Paper cycle: 2 new trades opened
+[2026-02-14 00:18:21,458] Snapshot generated: 15 rows
+[2026-02-14 00:18:23,026] Snapshot generated: 15 rows
+[2026-02-14 00:18:23,034] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:18:23,556] ======================================================================
+[2026-02-14 00:18:23,557] CRYPTO TRADING APP - Delta India Exchange
+[2026-02-14 00:18:23,557] Market Open: 00:00 UTC (5:30 AM IST) | 24/7 Trading
+[2026-02-14 00:18:23,557] ======================================================================
+[2026-02-14 00:18:23,557] ============================================================
+[2026-02-14 00:18:23,557] CRYPTO APP - Delta India Exchange
+[2026-02-14 00:18:23,557] ============================================================
+[2026-02-14 00:18:23,558] Credentials loaded successfully
+[2026-02-14 00:18:23,702] Using SIMULATION MODE for crypto trading...
+[2026-02-14 00:18:23,702] Loaded 15 symbols for simulation
+[2026-02-14 00:18:23,723] SIMULATION: Generating first 5m closes for all symbols...
+[2026-02-14 00:18:24,028] SIMULATION: Generated first 5m closes for 15 symbols
+[2026-02-14 00:18:24,029] Starting WebSocket for real-time data...
+[2026-02-14 00:18:24,111] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:24,113] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:24,114] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:24,115] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:24,116] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:24,119] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:24,120] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:24,121] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:24,122] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:24,123] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:24,125] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:24,126] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:24,127] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:24,127] Paper cycle: 13 new trades opened
+[2026-02-14 00:18:24,787] Websocket connected
+[2026-02-14 00:18:24,788] WebSocket Connected - Subscribing to channels...
+[2026-02-14 00:18:26,235] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:18:27,030] Fetching first closes (00:00 UTC / 5:30 AM IST)...
+[2026-02-14 00:18:27,030] Fetching crypto first closes (00:00 UTC / 5:30 AM IST)...
+[2026-02-14 00:18:27,030] Crypto session: 2026-02-13 | Market open (UTC): 1770921000 | Now: 1771008507
+[2026-02-14 00:18:27,407] HTTP Error 404: Not Found
+[2026-02-14 00:18:27,441] Snapshot generated: 15 rows
+[2026-02-14 00:18:27,450] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:27,452] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:27,453] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:27,454] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:27,455] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:27,456] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:27,458] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:27,458] Paper cycle: 7 new trades opened
+[2026-02-14 00:18:27,715] HTTP Error 404: Not Found
+[2026-02-14 00:18:28,020] HTTP Error 404: Not Found
+[2026-02-14 00:18:28,340] HTTP Error 404: Not Found
+[2026-02-14 00:18:28,447] Snapshot generated: 15 rows
+[2026-02-14 00:18:28,677] HTTP Error 404: Not Found
+[2026-02-14 00:18:28,988] HTTP Error 404: Not Found
+[2026-02-14 00:18:29,295] HTTP Error 404: Not Found
+[2026-02-14 00:18:29,592] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:18:29,643] HTTP Error 404: Not Found
+[2026-02-14 00:18:29,946] HTTP Error 404: Not Found
+[2026-02-14 00:18:30,312] HTTP Error 404: Not Found
+[2026-02-14 00:18:30,632] HTTP Error 404: Not Found
+[2026-02-14 00:18:30,748] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:30,749] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:30,750] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:30,752] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:30,767] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:30,769] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:30,770] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:30,772] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:30,773] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:30,773] Paper cycle: 9 new trades opened
+[2026-02-14 00:18:30,946] HTTP Error 404: Not Found
+[2026-02-14 00:18:31,281] HTTP Error 404: Not Found
+[2026-02-14 00:18:31,586] HTTP Error 404: Not Found
+[2026-02-14 00:18:31,897] HTTP Error 404: Not Found
+[2026-02-14 00:18:31,948] Main loop started - Running 24/7
+[2026-02-14 00:18:31,948] SIMULATION MODE: Prices are simulated for testing
+[2026-02-14 00:18:32,741] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:18:32,982] Snapshot generated: 15 rows
+[2026-02-14 00:18:33,917] Snapshot generated: 15 rows
+[2026-02-14 00:18:34,055] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:34,135] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:34,137] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:34,138] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:34,139] Paper cycle: 4 new trades opened
+[2026-02-14 00:18:35,169] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:35,171] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:35,173] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:35,174] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:35,174] Paper cycle: 4 new trades opened
+[2026-02-14 00:18:36,081] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:18:37,466] Snapshot generated: 15 rows
+[2026-02-14 00:18:37,538] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:37,540] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:37,540] Paper cycle: 2 new trades opened
+[2026-02-14 00:18:38,648] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:38,650] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:38,652] Paper cycle: 2 new trades opened
+[2026-02-14 00:18:38,688] Snapshot generated: 15 rows
+[2026-02-14 00:18:39,275] Snapshot generated: 15 rows
+[2026-02-14 00:18:39,283] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:18:40,846] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:40,848] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:40,850] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:40,853] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:40,854] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:40,854] Paper cycle: 5 new trades opened
+[2026-02-14 00:18:41,810] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:41,812] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:41,814] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:41,815] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:41,817] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:41,817] Paper cycle: 5 new trades opened
+[2026-02-14 00:18:42,580] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:18:42,994] Snapshot generated: 15 rows
+[2026-02-14 00:18:44,189] Snapshot generated: 15 rows
+[2026-02-14 00:18:44,198] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:44,200] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:44,202] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:44,203] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:44,205] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:44,206] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:44,207] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:44,207] Paper cycle: 7 new trades opened
+[2026-02-14 00:18:44,765] Snapshot generated: 15 rows
+[2026-02-14 00:18:45,150] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:45,153] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:45,154] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:45,156] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:45,157] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:45,158] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:45,159] Paper cycle: 6 new trades opened
+[2026-02-14 00:18:45,776] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:18:47,366] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:47,383] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:47,385] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:47,387] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:47,388] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:47,389] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:47,389] Paper cycle: 6 new trades opened
+[2026-02-14 00:18:48,352] Snapshot generated: 15 rows
+[2026-02-14 00:18:48,362] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:48,363] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:48,365] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:48,366] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:48,368] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:48,370] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:48,370] Paper cycle: 6 new trades opened
+[2026-02-14 00:18:49,093] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:18:49,567] Snapshot generated: 15 rows
+[2026-02-14 00:18:50,126] Snapshot generated: 15 rows
+[2026-02-14 00:18:50,762] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:50,763] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:50,765] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:50,766] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:50,769] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:50,769] Paper cycle: 5 new trades opened
+[2026-02-14 00:18:51,691] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:51,692] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:51,694] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:51,695] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:51,696] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:51,697] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:51,699] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:51,699] Paper cycle: 7 new trades opened
+[2026-02-14 00:18:52,332] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:18:53,900] Snapshot generated: 15 rows
+[2026-02-14 00:18:53,927] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:53,928] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:53,930] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:53,931] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:53,932] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:53,935] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:53,936] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:53,937] Paper cycle: 7 new trades opened
+[2026-02-14 00:18:54,925] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:54,927] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:54,928] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:54,930] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:54,931] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:54,932] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:54,936] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:54,936] Paper cycle: 7 new trades opened
+[2026-02-14 00:18:55,133] Snapshot generated: 15 rows
+[2026-02-14 00:18:55,699] Snapshot generated: 15 rows
+[2026-02-14 00:18:55,709] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:18:57,293] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:57,294] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:57,295] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:57,297] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:57,298] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:57,300] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:57,302] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:57,303] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:57,303] Paper cycle: 8 new trades opened
+[2026-02-14 00:18:58,561] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:58,562] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:58,564] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:58,565] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:58,567] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:58,569] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:58,570] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:58,571] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:58,572] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:18:58,572] Paper cycle: 9 new trades opened
+[2026-02-14 00:18:58,875] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:18:59,702] Snapshot generated: 15 rows
+[2026-02-14 00:19:00,688] Snapshot generated: 15 rows
+[2026-02-14 00:19:00,699] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:00,701] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:00,703] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:00,705] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:00,738] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:00,786] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:00,802] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:01,026] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:01,028] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:01,028] Paper cycle: 9 new trades opened
+[2026-02-14 00:19:01,118] Snapshot generated: 15 rows
+[2026-02-14 00:19:02,249] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:02,308] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:02,339] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:02,341] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:02,371] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:02,386] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:02,388] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:02,388] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:19:02,389] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:02,390] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:02,391] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:02,392] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:02,392] Paper cycle: 11 new trades opened
+[2026-02-14 00:19:04,410] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:04,412] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:04,413] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:04,415] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:04,418] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:04,419] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:04,421] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:04,422] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:04,423] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:04,423] Paper cycle: 9 new trades opened
+[2026-02-14 00:19:05,592] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:19:05,811] Snapshot generated: 15 rows
+[2026-02-14 00:19:05,825] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:05,826] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:05,827] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:05,828] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:05,830] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:05,831] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:05,832] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:05,833] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:05,836] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:05,836] Paper cycle: 9 new trades opened
+[2026-02-14 00:19:07,313] Snapshot generated: 15 rows
+[2026-02-14 00:19:07,335] Snapshot generated: 15 rows
+[2026-02-14 00:19:08,348] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:08,349] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:08,350] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:08,353] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:08,355] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:08,356] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:08,357] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:08,358] Paper cycle: 7 new trades opened
+[2026-02-14 00:19:09,406] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:09,485] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:09,581] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:09,630] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:09,662] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:09,663] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:09,665] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:09,665] Paper cycle: 7 new trades opened
+[2026-02-14 00:19:09,670] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:19:11,040] Snapshot generated: 15 rows
+[2026-02-14 00:19:11,785] Snapshot generated: 15 rows
+[2026-02-14 00:19:11,797] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:11,798] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:11,799] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:11,803] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:11,804] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:11,805] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:11,805] Paper cycle: 6 new trades opened
+[2026-02-14 00:19:13,095] Snapshot generated: 15 rows
+[2026-02-14 00:19:13,265] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:19:13,290] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:13,291] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:13,292] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:13,294] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:13,295] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:13,296] Paper cycle: 5 new trades opened
+[2026-02-14 00:19:15,138] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:15,139] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:15,141] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:15,142] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:15,144] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:15,144] Paper cycle: 5 new trades opened
+[2026-02-14 00:19:16,628] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:19:16,671] Snapshot generated: 15 rows
+[2026-02-14 00:19:16,683] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:16,685] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:16,688] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:16,689] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:16,691] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:16,692] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:16,693] Paper cycle: 6 new trades opened
+[2026-02-14 00:19:17,439] Snapshot generated: 15 rows
+[2026-02-14 00:19:18,629] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:18,648] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:18,650] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:18,652] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:18,654] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:18,655] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:18,655] Paper cycle: 6 new trades opened
+[2026-02-14 00:19:18,839] Snapshot generated: 15 rows
+[2026-02-14 00:19:19,852] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:19:20,047] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:20,048] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:20,049] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:20,052] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:20,053] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:20,055] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:20,055] Paper cycle: 6 new trades opened
+[2026-02-14 00:19:22,159] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:22,160] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:22,162] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:22,164] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:22,166] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:22,167] Paper cycle: 5 new trades opened
+[2026-02-14 00:19:22,445] Snapshot generated: 15 rows
+[2026-02-14 00:19:23,594] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:19:23,596] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:23,597] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:23,598] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:23,600] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:23,601] Paper cycle: 4 new trades opened
+[2026-02-14 00:19:23,613] Snapshot generated: 15 rows
+[2026-02-14 00:19:24,915] Snapshot generated: 15 rows
+[2026-02-14 00:19:25,845] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:25,847] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:25,848] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:25,850] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:25,852] Paper cycle: 4 new trades opened
+[2026-02-14 00:19:26,871] ======================================================================
+[2026-02-14 00:19:26,871] CRYPTO TRADING APP - Delta India Exchange
+[2026-02-14 00:19:26,871] Market Open: 00:00 UTC (5:30 AM IST) | 24/7 Trading
+[2026-02-14 00:19:26,871] ======================================================================
+[2026-02-14 00:19:26,871] ============================================================
+[2026-02-14 00:19:26,871] CRYPTO APP - Delta India Exchange
+[2026-02-14 00:19:26,872] ============================================================
+[2026-02-14 00:19:26,872] Credentials loaded successfully
+[2026-02-14 00:19:26,873] Using SIMULATION MODE for crypto trading...
+[2026-02-14 00:19:26,873] Loaded 15 symbols for simulation
+[2026-02-14 00:19:26,880] SIMULATION: Generating first 5m closes for all symbols...
+[2026-02-14 00:19:27,128] SIMULATION: Generated first 5m closes for 15 symbols
+[2026-02-14 00:19:27,129] Starting WebSocket for real-time data...
+[2026-02-14 00:19:27,212] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:19:27,299] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:27,300] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:27,302] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:27,321] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:27,323] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:27,324] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:27,325] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:27,327] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:27,328] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:27,329] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:27,330] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:27,331] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:27,333] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:27,333] Paper cycle: 13 new trades opened
+[2026-02-14 00:19:27,908] Websocket connected
+[2026-02-14 00:19:27,908] WebSocket Connected - Subscribing to channels...
+[2026-02-14 00:19:28,554] Snapshot generated: 15 rows
+[2026-02-14 00:19:29,170] Snapshot generated: 15 rows
+[2026-02-14 00:19:29,181] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:29,182] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:29,185] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:29,186] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:29,187] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:29,188] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:29,189] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:29,190] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:29,191] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:29,192] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:29,194] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:29,195] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:29,196] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:29,197] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:29,197] Paper cycle: 14 new trades opened
+[2026-02-14 00:19:30,130] Fetching first closes (00:00 UTC / 5:30 AM IST)...
+[2026-02-14 00:19:30,131] Fetching crypto first closes (00:00 UTC / 5:30 AM IST)...
+[2026-02-14 00:19:30,131] Crypto session: 2026-02-13 | Market open (UTC): 1770921000 | Now: 1771008570
+[2026-02-14 00:19:30,502] HTTP Error 404: Not Found
+[2026-02-14 00:19:30,713] Snapshot generated: 15 rows
+[2026-02-14 00:19:30,725] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:19:30,729] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:30,730] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:30,731] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:30,732] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:30,734] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:30,736] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:30,737] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:30,738] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:30,739] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:30,741] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:30,742] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:30,742] Paper cycle: 11 new trades opened
+[2026-02-14 00:19:30,808] HTTP Error 404: Not Found
+[2026-02-14 00:19:31,122] HTTP Error 404: Not Found
+[2026-02-14 00:19:31,413] HTTP Error 404: Not Found
+[2026-02-14 00:19:31,803] HTTP Error 404: Not Found
+[2026-02-14 00:19:32,102] HTTP Error 404: Not Found
+[2026-02-14 00:19:32,387] HTTP Error 404: Not Found
+[2026-02-14 00:19:32,509] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:32,510] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:32,511] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:32,513] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:32,514] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:32,515] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:32,517] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:32,519] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:32,520] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:32,521] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:32,521] Paper cycle: 10 new trades opened
+[2026-02-14 00:19:32,748] HTTP Error 404: Not Found
+[2026-02-14 00:19:33,056] HTTP Error 404: Not Found
+[2026-02-14 00:19:33,386] HTTP Error 404: Not Found
+[2026-02-14 00:19:33,763] HTTP Error 404: Not Found
+[2026-02-14 00:19:33,900] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:19:34,072] HTTP Error 404: Not Found
+[2026-02-14 00:19:34,111] Snapshot generated: 15 rows
+[2026-02-14 00:19:34,123] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:34,124] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:34,125] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:34,126] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:34,128] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:34,129] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:34,130] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:34,131] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:34,132] Paper cycle: 8 new trades opened
+[2026-02-14 00:19:34,421] HTTP Error 404: Not Found
+[2026-02-14 00:19:34,720] Snapshot generated: 15 rows
+[2026-02-14 00:19:34,732] HTTP Error 404: Not Found
+[2026-02-14 00:19:35,043] HTTP Error 404: Not Found
+[2026-02-14 00:19:35,094] Main loop started - Running 24/7
+[2026-02-14 00:19:35,095] SIMULATION MODE: Prices are simulated for testing
+[2026-02-14 00:19:35,733] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:35,736] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:35,737] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:35,739] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:35,740] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:35,741] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:35,742] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:35,742] Paper cycle: 7 new trades opened
+[2026-02-14 00:19:36,110] Snapshot generated: 15 rows
+[2026-02-14 00:19:37,336] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:37,338] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:37,369] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:37,462] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:37,479] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:37,480] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:37,481] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:37,481] Paper cycle: 7 new trades opened
+[2026-02-14 00:19:37,483] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:19:38,293] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:38,295] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:38,296] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:38,297] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:38,299] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:38,300] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:38,302] Paper cycle: 6 new trades opened
+[2026-02-14 00:19:39,066] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:39,069] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:39,071] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:39,072] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:39,074] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:39,075] Paper cycle: 5 new trades opened
+[2026-02-14 00:19:39,754] Snapshot generated: 15 rows
+[2026-02-14 00:19:40,136] Snapshot generated: 15 rows
+[2026-02-14 00:19:40,516] Snapshot generated: 15 rows
+[2026-02-14 00:19:40,651] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:19:40,935] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:40,936] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:40,938] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:40,939] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:40,940] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:40,942] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:40,942] Paper cycle: 6 new trades opened
+[2026-02-14 00:19:41,809] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:41,870] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:41,871] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:41,873] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:41,874] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:41,875] Paper cycle: 5 new trades opened
+[2026-02-14 00:19:41,901] Snapshot generated: 15 rows
+[2026-02-14 00:19:42,343] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:42,344] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:42,346] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:42,347] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:42,348] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:42,351] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:42,351] Paper cycle: 6 new trades opened
+[2026-02-14 00:19:44,195] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:44,256] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:44,258] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:44,260] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:44,261] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:44,262] Paper cycle: 5 new trades opened
+[2026-02-14 00:19:44,282] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:19:45,181] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:45,186] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:45,468] Snapshot generated: 15 rows
+[2026-02-14 00:19:45,779] Snapshot generated: 15 rows
+[2026-02-14 00:19:45,792] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:45,794] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:45,795] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:45,796] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:45,797] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:45,798] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:45,799] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:45,800] Paper cycle: 7 new trades opened
+[2026-02-14 00:19:47,671] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:47,672] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:47,673] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:47,675] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:47,676] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:47,677] Paper cycle: 5 new trades opened
+[2026-02-14 00:19:47,678] Snapshot generated: 15 rows
+[2026-02-14 00:19:47,693] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:19:48,966] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:48,969] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:48,970] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:48,972] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:48,973] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:48,974] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:48,975] Paper cycle: 6 new trades opened
+[2026-02-14 00:19:51,074] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:19:51,109] Snapshot generated: 15 rows
+[2026-02-14 00:19:51,125] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:51,126] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:51,127] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:51,128] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:51,130] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:51,131] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:51,132] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:51,133] Paper cycle: 7 new trades opened
+[2026-02-14 00:19:51,187] Snapshot generated: 15 rows
+[2026-02-14 00:19:52,547] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:52,548] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:52,550] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:52,552] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:52,553] Paper cycle: 4 new trades opened
+[2026-02-14 00:19:53,288] Snapshot generated: 15 rows
+[2026-02-14 00:19:54,301] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:19:54,813] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:54,814] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:54,829] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:54,830] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:54,831] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:54,832] Paper cycle: 5 new trades opened
+[2026-02-14 00:19:55,837] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:55,838] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:55,840] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:55,841] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:55,842] Paper cycle: 4 new trades opened
+[2026-02-14 00:19:57,431] Snapshot generated: 15 rows
+[2026-02-14 00:19:57,446] Snapshot generated: 15 rows
+[2026-02-14 00:19:57,658] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:19:58,525] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:58,527] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:58,529] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:58,530] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:58,531] Paper cycle: 4 new trades opened
+[2026-02-14 00:19:58,700] Snapshot generated: 15 rows
+[2026-02-14 00:19:59,791] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:59,822] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:59,824] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:59,885] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:19:59,886] Paper cycle: 4 new trades opened
+[2026-02-14 00:20:01,037] Paper cycle error: name 'first_close' is not defined
+[2026-02-14 00:20:02,372] Snapshot generated: 15 rows
+[2026-02-14 00:20:02,374] Snapshot generated: 15 rows
+[2026-02-14 00:20:02,391] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:20:02,430] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:20:02,462] Error opening paper trade: table paper_trades has no column named sl_price
+[2026-02-14 00:20:02,463] Paper cycle: 3 new trades opened
+[2026-02-14 00:20:16,998] ======================================================================
+[2026-02-14 00:20:16,999] CRYPTO TRADING APP - Delta India Exchange
+[2026-02-14 00:20:16,999] Market Open: 00:00 UTC (5:30 AM IST) | 24/7 Trading
+[2026-02-14 00:20:16,999] ======================================================================
+[2026-02-14 00:20:16,999] ============================================================
+[2026-02-14 00:20:16,999] CRYPTO APP - Delta India Exchange
+[2026-02-14 00:20:16,999] ============================================================
+[2026-02-14 00:20:17,000] Credentials loaded successfully
+[2026-02-14 00:20:17,047] Using SIMULATION MODE for crypto trading...
+[2026-02-14 00:20:17,048] Loaded 15 symbols for simulation
+[2026-02-14 00:20:17,055] SIMULATION: Generating first 5m closes for all symbols...
+[2026-02-14 00:20:17,290] SIMULATION: Generated first 5m closes for 15 symbols
+[2026-02-14 00:20:17,290] Starting WebSocket for real-time data...
+[2026-02-14 00:20:18,066] Websocket connected
+[2026-02-14 00:20:18,067] WebSocket Connected - Subscribing to channels...
+[2026-02-14 00:20:20,291] Fetching first closes (00:00 UTC / 5:30 AM IST)...
+[2026-02-14 00:20:20,291] Fetching crypto first closes (00:00 UTC / 5:30 AM IST)...
+[2026-02-14 00:20:20,291] Crypto session: 2026-02-13 | Market open (UTC): 1770921000 | Now: 1771008620
+[2026-02-14 00:20:20,612] HTTP Error 404: Not Found
+[2026-02-14 00:20:20,910] HTTP Error 404: Not Found
+[2026-02-14 00:20:21,208] HTTP Error 404: Not Found
+[2026-02-14 00:20:21,507] HTTP Error 404: Not Found
+[2026-02-14 00:20:21,834] HTTP Error 404: Not Found
+[2026-02-14 00:20:22,176] HTTP Error 404: Not Found
+[2026-02-14 00:20:22,506] HTTP Error 404: Not Found
+[2026-02-14 00:20:22,847] HTTP Error 404: Not Found
+[2026-02-14 00:20:23,176] HTTP Error 404: Not Found
+[2026-02-14 00:20:23,562] HTTP Error 404: Not Found
+[2026-02-14 00:20:23,899] HTTP Error 404: Not Found
+[2026-02-14 00:20:24,248] HTTP Error 404: Not Found
+[2026-02-14 00:20:24,603] HTTP Error 404: Not Found
+[2026-02-14 00:20:24,941] HTTP Error 404: Not Found
+[2026-02-14 00:20:25,312] HTTP Error 404: Not Found
+[2026-02-14 00:20:25,363] Main loop started - Running 24/7
+[2026-02-14 00:20:25,364] SIMULATION MODE: Prices are simulated for testing
+[2026-02-14 00:20:51,693] ======================================================================
+[2026-02-14 00:20:51,693] CRYPTO TRADING APP - Delta India Exchange
+[2026-02-14 00:20:51,693] Market Open: 00:00 UTC (5:30 AM IST) | 24/7 Trading
+[2026-02-14 00:20:51,693] ======================================================================
+[2026-02-14 00:20:51,693] ============================================================
+[2026-02-14 00:20:51,693] CRYPTO APP - Delta India Exchange
+[2026-02-14 00:20:51,693] ============================================================
+[2026-02-14 00:20:51,694] Credentials loaded successfully
+[2026-02-14 00:20:51,708] Using SIMULATION MODE for crypto trading...
+[2026-02-14 00:20:51,708] Loaded 15 symbols for simulation
+[2026-02-14 00:20:51,716] SIMULATION: Generating first 5m closes for all symbols...
+[2026-02-14 00:20:51,950] SIMULATION: Generated first 5m closes for 15 symbols
+[2026-02-14 00:20:51,950] Starting WebSocket for real-time data...
+[2026-02-14 00:20:52,718] Websocket connected
+[2026-02-14 00:20:52,718] WebSocket Connected - Subscribing to channels...
+[2026-02-14 00:20:54,952] Fetching first closes (00:00 UTC / 5:30 AM IST)...
+[2026-02-14 00:20:54,952] Fetching crypto first closes (00:00 UTC / 5:30 AM IST)...
+[2026-02-14 00:20:54,952] Crypto session: 2026-02-13 | Market open (UTC): 1770921000 | Now: 1771008654
+[2026-02-14 00:20:55,292] HTTP Error 404: Not Found
+[2026-02-14 00:20:55,658] HTTP Error 404: Not Found
+[2026-02-14 00:20:55,987] HTTP Error 404: Not Found
+[2026-02-14 00:20:56,324] HTTP Error 404: Not Found
+[2026-02-14 00:20:56,701] HTTP Error 404: Not Found
+[2026-02-14 00:20:57,027] HTTP Error 404: Not Found
+[2026-02-14 00:20:57,342] HTTP Error 404: Not Found
+[2026-02-14 00:20:57,690] HTTP Error 404: Not Found
+[2026-02-14 00:20:57,998] HTTP Error 404: Not Found
+[2026-02-14 00:20:58,327] HTTP Error 404: Not Found
+[2026-02-14 00:20:58,700] HTTP Error 404: Not Found
+[2026-02-14 00:20:59,001] HTTP Error 404: Not Found
+[2026-02-14 00:20:59,302] HTTP Error 404: Not Found
+[2026-02-14 00:20:59,618] HTTP Error 404: Not Found
+[2026-02-14 00:20:59,947] HTTP Error 404: Not Found
+[2026-02-14 00:20:59,998] Main loop started - Running 24/7
+[2026-02-14 00:20:59,998] SIMULATION MODE: Prices are simulated for testing
+[2026-02-14 00:21:02,145] [TARGET HIT] BTCUSDT @ 67954.76 | PnL: 1592.06 (2.40%)
+[2026-02-14 00:21:02,152] [STOP LOSS] ETHUSDT @ 3449.71 | PnL: -52.85 (-1.51%)
+[2026-02-14 00:21:03,163] [PAPER OPEN] BTCUSDT @ 67954.76 | SL: 67677.53 | TP: 68563.37 | Zone: fib_major
+[2026-02-14 00:21:03,241] [PAPER OPEN] ETHUSDT @ 3449.71 | SL: 3420.35 | TP: 3456.16 | Zone: rejection_major
+[2026-02-14 00:21:03,262] [PAPER OPEN] SOLUSDT @ 146.61 | SL: 146.43 | TP: 147.96 | Zone: midpoint
+[2026-02-14 00:21:03,275] [PAPER OPEN] DOTUSDT @ 7.22 | SL: 7.20 | TP: 7.28 | Zone: 
+[2026-02-14 00:21:03,286] [PAPER OPEN] MATICUSDT @ 0.66 | SL: 0.65 | TP: 0.66 | Zone: start
+[2026-02-14 00:21:03,296] [PAPER OPEN] UNIUSDT @ 9.83 | SL: 9.78 | TP: 9.94 | Zone: trend_fast
+[2026-02-14 00:21:03,305] [PAPER OPEN] LTCUSDT @ 73.21 | SL: 72.67 | TP: 73.43 | Zone: support_time
+[2026-02-14 00:21:03,313] [PAPER OPEN] BCHUSDT @ 324.39 | SL: 323.83 | TP: 327.22 | Zone: 
+[2026-02-14 00:21:03,322] [PAPER OPEN] XRPUSDT @ 0.57 | SL: 0.57 | TP: 0.58 | Zone: midpoint
+[2026-02-14 00:21:03,331] [PAPER OPEN] AVAXUSDT @ 35.47 | SL: 35.39 | TP: 35.76 | Zone: 
+[2026-02-14 00:21:03,340] [PAPER OPEN] ATOMUSDT @ 8.82 | SL: 8.78 | TP: 8.92 | Zone: trend_fast
+[2026-02-14 00:21:03,348] [PAPER OPEN] ETCUSDT @ 24.46 | SL: 24.29 | TP: 24.54 | Zone: rejection
+[2026-02-14 00:21:03,348] Paper cycle: 12 new trades opened
+[2026-02-14 00:21:04,493] [TARGET HIT] ETHUSDT @ 3462.10 | PnL: 12.39 (0.36%)
+[2026-02-14 00:21:04,499] [TARGET HIT] MATICUSDT @ 0.66 | PnL: 0.00 (0.28%)
+[2026-02-14 00:21:04,507] [STOP LOSS] BCHUSDT @ 322.79 | PnL: -1.60 (-0.49%)
+[2026-02-14 00:21:05,549] Snapshot generated: 15 rows
+[2026-02-14 00:21:06,695] [PAPER OPEN] ETHUSDT @ 3452.31 | SL: 3420.35 | TP: 3456.16 | Zone: floor
+[2026-02-14 00:21:06,706] [PAPER OPEN] ADAUSDT @ 0.45 | SL: 0.45 | TP: 0.46 | Zone: rejection
+[2026-02-14 00:21:06,716] [PAPER OPEN] MATICUSDT @ 0.66 | SL: 0.65 | TP: 0.66 | Zone: start
+[2026-02-14 00:21:06,722] Paper cycle: 3 new trades opened
+[2026-02-14 00:21:06,729] [STOP LOSS] DOTUSDT @ 7.19 | PnL: -0.03 (-0.38%)
+[2026-02-14 00:21:06,735] [STOP LOSS] ATOMUSDT @ 8.77 | PnL: -0.05 (-0.52%)
+[2026-02-14 00:21:08,910] [TARGET HIT] LTCUSDT @ 73.54 | PnL: 0.34 (0.46%)
+[2026-02-14 00:21:08,917] [TARGET HIT] ETHUSDT @ 3464.04 | PnL: 11.73 (0.34%)
+[2026-02-14 00:21:09,936] [PAPER OPEN] ETHUSDT @ 3464.04 | SL: 3420.35 | TP: 3456.16 | Zone: retracement_1
+[2026-02-14 00:21:09,948] [PAPER OPEN] DOTUSDT @ 7.21 | SL: 7.20 | TP: 7.28 | Zone: support_time
+[2026-02-14 00:21:09,959] [PAPER OPEN] LTCUSDT @ 73.54 | SL: 72.67 | TP: 73.43 | Zone: confirmation
+[2026-02-14 00:21:09,969] [PAPER OPEN] DOGEUSDT @ 0.08 | SL: 0.08 | TP: 0.08 | Zone: 
+[2026-02-14 00:21:09,972] Paper cycle: 4 new trades opened
+[2026-02-14 00:21:11,145] Snapshot generated: 15 rows
+[2026-02-14 00:21:11,153] [STOP LOSS] ADAUSDT @ 0.45 | PnL: -0.00 (-0.46%)
+[2026-02-14 00:21:11,159] [TARGET HIT] MATICUSDT @ 0.66 | PnL: 0.00 (0.28%)
+[2026-02-14 00:21:11,165] [TARGET HIT] ETHUSDT @ 3456.27 | PnL: -7.78 (-0.22%)
+[2026-02-14 00:21:11,172] [TARGET HIT] LTCUSDT @ 73.59 | PnL: 0.05 (0.06%)
+[2026-02-14 00:21:13,488] [PAPER OPEN] ETHUSDT @ 3453.81 | SL: 3420.35 | TP: 3456.16 | Zone: confirmation
+[2026-02-14 00:21:13,498] [PAPER OPEN] MATICUSDT @ 0.66 | SL: 0.65 | TP: 0.66 | Zone: fib_major
+[2026-02-14 00:21:13,508] [PAPER OPEN] LTCUSDT @ 73.42 | SL: 72.67 | TP: 73.43 | Zone: support_test
+[2026-02-14 00:21:13,512] Paper cycle: 3 new trades opened
+[2026-02-14 00:21:13,519] [STOP LOSS] ETCUSDT @ 24.23 | PnL: -0.23 (-0.94%)
+[2026-02-14 00:21:15,676] [STOP LOSS] SOLUSDT @ 146.31 | PnL: -0.30 (-0.21%)
+[2026-02-14 00:21:15,682] [TARGET HIT] ETHUSDT @ 3469.25 | PnL: 15.45 (0.45%)
+[2026-02-14 00:21:16,726] Snapshot generated: 15 rows
+[2026-02-14 00:21:16,735] [PAPER OPEN] ETHUSDT @ 3469.25 | SL: 3420.35 | TP: 3474.07 | Zone: decision
+[2026-02-14 00:21:16,742] Paper cycle: 1 new trades opened
+[2026-02-14 00:21:17,894] [STOP LOSS] MATICUSDT @ 0.65 | PnL: -0.01 (-0.79%)
+[2026-02-14 00:21:17,900] [TARGET HIT] ETHUSDT @ 3476.94 | PnL: 7.69 (0.22%)
+[2026-02-14 00:21:20,067] [PAPER OPEN] ETHUSDT @ 3472.72 | SL: 3420.35 | TP: 3456.16 | Zone: floor
+[2026-02-14 00:21:20,080] [PAPER OPEN] ETCUSDT @ 24.37 | SL: 24.29 | TP: 24.54 | Zone: 
+[2026-02-14 00:21:20,080] Paper cycle: 2 new trades opened
