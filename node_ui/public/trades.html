@@ -1,0 +1,279 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Superalgo Trade Monitor</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #111827;
+      --line: #243244;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --ok: #22c55e;
+      --down: #ef4444;
+      --accent: #38bdf8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(1200px 600px at 10% -20%, #23324b 0%, var(--bg) 55%);
+      color: var(--text);
+      font: 14px/1.4 "Segoe UI", system-ui, sans-serif;
+    }
+    .wrap { max-width: 2200px; margin: 0 auto; padding: 12px; }
+    .top {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(170px, 1fr));
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .card {
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, #111827, #0e1626);
+      border-radius: 10px;
+      padding: 10px;
+    }
+    .k { color: var(--muted); font-size: 12px; }
+    .v { font-size: 16px; font-weight: 600; margin-top: 2px; }
+    .ctrl {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      border: 1px solid var(--line);
+      background: var(--card);
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    input, button, a.nav {
+      border: 1px solid var(--line);
+      background: #0b1220;
+      color: var(--text);
+      border-radius: 8px;
+      padding: 7px 10px;
+      min-height: 34px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+    }
+    button { cursor: pointer; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--line);
+      background: #0b1220;
+    }
+    th, td {
+      border-bottom: 1px solid #1f2937;
+      padding: 7px;
+      text-align: left;
+      white-space: nowrap;
+      font-size: 12px;
+    }
+    th {
+      position: sticky;
+      top: 0;
+      background: #111827;
+      color: #d1d5db;
+      z-index: 2;
+    }
+    .grid2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .table-wrap {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      overflow: auto;
+      max-height: calc(100vh - 320px);
+      background: #0b1220;
+    }
+    .pnl-pos { color: var(--ok); font-weight: 700; }
+    .pnl-neg { color: var(--down); font-weight: 700; }
+    .meta { color: var(--muted); margin-left: auto; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top" id="stats"></div>
+
+    <div class="ctrl">
+      <input id="search" type="text" placeholder="Search symbol or tsym" />
+      <label>Open limit <input id="openLimit" type="number" value="500" min="1" max="5000" style="width:90px"/></label>
+      <label>Closed limit <input id="closedLimit" type="number" value="1000" min="1" max="10000" style="width:90px"/></label>
+      <label>Refresh(ms) <input id="refreshMs" type="number" value="2000" min="500" max="10000" style="width:110px"/></label>
+      <button id="apply">Apply</button>
+      <a class="nav" href="/" target="_blank">Open Level Monitor</a>
+      <span class="meta" id="meta">-</span>
+    </div>
+
+    <div class="grid2">
+      <div>
+        <h3>Open Trades</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Symbol</th>
+                <th>Entry</th>
+                <th>Last</th>
+                <th>PnL</th>
+                <th>PnL%</th>
+                <th>Runup</th>
+                <th>Drawdown</th>
+                <th>Reason</th>
+                <th>Updated</th>
+              </tr>
+            </thead>
+            <tbody id="openRows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div>
+        <h3>Recent Closed Trades</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Symbol</th>
+                <th>Entry</th>
+                <th>Exit</th>
+                <th>PnL</th>
+                <th>PnL%</th>
+                <th>Reason</th>
+                <th>Exit Time</th>
+              </tr>
+            </thead>
+            <tbody id="closedRows"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const statsEl = document.getElementById('stats');
+    const openRowsEl = document.getElementById('openRows');
+    const closedRowsEl = document.getElementById('closedRows');
+    const metaEl = document.getElementById('meta');
+
+    const searchEl = document.getElementById('search');
+    const openLimitEl = document.getElementById('openLimit');
+    const closedLimitEl = document.getElementById('closedLimit');
+    const refreshMsEl = document.getElementById('refreshMs');
+    const applyEl = document.getElementById('apply');
+
+    let timer = null;
+
+    function f2(v) {
+      if (v === null || v === undefined || v === '') return '-';
+      const n = Number(v);
+      return Number.isFinite(n) ? n.toFixed(2) : String(v);
+    }
+
+    function safe(obj, path, d = '-') {
+      let cur = obj;
+      for (const p of path) {
+        if (!cur || typeof cur !== 'object' || !(p in cur)) return d;
+        cur = cur[p];
+      }
+      return cur ?? d;
+    }
+
+    function pnlClass(v) {
+      const n = Number(v || 0);
+      if (n > 0) return 'pnl-pos';
+      if (n < 0) return 'pnl-neg';
+      return '';
+    }
+
+    function statCards(data) {
+      const s = data.summary || {};
+      const st = data.status || {};
+      const pd = safe(st, ['past_data_download'], {});
+      const ws = safe(st, ['websocket'], {});
+      const login = safe(st, ['login'], {});
+
+      const cards = [
+        ['Trade Mode', `${safe(s, ['trade_mode'], '-')} / ${safe(s, ['engine_state'], '-')}`],
+        ['Open Trades', safe(s, ['open_trades'], 0)],
+        ['Closed Trades', safe(s, ['closed_trades'], 0)],
+        ['Win Rate %', f2(safe(s, ['win_rate'], 0))],
+        ['Realized PnL', f2(safe(s, ['realized_pnl'], 0))],
+        ['Open PnL', f2(safe(s, ['open_pnl'], 0))],
+        ['Gross PnL', f2(safe(s, ['gross_pnl'], 0))],
+        ['Drawdown', f2(safe(s, ['max_drawdown'], 0))],
+        ['Login', login.ok ? 'OK' : 'NO'],
+        ['WebSocket', ws.open ? 'OPEN' : 'DOWN'],
+        ['Backfill %', f2(safe(pd, ['progress_pct'], 0))],
+        ['Backfill Rows', safe(pd, ['history_rows'], 0)],
+      ];
+
+      statsEl.innerHTML = cards.map(([k, v]) => `
+        <div class="card"><div class="k">${k}</div><div class="v">${v}</div></div>
+      `).join('');
+    }
+
+    function renderOpen(rows) {
+      openRowsEl.innerHTML = (rows || []).map(r => `
+        <tr>
+          <td>${r.symbol ?? ''}</td>
+          <td>${f2(r.entry_ltp)}</td>
+          <td>${f2(r.last_ltp)}</td>
+          <td class="${pnlClass(r.pnl)}">${f2(r.pnl)}</td>
+          <td class="${pnlClass(r.pnl_pct)}">${f2(r.pnl_pct)}</td>
+          <td>${f2(r.runup)}</td>
+          <td>${f2(r.drawdown)}</td>
+          <td>${r.reason ?? '-'}</td>
+          <td>${r.updated_at ?? '-'}</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderClosed(rows) {
+      closedRowsEl.innerHTML = (rows || []).map(r => `
+        <tr>
+          <td>${r.symbol ?? ''}</td>
+          <td>${f2(r.entry_ltp)}</td>
+          <td>${f2(r.exit_ltp)}</td>
+          <td class="${pnlClass(r.pnl)}">${f2(r.pnl)}</td>
+          <td class="${pnlClass(r.pnl_pct)}">${f2(r.pnl_pct)}</td>
+          <td>${r.reason ?? '-'}</td>
+          <td>${r.exit_ts ?? '-'}</td>
+        </tr>
+      `).join('');
+    }
+
+    async function refresh() {
+      const q = encodeURIComponent(searchEl.value || '');
+      const openLimit = Math.max(1, Math.min(5000, Number(openLimitEl.value || 500)));
+      const closedLimit = Math.max(1, Math.min(10000, Number(closedLimitEl.value || 1000)));
+      const t0 = performance.now();
+
+      const res = await fetch(`/api/trades?q=${q}&open_limit=${openLimit}&closed_limit=${closedLimit}`);
+      const data = await res.json();
+
+      statCards(data);
+      renderOpen(data.open_trades || []);
+      renderClosed(data.recent_closed || []);
+
+      metaEl.textContent = `open:${(data.open_trades || []).length} | closed:${(data.recent_closed || []).length} | load:${(performance.now()-t0).toFixed(0)}ms`;
+    }
+
+    function restartLoop() {
+      if (timer) clearInterval(timer);
+      const ms = Math.max(500, Math.min(10000, Number(refreshMsEl.value || 2000)));
+      refresh();
+      timer = setInterval(refresh, ms);
+    }
+
+    applyEl.addEventListener('click', restartLoop);
+    restartLoop();
+  </script>
+</body>
+</html>

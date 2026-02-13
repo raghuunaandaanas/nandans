@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>History Trade Dashboard</title>
+  <title>Superalgo Live Dashboard</title>
   <style>
     :root {
       --bg: #0f172a;
@@ -13,6 +13,7 @@
       --muted: #9ca3af;
       --ok: #22c55e;
       --warn: #f59e0b;
+      --down: #ef4444;
       --accent: #38bdf8;
     }
     * { box-sizing: border-box; }
@@ -22,10 +23,10 @@
       color: var(--text);
       font: 14px/1.4 "Segoe UI", system-ui, sans-serif;
     }
-    .wrap { max-width: 1920px; margin: 0 auto; padding: 12px; }
+    .wrap { max-width: 2200px; margin: 0 auto; padding: 12px; }
     .top {
       display: grid;
-      grid-template-columns: repeat(5, minmax(180px, 1fr));
+      grid-template-columns: repeat(6, minmax(170px, 1fr));
       gap: 10px;
       margin-bottom: 10px;
     }
@@ -36,7 +37,7 @@
       padding: 10px;
     }
     .k { color: var(--muted); font-size: 12px; }
-    .v { font-size: 18px; font-weight: 600; margin-top: 2px; }
+    .v { font-size: 16px; font-weight: 600; margin-top: 2px; }
     .ctrl {
       display: flex;
       gap: 8px;
@@ -48,13 +49,16 @@
       margin-bottom: 8px;
       flex-wrap: wrap;
     }
-    input, select, button {
+    input, select, button, a.nav {
       border: 1px solid var(--line);
       background: #0b1220;
       color: var(--text);
       border-radius: 8px;
       padding: 7px 10px;
       min-height: 34px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
     }
     button { cursor: pointer; }
     input[type="text"] { min-width: 220px; }
@@ -69,7 +73,7 @@
       padding: 7px;
       text-align: left;
       white-space: nowrap;
-      font-size: 13px;
+      font-size: 12px;
     }
     th {
       position: sticky;
@@ -80,11 +84,17 @@
     }
     .ok { color: var(--ok); }
     .pending { color: var(--warn); }
+    .trend-up { color: var(--ok); font-weight: 700; }
+    .trend-down { color: var(--down); font-weight: 700; }
+    .trend-side { color: var(--warn); font-weight: 700; }
+    .near-up { color: #93c5fd; }
+    .near-down { color: #fca5a5; }
+    .jackpot { color: #fde047; font-weight: 700; }
     .table-wrap {
       border: 1px solid var(--line);
       border-radius: 10px;
       overflow: auto;
-      max-height: calc(100vh - 238px);
+      max-height: calc(100vh - 270px);
       background: #0b1220;
     }
     .meta { color: var(--muted); margin-left: auto; }
@@ -123,10 +133,11 @@
 
       <input id="search" type="text" placeholder="Search symbol or tsym" />
       <label><input id="completeOnly" type="checkbox" /> Complete only</label>
-      <label><input id="triggerOnly" type="checkbox" checked /> Only BU1-BU5</label>
+      <label><input id="triggerOnly" type="checkbox" checked /> Only trend ranges</label>
       <label>Limit <input id="limit" type="number" value="5000" min="1" max="50000" style="width:95px"/></label>
       <label>Refresh(ms) <input id="refreshMs" type="number" value="2000" min="500" max="10000" style="width:110px"/></label>
       <button id="apply">Apply</button>
+      <a class="nav" href="/trades.html" target="_blank">Open Trade Monitor</a>
       <span class="meta" id="meta">-</span>
     </div>
 
@@ -138,8 +149,17 @@
             <th>TSym</th>
             <th>LTP</th>
             <th>Volume</th>
+            <th>Trend</th>
+            <th>Near</th>
+            <th>Confirm</th>
+            <th>Jackpot</th>
             <th>Close(TF)</th>
             <th>Points</th>
+            <th>BE1</th>
+            <th>BE2</th>
+            <th>BE3</th>
+            <th>BE4</th>
+            <th>BE5</th>
             <th>BU1</th>
             <th>BU2</th>
             <th>BU3</th>
@@ -170,6 +190,8 @@
     const applyEl = document.getElementById('apply');
 
     let timer = null;
+    const rowOrder = new Map();
+    let rowSeq = 0;
 
     function f2(v) {
       if (v === null || v === undefined || v === '') return '-';
@@ -177,41 +199,91 @@
       return Number.isFinite(n) ? n.toFixed(2) : String(v);
     }
 
-    function statCards(stats, extra) {
+    function safe(obj, path, d = '-') {
+      let cur = obj;
+      for (const p of path) {
+        if (!cur || typeof cur !== 'object' || !(p in cur)) return d;
+        cur = cur[p];
+      }
+      return cur ?? d;
+    }
+
+    function statCards(data) {
+      const s = data.status || {};
+      const t = s.trade || {};
+      const h = s.past_data_download || {};
+      const ws = s.websocket || {};
+      const login = s.login || {};
+      const stg = s.storage || {};
+      const hs = s.history_store || {};
+
       const cards = [
-        ['Total Symbols', stats.total_symbols],
-        ['Today Complete', stats.today_complete],
-        ['Today Pending', stats.today_pending],
-        ['History Pending Symbols', stats.history_pending_symbols],
-        ['Ticks File MB', stats.ticks_file_mb],
-        ['Trigger In-Range Seen', extra.trigger_in_range_seen],
-        ['Scan Rows', extra.scan_rows],
-        ['Displayed Rows', extra.displayed_rows],
-        ['Last Tick Write', stats.last_tick_write],
-        ['Snapshot Updated', extra.snapshot_updated_at],
+        ['Total Symbols', safe(data, ['stats', 'total_symbols'], 0)],
+        ['Today Complete', safe(data, ['stats', 'today_complete'], 0)],
+        ['Today Pending', safe(data, ['stats', 'today_pending'], 0)],
+        ['Backfill', `${safe(h, ['done_symbols'], 0)}/${safe(h, ['total_symbols'], 0)} (${f2(safe(h, ['progress_pct'], 0))}%)`],
+        ['Login', login.ok ? 'OK' : 'NO'],
+        ['WebSocket', ws.open ? 'OPEN' : 'DOWN'],
+        ['Ticks Stored', safe(hs, ['ticks_stored'], 0)],
+        ['Trade Engine', `${safe(t, ['mode'], '-')}/${safe(t, ['engine_state'], '-')}`],
+        ['Trades O/C', `${safe(t, ['open_trades'], 0)} / ${safe(t, ['closed_trades'], 0)}`],
+        ['Gross PnL', f2(safe(t, ['gross_pnl'], 0))],
+        ['Max Drawdown', f2(safe(t, ['max_drawdown'], 0))],
+        ['DB MB', f2(safe(stg, ['db_file_mb'], 0))],
       ];
+
       statsEl.innerHTML = cards.map(([k, v]) => `
-        <div class="card"><div class="k">${k}</div><div class="v">${v ?? '-'}</div></div>
+        <div class="card"><div class="k">${k}</div><div class="v">${v}</div></div>
       `).join('');
     }
 
+    function stableRows(rows) {
+      for (const r of rows) {
+        const key = String(r.symbol || '');
+        if (!rowOrder.has(key)) {
+          rowOrder.set(key, rowSeq);
+          rowSeq += 1;
+        }
+      }
+      return [...rows].sort((a, b) => {
+        const ka = rowOrder.get(String(a.symbol || '')) ?? 1e12;
+        const kb = rowOrder.get(String(b.symbol || '')) ?? 1e12;
+        if (ka !== kb) return ka - kb;
+        return String(a.symbol || '').localeCompare(String(b.symbol || ''));
+      });
+    }
+
     function renderRows(rows) {
-      rowsEl.innerHTML = rows.map(r => {
-        const ok = !!r.in_range;
+      const out = stableRows(rows || []);
+      rowsEl.innerHTML = out.map(r => {
+        const trend = String(r.trend || 'SIDEWAYS');
+        const trendClass = trend === 'UP' ? 'trend-up' : trend === 'DOWN' ? 'trend-down' : 'trend-side';
+        const near = String(r.near_name || '-');
+        const nearClass = near.startsWith('BU') ? 'near-up' : (near.startsWith('BE') ? 'near-down' : '');
+        const jackpot = !!r.jackpot_long || !!r.jackpot_short;
         return `
           <tr>
             <td>${r.symbol ?? ''}</td>
             <td>${r.tsym ?? ''}</td>
             <td>${f2(r.ltp)}</td>
             <td>${f2(r.volume)}</td>
+            <td class="${trendClass}">${trend}</td>
+            <td class="${nearClass}">${near} (${f2(r.near_diff)})</td>
+            <td>${r.confirmation ?? 0}</td>
+            <td class="${jackpot ? 'jackpot' : ''}">${jackpot ? 'JACKPOT' : '-'}</td>
             <td>${f2(r.close)}</td>
             <td>${f2(r.points)}</td>
+            <td>${f2(r.be1)}</td>
+            <td>${f2(r.be2)}</td>
+            <td>${f2(r.be3)}</td>
+            <td>${f2(r.be4)}</td>
+            <td>${f2(r.be5)}</td>
             <td>${f2(r.bu1)}</td>
             <td>${f2(r.bu2)}</td>
             <td>${f2(r.bu3)}</td>
             <td>${f2(r.bu4)}</td>
             <td>${f2(r.bu5)}</td>
-            <td class="${ok ? 'ok' : 'pending'}">${ok ? 'yes' : 'no'}</td>
+            <td class="${r.in_range ? 'ok' : 'pending'}">${r.in_range ? 'yes' : 'no'}</td>
             <td>${r.updated_at ?? '-'}</td>
           </tr>
         `;
@@ -230,17 +302,13 @@
       const res = await fetch(`/api/dashboard?q=${q}&complete=${complete}&trigger_only=${trigger}&tf=${tf}&factor=${factor}&limit=${limit}`);
       const data = await res.json();
 
-      statCards(data.stats || {}, {
-        trigger_in_range_seen: data.trigger_in_range_seen,
-        scan_rows: data.scan_rows,
-        displayed_rows: data.displayed_rows,
-        snapshot_updated_at: data.snapshot_updated_at,
-      });
+      statCards(data);
       renderRows(data.rows || []);
 
       const cfg = data.config || {};
       snapDayEl.textContent = `day:${data.snapshot_day || '-'} tf:${cfg.timeframe || '-'} factor:${cfg.factor || '-'}`;
-      metaEl.textContent = `shown:${data.displayed_rows} | source:${data.snapshot_rows} | load:${(performance.now()-t0).toFixed(0)}ms`;
+      const tradeState = safe(data, ['status', 'trade', 'engine_state'], '-');
+      metaEl.textContent = `shown:${data.displayed_rows} | source:${data.snapshot_rows} | trade:${tradeState} | load:${(performance.now()-t0).toFixed(0)}ms`;
     }
 
     function restartLoop() {
@@ -255,5 +323,3 @@
   </script>
 </body>
 </html>
-
-

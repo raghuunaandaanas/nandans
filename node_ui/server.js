@@ -31,6 +31,15 @@ const PAPER_TF = ['1m', '5m', '15m'].includes(process.env.PAPER_TF) ? process.en
 const PAPER_FACTOR = ['micro', 'mini', 'mega'].includes(process.env.PAPER_FACTOR) ? process.env.PAPER_FACTOR : 'micro';
 const PAPER_COOLDOWN_SEC = Number(process.env.PAPER_COOLDOWN_SEC || 30);
 
+const TRADE_MODE = ['paper', 'live'].includes(String(process.env.TRADE_MODE || 'paper').toLowerCase())
+  ? String(process.env.TRADE_MODE || 'paper').toLowerCase()
+  : 'paper';
+const ENABLE_LIVE_TRADING = process.env.ENABLE_LIVE_TRADING === '1';
+const TREND_ONLY = process.env.TREND_ONLY !== '0';
+const MIN_CONFIRMATION = Math.max(1, Number(process.env.MIN_CONFIRMATION || 2));
+const MIN_RR = Math.max(0.1, Number(process.env.MIN_RR || 1.2));
+const JACKPOT_ONLY = process.env.JACKPOT_ONLY === '1';
+
 let snapshotCache = { mtimeMs: -1, data: { day: '-', updated_at: '-', row_count: 0, rows: [] } };
 let symbolCache = { mtimeMs: -1, count: 0 };
 let dbRead = null;
@@ -217,27 +226,63 @@ function recomputeDerivedForConfig(baseRows, timeframe, factorName) {
     const close = toNum(row[closeField]);
     if (ltp === null || close === null) continue;
 
-    const points = close * factorVal;
+        const points = close * factorVal;
     const bu1 = close + points;
     const bu2 = close + points * 2;
     const bu3 = close + points * 3;
     const bu4 = close + points * 4;
     const bu5 = close + points * 5;
 
-    const levels = [bu1, bu2, bu3, bu4, bu5];
-    let nearIdx = 0;
-    let nearDiff = Math.abs(ltp - levels[0]);
-    for (let i = 1; i < levels.length; i += 1) {
-      const d = Math.abs(ltp - levels[i]);
+    const be1 = close - points;
+    const be2 = close - points * 2;
+    const be3 = close - points * 3;
+    const be4 = close - points * 4;
+    const be5 = close - points * 5;
+
+    const levelPairs = [
+      ['BU1', bu1],
+      ['BU2', bu2],
+      ['BU3', bu3],
+      ['BU4', bu4],
+      ['BU5', bu5],
+      ['BE1', be1],
+      ['BE2', be2],
+      ['BE3', be3],
+      ['BE4', be4],
+      ['BE5', be5],
+    ];
+
+    let nearName = levelPairs[0][0];
+    let nearValue = levelPairs[0][1];
+    let nearDiff = Math.abs(ltp - nearValue);
+    for (let i = 1; i < levelPairs.length; i += 1) {
+      const cur = levelPairs[i][1];
+      const d = Math.abs(ltp - cur);
       if (d < nearDiff) {
         nearDiff = d;
-        nearIdx = i;
+        nearName = levelPairs[i][0];
+        nearValue = cur;
       }
     }
-    const nearValue = levels[nearIdx];
+
     const nearPct = nearValue ? ((ltp - nearValue) / nearValue) * 100 : 0;
 
-    const inRange = ltp >= bu1 && ltp <= bu5;
+    const inRangeUp = ltp >= bu1 && ltp <= bu5;
+    const inRangeDown = ltp <= be1 && ltp >= be5;
+    const inRange = inRangeUp || inRangeDown;
+    const sideways = ltp > be1 && ltp < bu1;
+
+    let trend = 'SIDEWAYS';
+    if (ltp >= bu1) trend = 'UP';
+    else if (ltp <= be1) trend = 'DOWN';
+
+    const upBreakCount = [bu1, bu2, bu3, bu4, bu5].filter((v) => ltp >= v).length;
+    const downBreakCount = [be1, be2, be3, be4, be5].filter((v) => ltp <= v).length;
+    const confirmation = trend === 'UP' ? upBreakCount : trend === 'DOWN' ? downBreakCount : 0;
+
+    const jackpotLong = trend === 'UP' && nearName === 'BU1' && Math.abs(nearPct) <= 0.08;
+    const jackpotShort = trend === 'DOWN' && nearName === 'BE1' && Math.abs(nearPct) <= 0.08;
+
     const enriched = {
       ...row,
       close,
@@ -247,13 +292,29 @@ function recomputeDerivedForConfig(baseRows, timeframe, factorName) {
       bu3,
       bu4,
       bu5,
-      near_level: nearIdx + 1,
+      be1,
+      be2,
+      be3,
+      be4,
+      be5,
+      near_name: nearName,
       near_value: nearValue,
       near_diff: ltp - nearValue,
       near_pct: nearPct,
+      in_range_up: inRangeUp,
+      in_range_down: inRangeDown,
       in_range: inRange,
+      sideways,
+      trend,
+      confirmation,
+      up_break_count: upBreakCount,
+      down_break_count: downBreakCount,
+      jackpot_long: jackpotLong,
+      jackpot_short: jackpotShort,
       above_bu1: ltp >= bu1,
+      below_be1: ltp <= be1,
       above_bu5: ltp > bu5,
+      below_be5: ltp < be5,
     };
 
     allRows.push(enriched);
@@ -313,6 +374,25 @@ function filterRows(rows, q, completeOnly, limit) {
   return { rows: out, scanned };
 }
 
+function composeStatus(snapshot, tradeSummary) {
+  const st = snapshot && typeof snapshot === 'object' ? snapshot.status || {} : {};
+  return {
+    login: st.login || {},
+    websocket: st.websocket || {},
+    history_store: st.history_store || {},
+    analysis: st.analysis || {},
+    today_first_close: st.today_first_close || {},
+    past_data_download: st.past_data_download || {},
+    storage: st.storage || {},
+    trade: {
+      ...tradeSummary,
+      mode: TRADE_MODE,
+      live_enabled: ENABLE_LIVE_TRADING,
+      engine_state: TRADE_MODE === 'live' ? (ENABLE_LIVE_TRADING ? 'live_ready' : 'live_blocked') : 'paper',
+    },
+  };
+}
+
 function dashboardData(urlObj) {
   const snapshot = loadSnapshot();
   const totalSymbols = loadSymbolCount();
@@ -340,6 +420,7 @@ function dashboardData(urlObj) {
 
   const dbStats = loadDbStats(snapshot.day);
   const tmeta = ticksMeta();
+  const trade = paperSummary();
 
   return {
     snapshot_day: snapshot.day || '-',
@@ -364,6 +445,7 @@ function dashboardData(urlObj) {
       ticks_file_mb: tmeta.ticks_file_mb,
       last_tick_write: tmeta.last_tick_write,
     },
+    status: composeStatus(snapshot, trade),
     rows: filtered.rows,
   };
 }
@@ -532,7 +614,21 @@ function runPaperCycle() {
     if (paperState.openTrades.has(r.symbol)) continue;
     const cool = paperState.cooldownUntil.get(r.symbol) || 0;
     if (Date.now() < cool) continue;
-    if (toNum(r.ltp) === null) continue;
+
+    const ltp = toNum(r.ltp);
+    if (ltp === null) continue;
+
+    // Trend-only execution: stay out during sideways BE1..BU1.
+    if (TREND_ONLY && r.sideways) continue;
+    if (String(r.trend || '') !== 'UP') continue;
+    if (Number(r.confirmation || 0) < MIN_CONFIRMATION) continue;
+
+    const risk = Math.max(0.0001, ltp - Number(r.bu1));
+    const reward = Math.max(0, Number(r.bu5) - ltp);
+    const rr = reward / risk;
+    if (rr < MIN_RR) continue;
+
+    if (JACKPOT_ONLY && !r.jackpot_long) continue;
 
     openTradeFromRow(r, day);
   }
@@ -554,6 +650,11 @@ function paperSummary() {
       peak_equity: paperState.peakEquity,
       drawdown_now: 0,
       max_drawdown: paperState.maxDrawdown,
+      strategy_tf: PAPER_TF,
+      strategy_factor: PAPER_FACTOR,
+      trade_mode: TRADE_MODE,
+      live_enabled: ENABLE_LIVE_TRADING,
+      engine_state: TRADE_MODE === 'live' ? (ENABLE_LIVE_TRADING ? 'live_ready' : 'live_blocked') : 'paper',
     };
   }
 
@@ -595,16 +696,21 @@ function paperSummary() {
     max_drawdown: paperState.maxDrawdown,
     strategy_tf: PAPER_TF,
     strategy_factor: PAPER_FACTOR,
+    trade_mode: TRADE_MODE,
+    live_enabled: ENABLE_LIVE_TRADING,
+    engine_state: TRADE_MODE === 'live' ? (ENABLE_LIVE_TRADING ? 'live_ready' : 'live_blocked') : 'paper',
   };
 }
-
 function tradesData(urlObj) {
   const limitOpen = Math.max(1, Math.min(5000, Number(urlObj.searchParams.get('open_limit') || 500)));
   const limitClosed = Math.max(1, Math.min(10000, Number(urlObj.searchParams.get('closed_limit') || 1000)));
   const q = normalize(urlObj.searchParams.get('q') || '');
 
   const db = getPaperDb();
-  if (!db) return { summary: paperSummary(), open_trades: [], recent_closed: [] };
+  if (!db) {
+    const snapshot = loadSnapshot();
+    return { summary: paperSummary(), status: composeStatus(snapshot, paperSummary()), open_trades: [], recent_closed: [] };
+  }
 
   let open = db.prepare('SELECT * FROM paper_trades WHERE status=? ORDER BY updated_at DESC LIMIT ?').all('OPEN', limitOpen);
   let closed = db.prepare('SELECT * FROM paper_trades WHERE status=? ORDER BY exit_ts DESC LIMIT ?').all('CLOSED', limitClosed);
@@ -614,8 +720,11 @@ function tradesData(urlObj) {
     closed = closed.filter((r) => normalize(r.symbol).includes(q) || normalize(r.tsym).includes(q));
   }
 
+  const summary = paperSummary();
+  const snapshot = loadSnapshot();
   return {
-    summary: paperSummary(),
+    summary,
+    status: composeStatus(snapshot, summary),
     open_trades: open,
     recent_closed: closed,
     as_of: isoNow(),
@@ -660,7 +769,7 @@ function initPaperEngine() {
 const server = http.createServer((req, res) => {
   const u = new URL(req.url, `http://${req.headers.host}`);
 
-  if (u.pathname === '/api/health') return json(res, 200, { ok: true });
+  if (u.pathname === '/api/health') return json(res, 200, { ok: true, trade_mode: TRADE_MODE, live_enabled: ENABLE_LIVE_TRADING });
   if (u.pathname === '/api/dashboard') {
     try {
       return json(res, 200, dashboardData(u));
@@ -685,3 +794,15 @@ server.listen(PORT, () => {
   console.log(`Node UI running: http://127.0.0.1:${PORT}`);
   console.log(`Trade report: http://127.0.0.1:${PORT}/trades.html`);
 });
+
+
+
+
+
+
+
+
+
+
+
+

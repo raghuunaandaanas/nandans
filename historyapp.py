@@ -1,6 +1,7 @@
 import csv
 import json
 import os
+import shutil
 import sqlite3
 import subprocess
 import sys
@@ -75,6 +76,29 @@ target_minutes = {}
 ltp_map = {}
 volume_map = {}
 socket_opened = False
+socket_opened_at = None
+last_tick_at = None
+
+login_status = {
+    "ok": False,
+    "at": None,
+    "message": "not_logged_in",
+    "rest_sessions": 0,
+}
+today_status = {
+    "state": "init",
+    "last_cycle_at": None,
+    "last_processed": 0,
+    "last_finalized": 0,
+    "completed": False,
+}
+history_status = {
+    "state": "init",
+    "last_cycle_at": None,
+    "last_processed": 0,
+    "last_with_data": 0,
+    "completed": False,
+}
 
 _tick_buffer = []
 _ticks_received = 0
@@ -82,8 +106,7 @@ _ticks_flushed = 0
 _last_tick_flush_ts = time.time()
 _last_ui_snapshot_ts = 0.0
 _ui_dirty = True
-
-
+_snapshots_written = 0
 TODAY = date.today()
 TODAY_S = TODAY.isoformat()
 YESTERDAY_S = (TODAY - timedelta(days=1)).isoformat()
@@ -328,8 +351,6 @@ def mark_today_dirty(symbol):
     global _ui_dirty
     dirty_today.add(symbol)
     _ui_dirty = True
-
-
 def ensure_today_row(symbol, info):
     row = today_rows.get(symbol)
     if row:
@@ -389,7 +410,7 @@ def update_today_from_tick(symbol, info, price, dt_obj):
 
 
 def buffer_tick(tick):
-    global _ticks_received, _ui_dirty
+    global _ticks_received, _ui_dirty, last_tick_at
 
     exch = tick.get("e", "")
     token = tick.get("tk", "")
@@ -397,6 +418,7 @@ def buffer_tick(tick):
     info = symbol_map.get(symbol)
 
     _ticks_received += 1
+    last_tick_at = now_iso()
 
     lp = tick.get("lp", "")
     if lp not in (None, ""):
@@ -429,7 +451,6 @@ def buffer_tick(tick):
         tick.get("ft", ""),
         tick.get("ts", ""),
     ])
-
 
 def flush_ticks(force=False):
     global _ticks_flushed, _last_tick_flush_ts
@@ -479,10 +500,10 @@ def on_feed_update(tick):
 
 
 def on_socket_open():
-    global socket_opened
+    global socket_opened, socket_opened_at
     socket_opened = True
+    socket_opened_at = now_iso()
     log("WebSocket connected")
-
 
 def build_rest_clients(creds, usertoken):
     clients = [api]
@@ -498,7 +519,7 @@ def build_rest_clients(creds, usertoken):
 
 
 def login():
-    global api, rest_clients
+    global api, rest_clients, login_status
 
     creds = json.loads(CRED_FILE.read_text(encoding="utf-8"))
     api = NorenApi(host="https://api.shoonya.com/NorenWClientTP/", websocket="wss://api.shoonya.com/NorenWSTP/")
@@ -511,11 +532,22 @@ def login():
         imei=creds["imei"],
     )
     if ret.get("stat") != "Ok":
+        login_status = {
+            "ok": False,
+            "at": now_iso(),
+            "message": "login_failed",
+            "rest_sessions": 0,
+        }
         raise RuntimeError(f"Login failed: {ret}")
 
     rest_clients = build_rest_clients(creds, ret.get("susertoken"))
+    login_status = {
+        "ok": True,
+        "at": now_iso(),
+        "message": "login_success",
+        "rest_sessions": len(rest_clients),
+    }
     log(f"Login success | REST sessions: {len(rest_clients)}")
-
 
 def fetch_window_closes(client, exchange, token, day_obj):
     open_dt = datetime.combine(day_obj, MARKET_OPEN.get(exchange, dtime(9, 15)))
@@ -608,10 +640,23 @@ def init_today_pending():
 
 
 def today_fallback_loop():
+    with lock:
+        today_status["state"] = "running"
+        today_status["completed"] = False
+
     while True:
         now_dt = datetime.now()
         with lock:
             if not pending_today:
+                today_status.update(
+                    {
+                        "state": "completed",
+                        "last_cycle_at": now_iso(),
+                        "last_processed": 0,
+                        "last_finalized": 0,
+                        "completed": True,
+                    }
+                )
                 log("Current-day first-close completed (tick + fallback).")
                 return
             candidates = [
@@ -621,6 +666,16 @@ def today_fallback_loop():
             ]
 
         if not candidates:
+            with lock:
+                today_status.update(
+                    {
+                        "state": "waiting_market_window",
+                        "last_cycle_at": now_iso(),
+                        "last_processed": 0,
+                        "last_finalized": 0,
+                        "completed": False,
+                    }
+                )
             time.sleep(CURRENT_DAY_SLEEP_SEC)
             continue
 
@@ -684,17 +739,39 @@ def today_fallback_loop():
         with lock:
             flush_today_dirty(TODAY_DB_FLUSH_MAX_ROWS)
             left = len(pending_today)
+            today_status.update(
+                {
+                    "state": "running",
+                    "last_cycle_at": now_iso(),
+                    "last_processed": len(keys),
+                    "last_finalized": done_count,
+                    "completed": False,
+                }
+            )
 
         log(f"Today fallback cycle: processed={len(keys)}, finalized={done_count}, remaining={left}")
         time.sleep(CURRENT_DAY_SLEEP_SEC)
 
-
 def history_loop():
+    with lock:
+        history_status["state"] = "running"
+        history_status["completed"] = False
+
     while True:
         with lock:
             batch = db_get_history_batch(HISTORY_BATCH)
 
         if not batch:
+            with lock:
+                history_status.update(
+                    {
+                        "state": "completed",
+                        "last_cycle_at": now_iso(),
+                        "last_processed": 0,
+                        "last_with_data": 0,
+                        "completed": True,
+                    }
+                )
             log("Historical backfill completed.")
             return
 
@@ -760,26 +837,65 @@ def history_loop():
         with lock:
             db.commit()
             left = db.execute("SELECT COUNT(1) FROM history_state WHERE done=0").fetchone()[0]
+            history_status.update(
+                {
+                    "state": "running",
+                    "last_cycle_at": now_iso(),
+                    "last_processed": processed,
+                    "last_with_data": with_data,
+                    "completed": False,
+                }
+            )
 
         log(f"History cycle: processed={processed}, with_data={with_data}, pending_symbols={left}")
         time.sleep(HISTORY_SLEEP_SEC)
 
-
 def write_ui_snapshot():
-    global _ui_dirty, _last_ui_snapshot_ts
+    global _ui_dirty, _last_ui_snapshot_ts, _snapshots_written
 
     now_t = time.time()
     if now_t - _last_ui_snapshot_ts < UI_SNAPSHOT_INTERVAL_SEC:
         return
 
     with lock:
-        if not _ui_dirty:
-            _last_ui_snapshot_ts = now_t
-            return
         today_copy = dict(today_rows)
         ltp_copy = dict(ltp_map)
         vol_copy = dict(volume_map)
         order_copy = list(ordered_symbols)
+
+        login_copy = dict(login_status)
+        today_status_copy = dict(today_status)
+        history_status_copy = dict(history_status)
+        ws_open = bool(socket_opened)
+        ws_opened_copy = socket_opened_at
+        last_tick_copy = last_tick_at
+
+        ticks_received = _ticks_received
+        ticks_stored = _ticks_flushed
+        tick_buffer = len(_tick_buffer)
+        dirty_count = len(dirty_today)
+
+        today_pending = len(pending_today)
+        today_complete_rows = 0
+        for row in today_rows.values():
+            done = (
+                row.get("first_1m_close") is not None
+                and row.get("first_5m_close") is not None
+                and row.get("first_15m_close") is not None
+            )
+            if done:
+                today_complete_rows += 1
+
+        if db:
+            history_pending = int(db.execute("SELECT COUNT(1) FROM history_state WHERE done=0").fetchone()[0])
+            history_rows = int(db.execute("SELECT COUNT(1) FROM first_closes WHERE day <> ?", (TODAY_S,)).fetchone()[0])
+            today_db_rows = int(db.execute("SELECT COUNT(1) FROM first_closes WHERE day = ?", (TODAY_S,)).fetchone()[0])
+        else:
+            history_pending = 0
+            history_rows = 0
+            today_db_rows = 0
+
+        symbol_total = len(symbol_map)
         _ui_dirty = False
         _last_ui_snapshot_ts = now_t
 
@@ -834,14 +950,86 @@ def write_ui_snapshot():
                 }
             )
 
+    history_done = max(0, symbol_total - history_pending)
+    history_pct = round((history_done * 100.0 / symbol_total), 2) if symbol_total > 0 else 0.0
+
+    def file_mb(path_obj):
+        try:
+            return round(path_obj.stat().st_size / (1024 * 1024), 2)
+        except Exception:
+            return 0.0
+
+    def file_kb(path_obj):
+        try:
+            return round(path_obj.stat().st_size / 1024, 1)
+        except Exception:
+            return 0.0
+
+    try:
+        disk = shutil.disk_usage(OUT_DIR)
+        disk_free_gb = round(disk.free / (1024 * 1024 * 1024), 2)
+    except Exception:
+        disk_free_gb = None
+
+    try:
+        ticks_last_write = datetime.fromtimestamp(TICKS_FILE.stat().st_mtime).isoformat(timespec="seconds")
+    except Exception:
+        ticks_last_write = None
+
+    _snapshots_written += 1
+
     payload = {
         "day": TODAY_S,
         "updated_at": now_iso(),
         "row_count": len(rows),
         "rows": rows,
+        "status": {
+            "login": login_copy,
+            "websocket": {
+                "open": ws_open,
+                "opened_at": ws_opened_copy,
+                "last_tick_at": last_tick_copy,
+            },
+            "history_store": {
+                "state": "running" if ws_open else "waiting_ws",
+                "ticks_received": ticks_received,
+                "ticks_stored": ticks_stored,
+                "tick_buffer": tick_buffer,
+                "last_tick_write": ticks_last_write,
+                "today_db_rows": today_db_rows,
+            },
+            "analysis": {
+                "state": "running",
+                "ui_dirty": dirty_count > 0,
+                "dirty_today_rows": dirty_count,
+                "snapshots_written": _snapshots_written,
+                "snapshot_interval_sec": UI_SNAPSHOT_INTERVAL_SEC,
+            },
+            "today_first_close": {
+                **today_status_copy,
+                "pending_symbols": today_pending,
+                "complete_rows": today_complete_rows,
+            },
+            "past_data_download": {
+                **history_status_copy,
+                "total_symbols": symbol_total,
+                "done_symbols": history_done,
+                "pending_symbols": history_pending,
+                "progress_pct": history_pct,
+                "history_rows": history_rows,
+                "max_lookback_days": HISTORY_MAX_LOOKBACK_DAYS,
+                "stop_empty_streak": HISTORY_STOP_EMPTY_STREAK,
+            },
+            "storage": {
+                "db_file_mb": file_mb(DB_FILE),
+                "ticks_file_mb": file_mb(TICKS_FILE),
+                "snapshot_file_kb": file_kb(UI_SNAPSHOT_FILE),
+                "paper_db_mb": file_mb(OUT_DIR / "paper_trades.db"),
+                "disk_free_gb": disk_free_gb,
+            },
+        },
     }
     write_json_atomic(UI_SNAPSHOT_FILE, payload)
-
 
 def run_forever():
     last_log = time.time()
@@ -922,6 +1110,10 @@ if __name__ == "__main__":
             db.commit()
             db.close()
         log("Stopped by user")
+
+
+
+
 
 
 

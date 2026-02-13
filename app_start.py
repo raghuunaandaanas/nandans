@@ -17,8 +17,9 @@ STATE_FILE = RUNTIME_DIR / "state.json"
 
 BACKEND_LOG = LOG_DIR / "historyapp.log"
 UI_LOG = LOG_DIR / "node_ui.log"
-UI_URL = "http://127.0.0.1:8787/"
-HEALTH_URL = "http://127.0.0.1:8787/api/health"
+UI_PORT = int(os.getenv("UI_PORT", "8787"))
+UI_URL = f"http://127.0.0.1:{UI_PORT}/"
+HEALTH_URL = f"http://127.0.0.1:{UI_PORT}/api/health"
 
 DETACHED_PROCESS = 0x00000008
 CREATE_NEW_PROCESS_GROUP = 0x00000200
@@ -98,6 +99,31 @@ def pids_by_pattern(pattern):
     return []
 
 
+def pids_by_port(port):
+    script = (
+        "$p=Get-NetTCPConnection -LocalPort "
+        + str(port)
+        + " -State Listen -ErrorAction SilentlyContinue | "
+        "Select-Object -ExpandProperty OwningProcess -Unique; "
+        "if ($p) { $p | ConvertTo-Json -Compress }"
+    )
+    r = run_ps(script)
+    if r.returncode != 0:
+        return []
+    out = (r.stdout or "").strip()
+    if not out:
+        return []
+    try:
+        data = json.loads(out)
+        if isinstance(data, int):
+            return [data]
+        if isinstance(data, list):
+            return [int(x) for x in data]
+    except Exception:
+        pass
+    return []
+
+
 def is_pid_alive(pid):
     if not pid:
         return False
@@ -119,6 +145,29 @@ def kill_by_pattern(pattern):
     for pid in pids:
         kill_pid(pid)
     return pids
+
+
+def kill_duplicate_matches(pattern, keep_pid=None):
+    pids = pids_by_pattern(pattern)
+    killed = []
+    for pid in pids:
+        if keep_pid and int(pid) == int(keep_pid):
+            continue
+        kill_pid(pid)
+        killed.append(pid)
+    return killed
+
+
+def kill_port_listeners(port, keep_pids=None):
+    keep = {int(x) for x in (keep_pids or []) if x}
+    pids = pids_by_port(port)
+    killed = []
+    for pid in pids:
+        if int(pid) in keep:
+            continue
+        kill_pid(pid)
+        killed.append(pid)
+    return killed
 
 
 def ui_health(timeout=3):
@@ -172,11 +221,15 @@ def do_stop():
 
     extra_backend = kill_by_pattern(BACKEND_PATTERN)
     extra_ui = kill_by_pattern(UI_PATTERN)
+    port_killed = kill_port_listeners(UI_PORT)
 
     if STATE_FILE.exists():
         STATE_FILE.unlink(missing_ok=True)
 
-    log(f"Stopped. backend_matches={len(extra_backend)} ui_matches={len(extra_ui)}")
+    log(
+        f"Stopped. backend_matches={len(extra_backend)} ui_matches={len(extra_ui)} "
+        f"port_{UI_PORT}_killed={len(port_killed)}"
+    )
 
 
 def do_start(clean=False):
@@ -197,8 +250,22 @@ def do_start(clean=False):
     if not (ROOT / "node_ui" / "server.js").exists():
         raise SystemExit("node_ui/server.js not found")
 
+    pre_killed = kill_port_listeners(UI_PORT)
+
     backend_pid = start_proc([sys.executable, "-u", "historyapp.py"], BACKEND_LOG)
     ui_pid = start_proc(["node", str(ROOT / "node_ui" / "server.js")], UI_LOG)
+
+    time.sleep(2)
+
+    # Retry UI once if port clash or startup failure happened.
+    if not is_pid_alive(ui_pid) or not ui_health(timeout=2):
+        kill_port_listeners(UI_PORT)
+        ui_pid = start_proc(["node", str(ROOT / "node_ui" / "server.js")], UI_LOG)
+        time.sleep(2)
+
+    extra_backend = kill_duplicate_matches(BACKEND_PATTERN, keep_pid=backend_pid)
+    extra_ui = kill_duplicate_matches(UI_PATTERN, keep_pid=ui_pid)
+    kill_port_listeners(UI_PORT, keep_pids=[ui_pid])
 
     state = {
         "started_at": ts(),
@@ -206,12 +273,15 @@ def do_start(clean=False):
         "ui_pid": ui_pid,
         "backend_log": str(BACKEND_LOG),
         "ui_log": str(UI_LOG),
+        "ui_port": UI_PORT,
     }
     write_state(state)
 
-    time.sleep(2)
-    log(f"Started backend pid={backend_pid} alive={is_pid_alive(backend_pid)}")
-    log(f"Started node_ui pid={ui_pid} alive={is_pid_alive(ui_pid)} health={ui_health(timeout=2)}")
+    log(f"Started backend pid={backend_pid} alive={is_pid_alive(backend_pid)} extra_killed={len(extra_backend)}")
+    log(
+        f"Started node_ui pid={ui_pid} alive={is_pid_alive(ui_pid)} health={ui_health(timeout=2)} "
+        f"extra_killed={len(extra_ui)} pre_port_killed={len(pre_killed)}"
+    )
     log(f"UI: {UI_URL}")
 
 
@@ -220,9 +290,11 @@ def do_status():
     backend_pid = state.get("backend_pid")
     ui_pid = state.get("ui_pid")
 
+    on_port = pids_by_port(UI_PORT)
     log(f"State file: {'present' if state else 'missing'}")
     log(f"backend_pid={backend_pid} alive={is_pid_alive(backend_pid)} matches={pids_by_pattern(BACKEND_PATTERN)}")
     log(f"ui_pid={ui_pid} alive={is_pid_alive(ui_pid)} matches={pids_by_pattern(UI_PATTERN)}")
+    log(f"ui_port={UI_PORT} listeners={on_port}")
     log(f"ui_health={ui_health(timeout=2)} url={UI_URL}")
 
 
@@ -238,7 +310,13 @@ def do_clean():
 
 def main():
     ap = argparse.ArgumentParser(description="History app process manager")
-    ap.add_argument("command", nargs="?", default="start", choices=["start", "stop", "restart", "status", "clean"], help="default: start")
+    ap.add_argument(
+        "command",
+        nargs="?",
+        default="start",
+        choices=["start", "stop", "restart", "status", "clean"],
+        help="default: start",
+    )
     ap.add_argument("--clean", action="store_true", help="cleanup legacy files during start/restart")
     args = ap.parse_args()
 
@@ -258,4 +336,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
