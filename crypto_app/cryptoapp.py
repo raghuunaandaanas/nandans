@@ -871,36 +871,23 @@ class CryptoApp:
         # Initialize strategy engine
         self.strategy = B5StrategyEngine(factor='smart')
         
-        # Fetch and save products
-        log("Fetching available products...")
-        products = self.client.get_products()
-        if products:
-            self.data_manager.save_products(products)
-            # Filter for perpetual and futures only
-            self.symbols = [
-                p['symbol'] for p in products 
-                if p.get('contract_type') in ['perpetual', 'futures']
-                and p.get('quote_asset') == 'USDT'  # Focus on USDT pairs
-            ][:200]  # Limit to top 200 pairs for performance
-            log(f"Loaded {len(self.symbols)} trading symbols")
-        else:
-            # SIMULATION MODE: Use default crypto symbols
-            log("API failed - Using SIMULATION MODE with default symbols")
-            self.symbols = [
-                'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'ADAUSDT', 'DOTUSDT',
-                'LINKUSDT', 'MATICUSDT', 'UNIUSDT', 'LTCUSDT', 'BCHUSDT',
-                'XRPUSDT', 'DOGEUSDT', 'AVAXUSDT', 'ATOMUSDT', 'ETCUSDT'
-            ]
-            log(f"Loaded {len(self.symbols)} default symbols for simulation")
-            
-            # Save default products to database
-            default_products = [
-                {'symbol': s, 'underlying_asset': s.replace('USDT', ''), 
-                 'quote_asset': 'USDT', 'contract_type': 'perpetual',
-                 'contract_value': 1, 'tick_size': 0.01, 'lot_size': 1}
-                for s in self.symbols
-            ]
-            self.data_manager.save_products(default_products)
+        # Use SIMULATION MODE directly (API not working reliably)
+        log("Using SIMULATION MODE for crypto trading...")
+        self.symbols = [
+            'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'ADAUSDT', 'DOTUSDT',
+            'LINKUSDT', 'MATICUSDT', 'UNIUSDT', 'LTCUSDT', 'BCHUSDT',
+            'XRPUSDT', 'DOGEUSDT', 'AVAXUSDT', 'ATOMUSDT', 'ETCUSDT'
+        ]
+        log(f"Loaded {len(self.symbols)} symbols for simulation")
+        
+        # Save default products to database
+        default_products = [
+            {'symbol': s, 'underlying_asset': s.replace('USDT', ''), 
+             'quote_asset': 'USDT', 'contract_type': 'perpetual',
+             'contract_value': 1, 'tick_size': 0.01, 'lot_size': 1}
+            for s in self.symbols
+        ]
+        self.data_manager.save_products(default_products)
         
         # SIMULATION: Generate fake first closes for all symbols
         self.simulate_first_closes()
