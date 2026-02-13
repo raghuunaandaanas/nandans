@@ -484,7 +484,7 @@ function openTradeFromRow(row, day) {
     row.ltp,
     now,
     'OPEN',
-    '',
+    'trend_rr_entry',
     row.ltp,
     row.ltp,
     row.ltp,
@@ -515,7 +515,7 @@ function openTradeFromRow(row, day) {
     exit_ltp: null,
     exit_ts: null,
     status: 'OPEN',
-    reason: '',
+    reason: 'trend_rr_entry',
     last_ltp: row.ltp,
     max_ltp: row.ltp,
     min_ltp: row.ltp,
@@ -794,6 +794,7 @@ server.listen(PORT, () => {
   console.log(`Node UI running: http://127.0.0.1:${PORT}`);
   console.log(`Trade report: http://127.0.0.1:${PORT}/trades.html`);
 });
+
 
 
 
