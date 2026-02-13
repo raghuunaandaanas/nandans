@@ -30,7 +30,7 @@ const TF_CLOSE_FIELD = {
 };
 
 const PAPER_TF = ['1m', '5m', '15m'].includes(process.env.PAPER_TF) ? process.env.PAPER_TF : '5m';
-const PAPER_FACTOR = ['micro', 'mini', 'mega'].includes(process.env.PAPER_FACTOR) ? process.env.PAPER_FACTOR : 'micro';
+const PAPER_FACTOR = ['micro', 'mini', 'mega', 'smart'].includes(process.env.PAPER_FACTOR) ? process.env.PAPER_FACTOR : 'smart'; // Default to smart selector
 const PAPER_FACTOR_MCX = ['micro', 'mini', 'mega'].includes(process.env.PAPER_FACTOR_MCX) ? process.env.PAPER_FACTOR_MCX : 'mini'; // Use larger factor for commodities
 const PAPER_COOLDOWN_SEC = Number(process.env.PAPER_COOLDOWN_SEC || 30);
 const PAPER_CYCLE_MS = Math.max(500, Number(process.env.PAPER_CYCLE_MS || 1500));
@@ -40,14 +40,14 @@ const TRADE_MODE = ['paper', 'live'].includes(String(process.env.TRADE_MODE || '
   : 'paper';
 const ENABLE_LIVE_TRADING = process.env.ENABLE_LIVE_TRADING === '1';
 const TREND_ONLY = process.env.TREND_ONLY !== '0';
-const MIN_CONFIRMATION = Math.max(1, Number(process.env.MIN_CONFIRMATION || 3));
-const MIN_RR = Math.max(0.1, Number(process.env.MIN_RR || 1.8));
-const JACKPOT_ONLY = process.env.JACKPOT_ONLY !== '0';
+const MIN_CONFIRMATION = Math.max(1, Number(process.env.MIN_CONFIRMATION || 2));  // Lower to 2 for faster entries
+const MIN_RR = Math.max(0.1, Number(process.env.MIN_RR || 0.5));  // Lower to 0.5 for options/commodities
+const JACKPOT_ONLY = process.env.JACKPOT_ONLY === '1';  // Only jackpot if explicitly set
 const JACKPOT_TOUCH_LOOKBACK_SEC = Math.max(60, Number(process.env.JACKPOT_TOUCH_LOOKBACK_SEC || 1800));
 const JACKPOT_MIN_CONFIRMATION = Math.max(MIN_CONFIRMATION, Number(process.env.JACKPOT_MIN_CONFIRMATION || 3));
 const JACKPOT_MIN_RR = Math.max(MIN_RR, Number(process.env.JACKPOT_MIN_RR || 2.2));
 const MIN_VOLUME_ACCEL = Math.max(1, Number(process.env.MIN_VOLUME_ACCEL || 1.15));
-const MIN_PROBABILITY_SCORE = Math.max(0, Math.min(100, Number(process.env.MIN_PROBABILITY_SCORE || 70)));
+const MIN_PROBABILITY_SCORE = Math.max(0, Math.min(100, Number(process.env.MIN_PROBABILITY_SCORE || 35)));  // Lower to 35 for commodities
 const MAX_SPIKE_POINTS_MULT = Math.max(0.5, Number(process.env.MAX_SPIKE_POINTS_MULT || 2.5));
 
 // Broker Limits Configuration
@@ -157,6 +157,63 @@ function formatISTDateTime(date = new Date()) {
     minute: '2-digit',
     second: '2-digit'
   });
+}
+
+// Smart Factor Selector - automatically picks best factor based on price movement
+function selectSmartFactor(ltp, close, exchange, tsym) {
+  const ex = String(exchange || '').toUpperCase();
+  const sym = String(tsym || '').toUpperCase();
+  
+  // MCX commodities always use mini factor (2.61%)
+  if (ex === 'MCX') {
+    return { factor: FACTORS.mini, factorName: 'mini', reason: 'mcx_commodity' };
+  }
+  
+  // Calculate price movement percentage from close
+  const movePct = Math.abs((ltp - close) / close) * 100;
+  
+  // Detect instrument type
+  const isIndex = /^(NIFTY|BANKNIFTY|FINNIFTY|SENSEX)$/.test(sym);
+  const isOption = ex === 'NFO' || ex === 'BFO' || /(CE|PE)$/.test(sym);
+  const isFuture = /FUT/.test(sym);
+  
+  // For indices - always use micro (0.2611%)
+  if (isIndex) {
+    return { factor: FACTORS.micro, factorName: 'micro', reason: 'index' };
+  }
+  
+  // For options - select based on moneyness and volatility
+  if (isOption) {
+    // If very volatile (> 10%), use mega for extreme targets
+    if (movePct > 10) {
+      return { factor: FACTORS.mega, factorName: 'mega', reason: 'extreme_volatility_option' };
+    }
+    // If price has moved > 5%, use mini for bigger targets
+    if (movePct > 5) {
+      return { factor: FACTORS.mini, factorName: 'mini', reason: 'high_volatility_option' };
+    }
+    // Default for options
+    return { factor: FACTORS.micro, factorName: 'micro', reason: 'standard_option' };
+  }
+  
+  // For futures
+  if (isFuture) {
+    if (movePct > 3) {
+      return { factor: FACTORS.mini, factorName: 'mini', reason: 'volatile_future' };
+    }
+    return { factor: FACTORS.micro, factorName: 'micro', reason: 'standard_future' };
+  }
+  
+  // For equities - select based on volatility
+  if (movePct > 8) {
+    return { factor: FACTORS.mega, factorName: 'mega', reason: 'extreme_volatility_equity' };
+  }
+  if (movePct > 3) {
+    return { factor: FACTORS.mini, factorName: 'mini', reason: 'volatile_equity' };
+  }
+  
+  // Default: micro for most stocks
+  return { factor: FACTORS.micro, factorName: 'micro', reason: 'standard_equity' };
 }
 
 // Check if market should be closed for a symbol
@@ -517,10 +574,23 @@ function recomputeDerivedForConfig(baseRows, timeframe, factorName) {
     if (!symbol) continue;
     seenSymbols.add(symbol);
     
-    // Use larger factor for MCX commodities
+    // Determine which factor to use
     const exchange = String(row.exchange || '').toUpperCase();
-    const useMCXFactor = exchange === 'MCX';
-    const actualFactor = useMCXFactor ? factorValMCX : factorVal;
+    let actualFactor, selectedFactorName, factorReason;
+    
+    if (factorName === 'smart') {
+      // Smart selector: automatically pick best factor
+      const smart = selectSmartFactor(ltp, close, exchange, row.tsym);
+      actualFactor = smart.factor;
+      selectedFactorName = smart.factorName;
+      factorReason = smart.reason;
+    } else {
+      // Use configured factor
+      const useMCXFactor = exchange === 'MCX';
+      actualFactor = useMCXFactor ? factorValMCX : factorVal;
+      selectedFactorName = useMCXFactor ? PAPER_FACTOR_MCX : factorName;
+      factorReason = useMCXFactor ? 'mcx_auto' : 'config';
+    }
 
     const volume = Math.max(0, Number(toNum(row.volume) || 0));
     const rowTsMs = toMs(row.updated_at) || nowMs;
@@ -647,6 +717,8 @@ function recomputeDerivedForConfig(baseRows, timeframe, factorName) {
       ...row,
       close,
       points,
+      selected_factor: selectedFactorName,
+      factor_reason: factorReason,
       bu1,
       bu2,
       bu3,
@@ -792,9 +864,9 @@ function dashboardData(urlObj) {
   const timeframe = ['1m', '5m', '15m'].includes(urlObj.searchParams.get('tf'))
     ? urlObj.searchParams.get('tf')
     : '5m';
-  const factorName = ['micro', 'mini', 'mega'].includes(urlObj.searchParams.get('factor'))
+  const factorName = ['micro', 'mini', 'mega', 'smart'].includes(urlObj.searchParams.get('factor'))
     ? urlObj.searchParams.get('factor')
-    : 'micro';
+    : 'smart';  // Default to smart selector
 
   const limit = Math.max(1, Math.min(50000, Number(urlObj.searchParams.get('limit') || 5000)));
 
@@ -818,7 +890,7 @@ function dashboardData(urlObj) {
     config: {
       timeframe,
       factor: factorName,
-      factor_value: FACTORS[factorName],
+      factor_value: factorName === 'smart' ? 'auto' : FACTORS[factorName],
       trigger_only: triggerOnly,
       jackpot_only: JACKPOT_ONLY,
       jackpot_min_rr: JACKPOT_MIN_RR,
@@ -845,10 +917,8 @@ function dashboardData(urlObj) {
 function tradeGuardLongRow(row, ltp) {
   const bu1 = toNum(row?.bu1);
   const bu5 = toNum(row?.bu5);
-  const be5 = toNum(row?.be5);
-  const be5Low = toNum(row?.be5_low_ltp);
 
-  if (ltp === null || bu1 === null || bu5 === null || be5 === null) {
+  if (ltp === null || bu1 === null || bu5 === null) {
     return { ok: false, reason: 'missing_levels' };
   }
 
@@ -856,17 +926,8 @@ function tradeGuardLongRow(row, ltp) {
     return { ok: false, reason: 'outside_bu1_bu5' };
   }
 
-  const be5ReversalReady =
-    Boolean(row?.jackpot_be5_reversal) &&
-    Boolean(row?.be5_touched_recent) &&
-    be5Low !== null &&
-    be5Low <= be5;
-
-  if (!be5ReversalReady) {
-    return { ok: false, reason: 'no_be5_reversal' };
-  }
-
-  return { ok: true, reason: 'be5_reversal_bu_range' };
+  // Relaxed: Just need to be in range and trending up
+  return { ok: true, reason: 'in_bu_range' };
 }
 
 function loadOpenTrades() {
@@ -1294,7 +1355,15 @@ function runPaperCycle() {
     const reward = Math.max(0, Number(r.bu5) - ltp);
     const rr = reward / risk;
     if (rr < MIN_RR) continue;
-    if (Number(r.probability_score || 0) < MIN_PROBABILITY_SCORE) continue;
+    
+    // MCX evening session: lower probability threshold since first closes are from morning
+    const isMCX = String(r.exchange || '').toUpperCase() === 'MCX';
+    const now = new Date();
+    const istHour = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })).getHours();
+    const isMCXEvening = isMCX && istHour >= 17; // After 5 PM IST
+    const minProb = isMCXEvening ? 25 : MIN_PROBABILITY_SCORE;
+    
+    if (Number(r.probability_score || 0) < minProb) continue;
     if (r.spike_flag) continue;
 
     if (JACKPOT_ONLY && !r.jackpot_be5_reversal) continue;

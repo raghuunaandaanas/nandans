@@ -224,6 +224,18 @@
     .inst-option { background: #581c87; color: #d8b4fe; }
     .inst-future { background: #701a75; color: #f0abfc; }
     .inst-commodity { background: #7c2d12; color: #fdba74; }
+    
+    .factor-badge {
+      display: inline-block;
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .factor-micro { background: #065f46; color: #6ee7b7; }  /* 0.2611% - green */
+    .factor-mini { background: #92400e; color: #fcd34d; }   /* 2.61% - amber */
+    .factor-mega { background: #7f1d1d; color: #fca5a5; }   /* 26.11% - red */
   </style>
 </head>
 <body>
@@ -231,7 +243,7 @@
     <!-- Header with IST Time -->
     <div class="header">
       <div>
-        <h1>📊 Superalgo Live Dashboard | B5 Factor (0.2611%)</h1>
+        <h1>📊 Superalgo Live Dashboard | B5 Factor (Smart Selector)</h1>
         <div class="ist-date" id="istDate">-</div>
       </div>
       <div style="text-align: right;">
@@ -294,7 +306,8 @@
 
       <label>Factor
         <select id="factor">
-          <option value="micro" selected>micro 0.2611%</option>
+          <option value="smart" selected>🧠 Smart (Auto)</option>
+          <option value="micro">micro 0.2611%</option>
           <option value="mini">mini 2.61%</option>
           <option value="mega">mega 26.11%</option>
         </select>
@@ -333,6 +346,7 @@
             <th>Symbol</th>
             <th>TSym</th>
             <th>Type</th>
+            <th>Factor</th>
             <th>LTP</th>
             <th>Volume</th>
             <th>VolΔ</th>
@@ -714,11 +728,14 @@
         const bu3c = levelClass('BU3', r.bu3, r.ltp, r.points, near);
         const bu5c = levelClass('BU5', r.bu5, r.ltp, r.points, near);
 
+        const factorBadge = r.selected_factor ? `<span class="factor-badge factor-${r.selected_factor}">${r.selected_factor.toUpperCase()}</span>` : '-';
+        
         return `
           <tr>
             <td>${r.symbol ?? ''}</td>
             <td>${r.tsym ?? ''}</td>
             <td><span class="inst-badge ${instBadgeClass(type)}">${type}</span></td>
+            <td>${factorBadge}</td>
             <td>${f2(r.ltp)}</td>
             <td>${i0(r.volume)}</td>
             <td>${i0(r.volume_delta)}</td>
@@ -1233,7 +1250,7 @@
       const complete = completeOnlyEl.checked ? '1' : '0';
       const trigger = triggerOnlyEl.checked ? '1' : '0';
       const tf = encodeURIComponent(tfEl.value || '5m');
-      const factor = encodeURIComponent(factorEl.value || 'micro');
+      const factor = encodeURIComponent(factorEl.value || 'smart');
       const limit = Math.max(1, Math.min(50000, Number(limitEl.value || 5000)));
       const t0 = performance.now();
 
