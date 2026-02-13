@@ -186,10 +186,21 @@ def parse_symbols(paths):
             if len(parts) < 2 or not parts[0] or not parts[1]:
                 continue
             exch, token = parts[0], parts[1]
+            
+            # Different exchanges have different column layouts
+            # MCX: exch,token,lot,tick,short,symbol,expiry... (symbol at index 5)
+            # NFO/BFO/NSE: exch,token,?,short,symbol,expiry... (symbol at index 4)
+            tsym = token
+            if exch == "MCX":
+                tsym = parts[5] if len(parts) > 5 and parts[5] else parts[4] if len(parts) > 4 and parts[4] else token
+            else:
+                # NFO, BFO, NSE, BSE
+                tsym = parts[4] if len(parts) > 4 and parts[4] else token
+            
             out[f"{exch}|{token}"] = {
                 "exchange": exch,
                 "token": token,
-                "tsym": parts[5] if len(parts) > 5 and parts[5] else (parts[4] if len(parts) > 4 and parts[4] else token),
+                "tsym": tsym,
             }
     return out
 
