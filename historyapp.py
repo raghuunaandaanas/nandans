@@ -189,7 +189,7 @@ def parse_symbols(paths):
             out[f"{exch}|{token}"] = {
                 "exchange": exch,
                 "token": token,
-                "tsym": parts[4] if len(parts) > 4 and parts[4] else token,
+                "tsym": parts[5] if len(parts) > 5 and parts[5] else (parts[4] if len(parts) > 4 and parts[4] else token),
             }
     return out
 
