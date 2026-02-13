@@ -419,10 +419,10 @@ class CryptoDataManager:
             conn.commit()
     
     def get_active_symbols(self) -> List[str]:
-        """Get list of active trading symbols"""
+        """Get list of active trading symbols including options"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute(
-                "SELECT symbol FROM products WHERE product_type IN ('perpetual', 'futures') ORDER BY symbol"
+                "SELECT symbol FROM products WHERE product_type IN ('perpetual', 'futures', 'option') ORDER BY symbol"
             )
             return [row[0] for row in cursor.fetchall()]
     
@@ -875,20 +875,58 @@ class CryptoApp:
         
         # Use SIMULATION MODE directly (API not working reliably)
         log("Using SIMULATION MODE for crypto trading...")
-        self.symbols = [
+        
+        # Spot/Perpetual symbols
+        spot_symbols = [
             'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'ADAUSDT', 'DOTUSDT',
             'LINKUSDT', 'MATICUSDT', 'UNIUSDT', 'LTCUSDT', 'BCHUSDT',
             'XRPUSDT', 'DOGEUSDT', 'AVAXUSDT', 'ATOMUSDT', 'ETCUSDT'
         ]
-        log(f"Loaded {len(self.symbols)} symbols for simulation")
         
-        # Save default products to database
-        default_products = [
-            {'symbol': s, 'underlying_asset': s.replace('USDT', ''), 
-             'quote_asset': 'USDT', 'contract_type': 'perpetual',
-             'contract_value': 1, 'tick_size': 0.01, 'lot_size': 1}
-            for s in self.symbols
-        ]
+        # BTC Options (weekly strikes around current price 67450)
+        btc_strikes = [65000, 66000, 67000, 67500, 68000, 69000, 70000, 71000, 72000]
+        btc_options_calls = [f'BTC-{s}C' for s in btc_strikes]
+        btc_options_puts = [f'BTC-{s}P' for s in btc_strikes]
+        
+        # ETH Options (weekly strikes around current price 3450)
+        eth_strikes = [3200, 3300, 3400, 3450, 3500, 3600, 3700, 3800]
+        eth_options_calls = [f'ETH-{s}C' for s in eth_strikes]
+        eth_options_puts = [f'ETH-{s}P' for s in eth_strikes]
+        
+        # SOL Options
+        sol_strikes = [130, 135, 140, 145, 150, 155, 160]
+        sol_options_calls = [f'SOL-{s}C' for s in sol_strikes]
+        sol_options_puts = [f'SOL-{s}P' for s in sol_strikes]
+        
+        self.symbols = (
+            spot_symbols + 
+            btc_options_calls + btc_options_puts +
+            eth_options_calls + eth_options_puts +
+            sol_options_calls + sol_options_puts
+        )
+        log(f"Loaded {len(self.symbols)} symbols for simulation ({len(spot_symbols)} spot, {len(btc_options_calls)+len(btc_options_puts)} BTC options, {len(eth_options_calls)+len(eth_options_puts)} ETH options, {len(sol_options_calls)+len(sol_options_puts)} SOL options)")
+        
+        # Save default products to database with proper option identification
+        default_products = []
+        for s in self.symbols:
+            if 'USDT' in s:
+                # Spot/Perpetual
+                underlying = s.replace('USDT', '')
+                product_type = 'perpetual'
+            elif '-' in s:
+                # Option: BTC-67000C or ETH-3500P
+                underlying = s.split('-')[0]
+                product_type = 'option'
+            else:
+                underlying = s
+                product_type = 'perpetual'
+            
+            default_products.append({
+                'symbol': s, 'underlying_asset': underlying, 
+                'quote_asset': 'USDT', 'contract_type': product_type,
+                'contract_value': 1, 'tick_size': 0.01, 'lot_size': 1
+            })
+        
         self.data_manager.save_products(default_products)
         
         # SIMULATION: Generate fake first closes for all symbols
@@ -900,13 +938,45 @@ class CryptoApp:
         """Generate simulated first 5m closes for all symbols"""
         log("SIMULATION: Generating first 5m closes for all symbols...")
         
-        # Base prices for major cryptos
+        # Base prices for major cryptos and options
+        btc_spot = 67450.0
+        eth_spot = 3450.0
+        sol_spot = 145.50
+        
         base_prices = {
-            'BTCUSDT': 67450.0, 'ETHUSDT': 3450.0, 'SOLUSDT': 145.50,
+            # Spot/Perpetual
+            'BTCUSDT': btc_spot, 'ETHUSDT': eth_spot, 'SOLUSDT': sol_spot,
             'ADAUSDT': 0.45, 'DOTUSDT': 7.20, 'LINKUSDT': 18.30,
             'MATICUSDT': 0.65, 'UNIUSDT': 9.80, 'LTCUSDT': 72.50,
             'BCHUSDT': 325.0, 'XRPUSDT': 0.58, 'DOGEUSDT': 0.082,
-            'AVAXUSDT': 35.20, 'ATOMUSDT': 8.90, 'ETCUSDT': 24.50
+            'AVAXUSDT': 35.20, 'ATOMUSDT': 8.90, 'ETCUSDT': 24.50,
+            # BTC Options - ATM options priced higher, OTM lower
+            'BTC-65000C': max(10, btc_spot - 65000) * 0.95, 'BTC-65000P': max(10, 65000 - btc_spot) * 0.95,
+            'BTC-66000C': max(10, btc_spot - 66000) * 0.96, 'BTC-66000P': max(10, 66000 - btc_spot) * 0.96,
+            'BTC-67000C': max(10, btc_spot - 67000) * 0.97, 'BTC-67000P': max(10, 67000 - btc_spot) * 0.97,
+            'BTC-67500C': max(10, btc_spot - 67500) * 0.98, 'BTC-67500P': max(10, 67500 - btc_spot) * 0.98,
+            'BTC-68000C': max(10, 68000 - btc_spot) * 0.5 + 200, 'BTC-68000P': max(10, 68000 - btc_spot) * 0.95,
+            'BTC-69000C': max(10, 69000 - btc_spot) * 0.3 + 100, 'BTC-69000P': max(10, 69000 - btc_spot) * 0.96,
+            'BTC-70000C': max(10, 70000 - btc_spot) * 0.2 + 80, 'BTC-70000P': max(10, 70000 - btc_spot) * 0.97,
+            'BTC-71000C': max(10, 71000 - btc_spot) * 0.15 + 60, 'BTC-71000P': max(10, 71000 - btc_spot) * 0.98,
+            'BTC-72000C': max(10, 72000 - btc_spot) * 0.12 + 50, 'BTC-72000P': max(10, 72000 - btc_spot) * 0.99,
+            # ETH Options
+            'ETH-3200C': max(1, eth_spot - 3200) * 0.95, 'ETH-3200P': max(1, 3200 - eth_spot) * 0.95,
+            'ETH-3300C': max(1, eth_spot - 3300) * 0.96, 'ETH-3300P': max(1, 3300 - eth_spot) * 0.96,
+            'ETH-3400C': max(1, eth_spot - 3400) * 0.97, 'ETH-3400P': max(1, 3400 - eth_spot) * 0.97,
+            'ETH-3450C': max(1, eth_spot - 3450) * 0.98, 'ETH-3450P': max(1, 3450 - eth_spot) * 0.98,
+            'ETH-3500C': max(1, 3500 - eth_spot) * 0.5 + 30, 'ETH-3500P': max(1, 3500 - eth_spot) * 0.95,
+            'ETH-3600C': max(1, 3600 - eth_spot) * 0.3 + 20, 'ETH-3600P': max(1, 3600 - eth_spot) * 0.96,
+            'ETH-3700C': max(1, 3700 - eth_spot) * 0.2 + 15, 'ETH-3700P': max(1, 3700 - eth_spot) * 0.97,
+            'ETH-3800C': max(1, 3800 - eth_spot) * 0.15 + 12, 'ETH-3800P': max(1, 3800 - eth_spot) * 0.98,
+            # SOL Options
+            'SOL-130C': max(0.5, sol_spot - 130) * 0.95, 'SOL-130P': max(0.5, 130 - sol_spot) * 0.95,
+            'SOL-135C': max(0.5, sol_spot - 135) * 0.96, 'SOL-135P': max(0.5, 135 - sol_spot) * 0.96,
+            'SOL-140C': max(0.5, sol_spot - 140) * 0.97, 'SOL-140P': max(0.5, 140 - sol_spot) * 0.97,
+            'SOL-145C': max(0.5, sol_spot - 145) * 0.98, 'SOL-145P': max(0.5, 145 - sol_spot) * 0.98,
+            'SOL-150C': max(0.5, 150 - sol_spot) * 0.5 + 3, 'SOL-150P': max(0.5, 150 - sol_spot) * 0.95,
+            'SOL-155C': max(0.5, 155 - sol_spot) * 0.3 + 2, 'SOL-155P': max(0.5, 155 - sol_spot) * 0.96,
+            'SOL-160C': max(0.5, 160 - sol_spot) * 0.2 + 1.5, 'SOL-160P': max(0.5, 160 - sol_spot) * 0.97,
         }
         
         today = get_crypto_day()
@@ -940,9 +1010,21 @@ class CryptoApp:
                 row = cursor.fetchone()
                 last_price = row[0] if row else 100.0
             
-            # Generate random price movement (-0.5% to +0.5%)
-            change = (random.random() - 0.5) / 100
+            # Options have higher volatility than spot
+            if '-' in symbol:  # Options: BTC-67000C, ETH-3500P, etc.
+                # Higher volatility for options (-2% to +2%)
+                change = (random.random() - 0.5) * 0.04
+            else:
+                # Lower volatility for spot (-0.5% to +0.5%)
+                change = (random.random() - 0.5) / 100
+            
             new_price = last_price * (1 + change)
+            
+            # Ensure price doesn't go below minimum
+            if '-' in symbol:
+                new_price = max(0.01, new_price)  # Options can go near zero
+            else:
+                new_price = max(0.0001, new_price)  # Spot minimum
             
             # Save tick
             self.data_manager.save_tick(symbol, new_price, random.random() * 10, 'buy' if change > 0 else 'sell')
