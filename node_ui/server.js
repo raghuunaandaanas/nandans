@@ -31,6 +31,7 @@ const TF_CLOSE_FIELD = {
 
 const PAPER_TF = ['1m', '5m', '15m'].includes(process.env.PAPER_TF) ? process.env.PAPER_TF : '5m';
 const PAPER_FACTOR = ['micro', 'mini', 'mega'].includes(process.env.PAPER_FACTOR) ? process.env.PAPER_FACTOR : 'micro';
+const PAPER_FACTOR_MCX = ['micro', 'mini', 'mega'].includes(process.env.PAPER_FACTOR_MCX) ? process.env.PAPER_FACTOR_MCX : 'mini'; // Use larger factor for commodities
 const PAPER_COOLDOWN_SEC = Number(process.env.PAPER_COOLDOWN_SEC || 30);
 const PAPER_CYCLE_MS = Math.max(500, Number(process.env.PAPER_CYCLE_MS || 1500));
 
@@ -494,6 +495,7 @@ function calculateBrokerageCharges(entryPrice, exitPrice, quantity, exchange) {
 function recomputeDerivedForConfig(baseRows, timeframe, factorName) {
   const closeField = TF_CLOSE_FIELD[timeframe];
   const factorVal = FACTORS[factorName];
+  const factorValMCX = FACTORS[PAPER_FACTOR_MCX]; // Larger factor for commodities
   const key = cfgKey(timeframe, factorName);
   let cfgState = signalState.byConfig.get(key);
   if (!cfgState) {
@@ -514,6 +516,11 @@ function recomputeDerivedForConfig(baseRows, timeframe, factorName) {
     const symbol = String(row.symbol || '');
     if (!symbol) continue;
     seenSymbols.add(symbol);
+    
+    // Use larger factor for MCX commodities
+    const exchange = String(row.exchange || '').toUpperCase();
+    const useMCXFactor = exchange === 'MCX';
+    const actualFactor = useMCXFactor ? factorValMCX : factorVal;
 
     const volume = Math.max(0, Number(toNum(row.volume) || 0));
     const rowTsMs = toMs(row.updated_at) || nowMs;
@@ -526,8 +533,8 @@ function recomputeDerivedForConfig(baseRows, timeframe, factorName) {
       be5TouchVolume: 0,
     };
 
-    // B5 Factor calculations (0.2611%)
-    const points = close * factorVal;
+    // B5 Factor calculations - use larger factor for commodities
+    const points = close * actualFactor;
     const bu1 = close + points;
     const bu2 = close + points * 2;
     const bu3 = close + points * 3;
