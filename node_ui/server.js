@@ -30,19 +30,22 @@ const TF_CLOSE_FIELD = {
 const PAPER_TF = ['1m', '5m', '15m'].includes(process.env.PAPER_TF) ? process.env.PAPER_TF : '5m';
 const PAPER_FACTOR = ['micro', 'mini', 'mega'].includes(process.env.PAPER_FACTOR) ? process.env.PAPER_FACTOR : 'micro';
 const PAPER_COOLDOWN_SEC = Number(process.env.PAPER_COOLDOWN_SEC || 30);
+const PAPER_CYCLE_MS = Math.max(500, Number(process.env.PAPER_CYCLE_MS || 1500));
 
 const TRADE_MODE = ['paper', 'live'].includes(String(process.env.TRADE_MODE || 'paper').toLowerCase())
   ? String(process.env.TRADE_MODE || 'paper').toLowerCase()
   : 'paper';
 const ENABLE_LIVE_TRADING = process.env.ENABLE_LIVE_TRADING === '1';
 const TREND_ONLY = process.env.TREND_ONLY !== '0';
-const MIN_CONFIRMATION = Math.max(1, Number(process.env.MIN_CONFIRMATION || 2));
-const MIN_RR = Math.max(0.1, Number(process.env.MIN_RR || 1.2));
-const JACKPOT_ONLY = process.env.JACKPOT_ONLY === '1';
+const MIN_CONFIRMATION = Math.max(1, Number(process.env.MIN_CONFIRMATION || 3));
+const MIN_RR = Math.max(0.1, Number(process.env.MIN_RR || 1.8));
+const JACKPOT_ONLY = process.env.JACKPOT_ONLY !== '0';
 const JACKPOT_TOUCH_LOOKBACK_SEC = Math.max(60, Number(process.env.JACKPOT_TOUCH_LOOKBACK_SEC || 1800));
 const JACKPOT_MIN_CONFIRMATION = Math.max(MIN_CONFIRMATION, Number(process.env.JACKPOT_MIN_CONFIRMATION || 3));
 const JACKPOT_MIN_RR = Math.max(MIN_RR, Number(process.env.JACKPOT_MIN_RR || 2.2));
 const MIN_VOLUME_ACCEL = Math.max(1, Number(process.env.MIN_VOLUME_ACCEL || 1.15));
+const MIN_PROBABILITY_SCORE = Math.max(0, Math.min(100, Number(process.env.MIN_PROBABILITY_SCORE || 70)));
+const MAX_SPIKE_POINTS_MULT = Math.max(0.5, Number(process.env.MAX_SPIKE_POINTS_MULT || 2.5));
 
 let snapshotCache = { mtimeMs: -1, data: { day: '-', updated_at: '-', row_count: 0, rows: [] } };
 let symbolCache = { mtimeMs: -1, count: 0 };
@@ -318,6 +321,8 @@ function recomputeDerivedForConfig(baseRows, timeframe, factorName) {
     const volDelta = prev.prevVolume === null ? 0 : Math.max(0, volume - Number(prev.prevVolume));
     const volumeAccel = prev.prevVolDelta > 0 ? volDelta / Number(prev.prevVolDelta) : (volDelta > 0 ? 1 : 0);
     const crossedBu1 = prev.prevLtp !== null && Number(prev.prevLtp) < bu1 && ltp >= bu1;
+    const ltpJump = prev.prevLtp === null ? 0 : Math.abs(ltp - Number(prev.prevLtp));
+    const spikeFlag = points > 0 ? ltpJump > (points * MAX_SPIKE_POINTS_MULT) : false;
 
     if (ltp <= be5) {
       prev.be5TouchTs = rowTsMs;
@@ -402,6 +407,8 @@ function recomputeDerivedForConfig(baseRows, timeframe, factorName) {
       jackpot_be5_reversal: jackpotBe5Reversal,
       jackpot_short: jackpotShort,
       probability_score: probabilityScore,
+      ltp_jump: ltpJump,
+      spike_flag: spikeFlag,
       above_bu1: ltp >= bu1,
       below_be1: ltp <= be1,
       above_bu5: ltp > bu5,
@@ -439,20 +446,17 @@ function recomputeDerivedForConfig(baseRows, timeframe, factorName) {
   return { allRows, triggerRows };
 }
 
-function ensureDerivedCache(snapshotMtimeMs, baseRows) {
-  if (derivedCache.snapshotMtimeMs === snapshotMtimeMs) return;
-
-  derivedCache.snapshotMtimeMs = snapshotMtimeMs;
-  derivedCache.byConfig.clear();
-
-  const tfs = ['1m', '5m', '15m'];
-  const factors = ['micro', 'mini', 'mega'];
-
-  for (const tf of tfs) {
-    for (const f of factors) {
-      derivedCache.byConfig.set(cfgKey(tf, f), recomputeDerivedForConfig(baseRows, tf, f));
-    }
+function getDerivedForConfig(snapshotMtimeMs, baseRows, timeframe, factorName) {
+  if (derivedCache.snapshotMtimeMs !== snapshotMtimeMs) {
+    derivedCache.snapshotMtimeMs = snapshotMtimeMs;
+    derivedCache.byConfig.clear();
   }
+
+  const key = cfgKey(timeframe, factorName);
+  if (!derivedCache.byConfig.has(key)) {
+    derivedCache.byConfig.set(key, recomputeDerivedForConfig(baseRows, timeframe, factorName));
+  }
+  return derivedCache.byConfig.get(key) || { allRows: [], triggerRows: [] };
 }
 
 function filterRows(rows, q, completeOnly, limit) {
@@ -511,9 +515,7 @@ function dashboardData(urlObj) {
   const limit = Math.max(1, Math.min(50000, Number(urlObj.searchParams.get('limit') || 5000)));
 
   const baseRows = Array.isArray(snapshot.rows) ? snapshot.rows : [];
-  ensureDerivedCache(snapshotCache.mtimeMs, baseRows);
-
-  const cacheItem = derivedCache.byConfig.get(cfgKey(timeframe, factorName)) || { allRows: [], triggerRows: [] };
+  const cacheItem = getDerivedForConfig(snapshotCache.mtimeMs, baseRows, timeframe, factorName);
   const sourceRows = triggerOnly ? cacheItem.triggerRows : cacheItem.allRows;
 
   const filtered = filterRows(sourceRows, q, completeOnly, limit);
@@ -538,6 +540,8 @@ function dashboardData(urlObj) {
       jackpot_min_rr: JACKPOT_MIN_RR,
       jackpot_min_confirmation: JACKPOT_MIN_CONFIRMATION,
       jackpot_touch_lookback_sec: JACKPOT_TOUCH_LOOKBACK_SEC,
+      min_probability_score: MIN_PROBABILITY_SCORE,
+      max_spike_points_mult: MAX_SPIKE_POINTS_MULT,
     },
     stats: {
       total_symbols: totalSymbols,
@@ -554,6 +558,32 @@ function dashboardData(urlObj) {
   };
 }
 
+function tradeGuardLongRow(row, ltp) {
+  const bu1 = toNum(row?.bu1);
+  const bu5 = toNum(row?.bu5);
+  const be5 = toNum(row?.be5);
+  const be5Low = toNum(row?.be5_low_ltp);
+
+  if (ltp === null || bu1 === null || bu5 === null || be5 === null) {
+    return { ok: false, reason: 'missing_levels' };
+  }
+
+  if (!(ltp >= bu1 && ltp <= bu5)) {
+    return { ok: false, reason: 'outside_bu1_bu5' };
+  }
+
+  const be5ReversalReady =
+    Boolean(row?.jackpot_be5_reversal) &&
+    Boolean(row?.be5_touched_recent) &&
+    be5Low !== null &&
+    be5Low <= be5;
+
+  if (!be5ReversalReady) {
+    return { ok: false, reason: 'no_be5_reversal' };
+  }
+
+  return { ok: true, reason: 'be5_reversal_bu_range' };
+}
 function loadOpenTrades() {
   const db = getPaperDb();
   const cur = db.prepare('SELECT * FROM paper_trades WHERE status = ?').all('OPEN');
@@ -561,6 +591,9 @@ function loadOpenTrades() {
 }
 
 function openTradeFromRow(row, day, reason = 'trend_rr_entry') {
+  const ltp = toNum(row?.ltp);
+  const guard = tradeGuardLongRow(row, ltp);
+  if (!guard.ok) return false;
   const db = getPaperDb();
   const now = isoNow();
   const stmt = db.prepare(`
@@ -585,13 +618,13 @@ function openTradeFromRow(row, day, reason = 'trend_rr_entry') {
     row.bu3,
     row.bu4,
     row.bu5,
-    row.ltp,
+    ltp,
     now,
     'OPEN',
     reason,
-    row.ltp,
-    row.ltp,
-    row.ltp,
+    ltp,
+    ltp,
+    ltp,
     0,
     0,
     0,
@@ -614,15 +647,15 @@ function openTradeFromRow(row, day, reason = 'trend_rr_entry') {
     bu3: row.bu3,
     bu4: row.bu4,
     bu5: row.bu5,
-    entry_ltp: row.ltp,
+    entry_ltp: ltp,
     entry_ts: now,
     exit_ltp: null,
     exit_ts: null,
     status: 'OPEN',
     reason,
-    last_ltp: row.ltp,
-    max_ltp: row.ltp,
-    min_ltp: row.ltp,
+    last_ltp: ltp,
+    max_ltp: ltp,
+    min_ltp: ltp,
     runup: 0,
     drawdown: 0,
     pnl: 0,
@@ -630,6 +663,7 @@ function openTradeFromRow(row, day, reason = 'trend_rr_entry') {
     updated_at: now,
   };
   paperState.openTrades.set(row.symbol, t);
+  return true;
 }
 
 function closeTrade(trade, ltp, reason) {
@@ -685,8 +719,7 @@ function runPaperCycle() {
   const baseRows = Array.isArray(snapshot.rows) ? snapshot.rows : [];
   if (!baseRows.length) return;
 
-  ensureDerivedCache(snapshotCache.mtimeMs, baseRows);
-  const item = derivedCache.byConfig.get(cfgKey(PAPER_TF, PAPER_FACTOR));
+  const item = getDerivedForConfig(snapshotCache.mtimeMs, baseRows, PAPER_TF, PAPER_FACTOR);
   if (!item) return;
 
   if (paperState.lastSnapshotMtime === snapshotCache.mtimeMs) return;
@@ -731,10 +764,15 @@ function runPaperCycle() {
     const reward = Math.max(0, Number(r.bu5) - ltp);
     const rr = reward / risk;
     if (rr < MIN_RR) continue;
+    if (Number(r.probability_score || 0) < MIN_PROBABILITY_SCORE) continue;
+    if (r.spike_flag) continue;
 
     if (JACKPOT_ONLY && !r.jackpot_be5_reversal) continue;
 
-    const reason = r.jackpot_be5_reversal ? 'jackpot_be5_reversal' : (r.jackpot_retest ? 'bu1_retest_entry' : 'trend_rr_entry');
+    const guard = tradeGuardLongRow(r, ltp);
+    if (!guard.ok) continue;
+
+    const reason = 'be5_reversal_guard_entry';
     openTradeFromRow(r, day, reason);
   }
 }
@@ -997,7 +1035,7 @@ function serveStatic(reqPath, res) {
 function initPaperEngine() {
   getPaperDb();
   loadOpenTrades();
-  setInterval(runPaperCycle, 1000);
+  setInterval(runPaperCycle, PAPER_CYCLE_MS);
 }
 
 const server = http.createServer((req, res) => {
@@ -1028,4 +1066,13 @@ server.listen(PORT, () => {
   console.log(`Node UI running: http://127.0.0.1:${PORT}`);
   console.log(`Trade report: http://127.0.0.1:${PORT}/trades.html`);
 });
+
+
+
+
+
+
+
+
+
 

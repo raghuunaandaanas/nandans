@@ -27,8 +27,9 @@ TICKS_FILE = OUT_DIR / "ticks.csv"
 UI_SNAPSHOT_FILE = OUT_DIR / "ui_current_day.json"
 DB_FILE = OUT_DIR / "first_closes.db"
 
-FETCH_WORKERS = int(os.getenv("FIRST_CLOSE_WORKERS", "4"))
-MAX_REST_SESSIONS = int(os.getenv("MAX_REST_SESSIONS", "4"))
+MAX_REST_SESSIONS = int(os.getenv("MAX_REST_SESSIONS", "8"))
+TODAY_FETCH_WORKERS = int(os.getenv("TODAY_FETCH_WORKERS", os.getenv("FIRST_CLOSE_WORKERS", "6")))
+HISTORY_FETCH_WORKERS = int(os.getenv("HISTORY_FETCH_WORKERS", os.getenv("FIRST_CLOSE_WORKERS", "12")))
 MAX_FETCH_RETRIES = int(os.getenv("FIRST_CLOSE_MAX_RETRIES", "3"))
 FETCH_SAVE_EVERY = int(os.getenv("FIRST_CLOSE_SAVE_EVERY", "300"))
 
@@ -50,6 +51,37 @@ UI_SNAPSHOT_INTERVAL_SEC = float(os.getenv("UI_SNAPSHOT_INTERVAL_SEC", "3.0"))
 UI_MAX_ROWS = int(os.getenv("UI_MAX_ROWS", "0"))
 TODAY_DB_FLUSH_INTERVAL_SEC = float(os.getenv("TODAY_DB_FLUSH_INTERVAL_SEC", "5.0"))
 TODAY_DB_FLUSH_MAX_ROWS = int(os.getenv("TODAY_DB_FLUSH_MAX_ROWS", "5000"))
+CPU_PROFILE = os.getenv("CPU_PROFILE", "eco").strip().lower()
+if CPU_PROFILE == "eco":
+    MAX_REST_SESSIONS = min(MAX_REST_SESSIONS, 2)
+    TODAY_FETCH_WORKERS = min(TODAY_FETCH_WORKERS, 2)
+    HISTORY_FETCH_WORKERS = min(HISTORY_FETCH_WORKERS, 2)
+    CURRENT_DAY_BATCH = min(CURRENT_DAY_BATCH, 350)
+    HISTORY_BATCH = min(HISTORY_BATCH, 300)
+    CURRENT_DAY_SLEEP_SEC = max(CURRENT_DAY_SLEEP_SEC, 8.0)
+    HISTORY_SLEEP_SEC = max(HISTORY_SLEEP_SEC, 10.0)
+    UI_SNAPSHOT_INTERVAL_SEC = max(UI_SNAPSHOT_INTERVAL_SEC, 6.0)
+elif CPU_PROFILE != "max":
+    MAX_REST_SESSIONS = min(MAX_REST_SESSIONS, 4)
+    TODAY_FETCH_WORKERS = min(TODAY_FETCH_WORKERS, 3)
+    HISTORY_FETCH_WORKERS = min(HISTORY_FETCH_WORKERS, 4)
+    CURRENT_DAY_BATCH = min(CURRENT_DAY_BATCH, 600)
+    HISTORY_BATCH = min(HISTORY_BATCH, 500)
+    CURRENT_DAY_SLEEP_SEC = max(CURRENT_DAY_SLEEP_SEC, 6.0)
+    HISTORY_SLEEP_SEC = max(HISTORY_SLEEP_SEC, 8.0)
+    UI_SNAPSHOT_INTERVAL_SEC = max(UI_SNAPSHOT_INTERVAL_SEC, 4.0)
+
+TODAY_WS_THROTTLE = os.getenv("TODAY_WS_THROTTLE", "1") == "1"
+TODAY_WS_BATCH = int(os.getenv("TODAY_WS_BATCH", "120"))
+TODAY_WS_WORKERS = int(os.getenv("TODAY_WS_WORKERS", "1"))
+TODAY_WS_SLEEP_SEC = float(os.getenv("TODAY_WS_SLEEP_SEC", "12.0"))
+
+HISTORY_WS_THROTTLE = os.getenv("HISTORY_WS_THROTTLE", "1") == "1"
+HISTORY_WS_BATCH = int(os.getenv("HISTORY_WS_BATCH", "150"))
+HISTORY_WS_WORKERS = int(os.getenv("HISTORY_WS_WORKERS", "1"))
+HISTORY_WS_SLEEP_SEC = float(os.getenv("HISTORY_WS_SLEEP_SEC", "12.0"))
+
+UI_FORCE_SNAPSHOT_SEC = float(os.getenv("UI_FORCE_SNAPSHOT_SEC", "20.0"))
 
 MARKET_OPEN = {
     "NSE": dtime(9, 15),
@@ -424,11 +456,15 @@ def buffer_tick(tick):
     if lp not in (None, ""):
         try:
             price = float(lp)
-            ltp_map[symbol] = price
-            _ui_dirty = True
-            if info:
+            prev_price = ltp_map.get(symbol)
+            if prev_price != price:
+                ltp_map[symbol] = price
+                _ui_dirty = True
+            if info and symbol in pending_today:
+                cutoff = target_minutes.get(info["exchange"], target_minutes["NSE"])["fallback_after"]
                 dt_obj = parse_tick_dt(tick)
-                update_today_from_tick(symbol, info, price, dt_obj)
+                if dt_obj <= cutoff:
+                    update_today_from_tick(symbol, info, price, dt_obj)
         except Exception:
             pass
 
@@ -507,7 +543,7 @@ def on_socket_open():
 
 def build_rest_clients(creds, usertoken):
     clients = [api]
-    target = max(1, min(MAX_REST_SESSIONS, FETCH_WORKERS))
+    target = max(1, min(MAX_REST_SESSIONS, 32))
     for _ in range(target - 1):
         c = NorenApi(host="https://api.shoonya.com/NorenWClientTP/", websocket="wss://api.shoonya.com/NorenWSTP/")
         try:
@@ -547,7 +583,7 @@ def login():
         "message": "login_success",
         "rest_sessions": len(rest_clients),
     }
-    log(f"Login success | REST sessions: {len(rest_clients)}")
+    log(f"Login success | profile={CPU_PROFILE} | REST sessions: {len(rest_clients)} | today_workers={TODAY_FETCH_WORKERS} history_workers={HISTORY_FETCH_WORKERS}")
 
 def fetch_window_closes(client, exchange, token, day_obj):
     open_dt = datetime.combine(day_obj, MARKET_OPEN.get(exchange, dtime(9, 15)))
@@ -601,6 +637,48 @@ def fetch_window_closes(client, exchange, token, day_obj):
                 break
 
     return {"first_1m_close": c1, "first_5m_close": c5, "first_15m_close": c15}, True
+
+
+def effective_pool_size(requested_workers, job_count):
+    sessions = max(1, len(rest_clients))
+    return max(1, min(requested_workers, sessions, job_count))
+
+
+def split_round_robin(items, bucket_count):
+    if bucket_count <= 1:
+        return [list(items)] if items else []
+    buckets = [[] for _ in range(bucket_count)]
+    for i, item in enumerate(items):
+        buckets[i % bucket_count].append(item)
+    return [b for b in buckets if b]
+
+
+def fetch_today_partition(client, symbols):
+    out = []
+    for s in symbols:
+        info = symbol_map.get(s)
+        if not info:
+            continue
+        vals, fetched = fetch_window_closes(client, info["exchange"], info["token"], TODAY)
+        out.append((s, vals, fetched))
+    return out
+
+
+def fetch_history_partition(client, rows):
+    out = []
+    for row in rows:
+        symbol, next_day_s, _empty, _lookback, _retries = row
+        info = symbol_map.get(symbol)
+        if not info:
+            continue
+        vals, fetched = fetch_window_closes(
+            client,
+            info["exchange"],
+            info["token"],
+            date.fromisoformat(next_day_s),
+        )
+        out.append((row, vals, fetched))
+    return out
 
 
 def subscribe_all_symbols():
@@ -659,11 +737,13 @@ def today_fallback_loop():
                 )
                 log("Current-day first-close completed (tick + fallback).")
                 return
+
             candidates = [
                 s
                 for s in pending_today
                 if now_dt >= target_minutes.get(symbol_map[s]["exchange"], target_minutes["NSE"])["fallback_after"]
             ]
+            ws_now = bool(socket_opened)
 
         if not candidates:
             with lock:
@@ -676,65 +756,75 @@ def today_fallback_loop():
                         "completed": False,
                     }
                 )
-            time.sleep(CURRENT_DAY_SLEEP_SEC)
+            sleep_sec = max(CURRENT_DAY_SLEEP_SEC, TODAY_WS_SLEEP_SEC) if (TODAY_WS_THROTTLE and ws_now) else CURRENT_DAY_SLEEP_SEC
+            time.sleep(sleep_sec)
             continue
 
         keys = candidates[:CURRENT_DAY_BATCH]
+        if TODAY_WS_THROTTLE and ws_now:
+            keys = keys[: max(1, TODAY_WS_BATCH)]
         done_count = 0
 
-        with ThreadPoolExecutor(max_workers=FETCH_WORKERS) as pool:
+        workers = effective_pool_size(TODAY_FETCH_WORKERS, len(keys))
+        if TODAY_WS_THROTTLE and ws_now:
+            workers = max(1, min(workers, TODAY_WS_WORKERS))
+        buckets = split_round_robin(keys, workers)
+
+        with ThreadPoolExecutor(max_workers=workers) as pool:
             fut_map = {}
-            for i, s in enumerate(keys):
-                info = symbol_map[s]
+            for i, bucket in enumerate(buckets):
                 client = rest_clients[i % len(rest_clients)]
-                fut_map[pool.submit(fetch_window_closes, client, info["exchange"], info["token"], TODAY)] = s
+                fut_map[pool.submit(fetch_today_partition, client, bucket)] = bucket
 
-            for i, fut in enumerate(as_completed(fut_map), 1):
-                s = fut_map[fut]
-                info = symbol_map[s]
-
-                vals, fetched = None, False
+            task_i = 0
+            for fut in as_completed(fut_map):
                 try:
-                    vals, fetched = fut.result()
+                    part_results = fut.result()
                 except Exception:
-                    vals, fetched = None, False
+                    part_results = []
 
-                with lock:
-                    row = ensure_today_row(s, info)
-                    retries = today_fail_counts.get(s, 0)
+                for s, vals, fetched in part_results:
+                    task_i += 1
+                    info = symbol_map.get(s)
+                    if not info:
+                        continue
 
-                    if fetched and vals:
-                        if row.get("first_1m_close") is None and vals.get("first_1m_close") is not None:
-                            row["first_1m_close"] = vals.get("first_1m_close")
-                        if row.get("first_5m_close") is None and vals.get("first_5m_close") is not None:
-                            row["first_5m_close"] = vals.get("first_5m_close")
-                        if row.get("first_15m_close") is None and vals.get("first_15m_close") is not None:
-                            row["first_15m_close"] = vals.get("first_15m_close")
+                    with lock:
+                        row = ensure_today_row(s, info)
+                        retries = today_fail_counts.get(s, 0)
 
-                    complete = (
-                        row.get("first_1m_close") is not None
-                        and row.get("first_5m_close") is not None
-                        and row.get("first_15m_close") is not None
-                    )
+                        if fetched and vals:
+                            if row.get("first_1m_close") is None and vals.get("first_1m_close") is not None:
+                                row["first_1m_close"] = vals.get("first_1m_close")
+                            if row.get("first_5m_close") is None and vals.get("first_5m_close") is not None:
+                                row["first_5m_close"] = vals.get("first_5m_close")
+                            if row.get("first_15m_close") is None and vals.get("first_15m_close") is not None:
+                                row["first_15m_close"] = vals.get("first_15m_close")
 
-                    if complete:
-                        row["fetch_done"] = True
-                        row["updated_at"] = now_iso()
-                        pending_today.discard(s)
-                        today_fail_counts.pop(s, None)
-                        done_count += 1
-                    else:
-                        retries += 1
-                        today_fail_counts[s] = retries
-                        if retries >= MAX_FETCH_RETRIES:
-                            row["fetch_done"] = False
+                        complete = (
+                            row.get("first_1m_close") is not None
+                            and row.get("first_5m_close") is not None
+                            and row.get("first_15m_close") is not None
+                        )
+
+                        if complete:
+                            row["fetch_done"] = True
                             row["updated_at"] = now_iso()
                             pending_today.discard(s)
+                            today_fail_counts.pop(s, None)
+                            done_count += 1
+                        else:
+                            retries += 1
+                            today_fail_counts[s] = retries
+                            if retries >= MAX_FETCH_RETRIES:
+                                row["fetch_done"] = False
+                                row["updated_at"] = now_iso()
+                                pending_today.discard(s)
 
-                    mark_today_dirty(s)
+                        mark_today_dirty(s)
 
-                    if i % FETCH_SAVE_EVERY == 0:
-                        flush_today_dirty(TODAY_DB_FLUSH_MAX_ROWS)
+                        if task_i % FETCH_SAVE_EVERY == 0:
+                            flush_today_dirty(TODAY_DB_FLUSH_MAX_ROWS)
 
         with lock:
             flush_today_dirty(TODAY_DB_FLUSH_MAX_ROWS)
@@ -750,7 +840,8 @@ def today_fallback_loop():
             )
 
         log(f"Today fallback cycle: processed={len(keys)}, finalized={done_count}, remaining={left}")
-        time.sleep(CURRENT_DAY_SLEEP_SEC)
+        sleep_sec = max(CURRENT_DAY_SLEEP_SEC, TODAY_WS_SLEEP_SEC) if (TODAY_WS_THROTTLE and ws_now) else CURRENT_DAY_SLEEP_SEC
+        time.sleep(sleep_sec)
 
 def history_loop():
     with lock:
@@ -759,7 +850,9 @@ def history_loop():
 
     while True:
         with lock:
-            batch = db_get_history_batch(HISTORY_BATCH)
+            ws_now = bool(socket_opened)
+            batch_size = HISTORY_BATCH if not (HISTORY_WS_THROTTLE and ws_now) else min(HISTORY_BATCH, HISTORY_WS_BATCH)
+            batch = db_get_history_batch(batch_size)
 
         if not batch:
             with lock:
@@ -778,61 +871,65 @@ def history_loop():
         processed = 0
         with_data = 0
 
-        with ThreadPoolExecutor(max_workers=FETCH_WORKERS) as pool:
+        valid_rows = [r for r in batch if symbol_map.get(r[0])]
+        workers = effective_pool_size(HISTORY_FETCH_WORKERS, len(valid_rows))
+        if HISTORY_WS_THROTTLE and ws_now:
+            workers = max(1, min(workers, HISTORY_WS_WORKERS))
+        buckets = split_round_robin(valid_rows, workers)
+
+        with ThreadPoolExecutor(max_workers=workers) as pool:
             fut_map = {}
-            for i, row in enumerate(batch):
-                symbol, next_day_s, _empty, _lookback, _retries = row
-                info = symbol_map.get(symbol)
-                if not info:
-                    continue
+            for i, bucket in enumerate(buckets):
                 client = rest_clients[i % len(rest_clients)]
-                fut_map[pool.submit(fetch_window_closes, client, info["exchange"], info["token"], date.fromisoformat(next_day_s))] = row
+                fut_map[pool.submit(fetch_history_partition, client, bucket)] = bucket
 
-            for i, fut in enumerate(as_completed(fut_map), 1):
-                symbol, next_day_s, empty_streak, lookback_days, retries = fut_map[fut]
-                info = symbol_map[symbol]
-
-                vals, fetched = None, False
+            task_i = 0
+            for fut in as_completed(fut_map):
                 try:
-                    vals, fetched = fut.result()
+                    part_results = fut.result()
                 except Exception:
-                    vals, fetched = None, False
+                    part_results = []
 
-                day_obj = date.fromisoformat(next_day_s)
-                next_day_new = (day_obj - timedelta(days=1)).isoformat()
+                for row, vals, fetched in part_results:
+                    task_i += 1
+                    symbol, next_day_s, empty_streak, lookback_days, retries = row
+                    info = symbol_map[symbol]
 
-                with lock:
-                    if fetched:
-                        db_upsert_first_close(symbol, info, next_day_s, vals, True)
-                        has_data = bool(
-                            vals
-                            and (
-                                vals.get("first_1m_close") is not None
-                                or vals.get("first_5m_close") is not None
-                                or vals.get("first_15m_close") is not None
+                    day_obj = date.fromisoformat(next_day_s)
+                    next_day_new = (day_obj - timedelta(days=1)).isoformat()
+
+                    with lock:
+                        if fetched:
+                            db_upsert_first_close(symbol, info, next_day_s, vals, True)
+                            has_data = bool(
+                                vals
+                                and (
+                                    vals.get("first_1m_close") is not None
+                                    or vals.get("first_5m_close") is not None
+                                    or vals.get("first_15m_close") is not None
+                                )
                             )
-                        )
-                        empty_streak = 0 if has_data else empty_streak + 1
-                        lookback_days += 1
-                        retries = 0
-                        if has_data:
-                            with_data += 1
-                    else:
-                        retries += 1
-                        if retries >= MAX_FETCH_RETRIES:
-                            retries = 0
+                            empty_streak = 0 if has_data else empty_streak + 1
                             lookback_days += 1
-                            empty_streak += 1
+                            retries = 0
+                            if has_data:
+                                with_data += 1
                         else:
-                            next_day_new = next_day_s
+                            retries += 1
+                            if retries >= MAX_FETCH_RETRIES:
+                                retries = 0
+                                lookback_days += 1
+                                empty_streak += 1
+                            else:
+                                next_day_new = next_day_s
 
-                    done = lookback_days >= HISTORY_MAX_LOOKBACK_DAYS or empty_streak >= HISTORY_STOP_EMPTY_STREAK
-                    db_update_history_state(symbol, next_day_new, empty_streak, lookback_days, retries, done)
+                        done = lookback_days >= HISTORY_MAX_LOOKBACK_DAYS or empty_streak >= HISTORY_STOP_EMPTY_STREAK
+                        db_update_history_state(symbol, next_day_new, empty_streak, lookback_days, retries, done)
 
-                    if i % FETCH_SAVE_EVERY == 0:
-                        db.commit()
+                        if task_i % FETCH_SAVE_EVERY == 0:
+                            db.commit()
 
-                processed += 1
+                    processed += 1
 
         with lock:
             db.commit()
@@ -848,7 +945,8 @@ def history_loop():
             )
 
         log(f"History cycle: processed={processed}, with_data={with_data}, pending_symbols={left}")
-        time.sleep(HISTORY_SLEEP_SEC)
+        sleep_sec = max(HISTORY_SLEEP_SEC, HISTORY_WS_SLEEP_SEC) if (HISTORY_WS_THROTTLE and ws_now) else HISTORY_SLEEP_SEC
+        time.sleep(sleep_sec)
 
 def write_ui_snapshot():
     global _ui_dirty, _last_ui_snapshot_ts, _snapshots_written
@@ -858,6 +956,8 @@ def write_ui_snapshot():
         return
 
     with lock:
+        if not _ui_dirty and (now_t - _last_ui_snapshot_ts) < UI_FORCE_SNAPSHOT_SEC:
+            return
         today_copy = dict(today_rows)
         ltp_copy = dict(ltp_map)
         vol_copy = dict(volume_map)
@@ -1110,6 +1210,15 @@ if __name__ == "__main__":
             db.commit()
             db.close()
         log("Stopped by user")
+
+
+
+
+
+
+
+
+
 
 
 
