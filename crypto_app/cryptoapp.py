@@ -75,10 +75,42 @@ STATE_FILE = RUNTIME_DIR / "crypto_state.json"
 DELTA_REST_URL = "https://api.india.delta.exchange"
 DELTA_WS_URL = "wss://socket.india.delta.exchange"
 
-# Crypto Market Configuration (24/7 trading)
-# Unlike NSE/BSE/MCX, crypto never sleeps
-CRYPTO_MARKET_OPEN = dtime(0, 0, 0)  # Midnight IST
-CRYPTO_MARKET_CLOSE = dtime(23, 59, 59)  # Almost midnight
+# =============================================================================
+# CRYPTO MARKET TIME CONFIGURATION
+# =============================================================================
+# Crypto markets reset daily at 00:00 UTC = 5:30 AM IST
+# This is our reference point for first 5m, 15m closes
+# Unlike NSE (9:15 AM IST), crypto uses UTC midnight
+
+# Get current time in IST (UTC+5:30)
+def get_ist_now():
+    """Get current time in IST (UTC+5:30)"""
+    utc_now = datetime.utcnow()
+    ist_offset = timedelta(hours=5, minutes=30)
+    return utc_now + ist_offset
+
+def get_crypto_day():
+    """
+    Get current crypto trading day
+    Crypto day starts at 00:00 UTC = 5:30 AM IST
+    """
+    utc_now = datetime.utcnow()
+    # If UTC time is before 00:00, we're still in previous day's session
+    # Actually for crypto, each UTC day is a new session
+    return utc_now.date().isoformat()
+
+def get_crypto_market_open_ts():
+    """
+    Get timestamp for crypto market open (00:00 UTC = 5:30 AM IST)
+    Returns Unix timestamp for start of current UTC day
+    """
+    utc_now = datetime.utcnow()
+    utc_midnight = utc_now.replace(hour=0, minute=0, second=0, microsecond=0)
+    return int(utc_midnight.timestamp())
+
+# Crypto Market Hours (24/7, but daily reset at 00:00 UTC)
+CRYPTO_DAILY_RESET_UTC = dtime(0, 0, 0)  # 00:00 UTC = 5:30 AM IST
+CRYPTO_DAILY_RESET_IST = dtime(5, 30, 0)  # 5:30 AM IST
 
 # Timeframes for first closes (same as Shoonya)
 TIMEFRAMES = {
@@ -891,25 +923,48 @@ class CryptoApp:
             log(f"Flush error: {e}")
     
     def fetch_first_closes(self):
-        """Fetch first 1m, 5m, 15m closes for all symbols"""
-        log("Fetching first closes...")
+        """
+        Fetch first 1m, 5m, 15m closes for all symbols
         
-        today = date.today().isoformat()
-        now = int(time.time())
+        CRYPTO TIME HANDLING:
+        - Crypto daily reset at 00:00 UTC = 5:30 AM IST
+        - First 5m candle: 00:00-00:05 UTC
+        - First 15m candle: 00:00-00:15 UTC
+        - We fetch from 00:00 UTC (market open) to now
+        """
+        log("Fetching crypto first closes (00:00 UTC / 5:30 AM IST)...")
         
-        # Fetch 5m candles for last hour to get first close
-        start_time = now - 3600
+        # Get crypto trading day
+        today = get_crypto_day()
         
+        # Get market open timestamp (00:00 UTC)
+        market_open_ts = get_crypto_market_open_ts()
+        now_ts = int(time.time())
+        
+        log(f"Crypto session: {today} | Market open (UTC): {market_open_ts} | Now: {now_ts}")
+        
+        # Fetch 5m candles from market open
         for symbol in self.symbols[:50]:  # Limit for rate limiting
             try:
-                candles = self.client.get_candles(symbol, '5', start_time, now)
-                if candles and len(candles) > 0:
-                    first_close = float(candles[0].get('close', 0))
-                    if first_close > 0:
-                        self.data_manager.save_first_close(symbol, '5m', first_close, today)
-                        log(f"First 5m close for {symbol}: {first_close}")
+                # Get 5m candles from 00:00 UTC to now
+                candles = self.client.get_candles(symbol, '5', market_open_ts, now_ts)
                 
-                time.sleep(0.1)  # Rate limiting
+                if candles and len(candles) > 0:
+                    # First candle after 00:00 UTC is our first 5m close
+                    first_5m = float(candles[0].get('close', 0))
+                    if first_5m > 0:
+                        self.data_manager.save_first_close(symbol, '5m', first_5m, today)
+                        log(f"First 5m close for {symbol}: {first_5m} (candle 00:00-00:05 UTC)")
+                    
+                    # If we have at least 3 candles, we can get first 15m
+                    if len(candles) >= 3:
+                        # 15m close = close of 3rd 5m candle (00:10-00:15)
+                        first_15m = float(candles[2].get('close', 0))
+                        if first_15m > 0:
+                            self.data_manager.save_first_close(symbol, '15m', first_15m, today)
+                            log(f"First 15m close for {symbol}: {first_15m} (candle 00:10-00:15 UTC)")
+                
+                time.sleep(0.05)  # Rate limiting - faster for crypto
                 
             except Exception as e:
                 log(f"Error fetching {symbol}: {e}")
@@ -917,6 +972,9 @@ class CryptoApp:
     def generate_snapshot(self):
         """Generate UI snapshot (parallel to Shoonya's snapshot)"""
         try:
+            # Get crypto day
+            crypto_day = get_crypto_day()
+            
             # Get latest prices
             snapshot_rows = []
             
@@ -929,11 +987,11 @@ class CryptoApp:
                 latest = ticks[0]
                 ltp = latest['price']
                 
-                # Get first close
+                # Get first close for current crypto day
                 with sqlite3.connect(DB_FILE) as conn:
                     cursor = conn.execute(
-                        "SELECT first_5m_close FROM first_closes WHERE symbol = ?",
-                        (symbol,)
+                        "SELECT first_5m_close FROM first_closes WHERE symbol = ? AND day = ?",
+                        (symbol, crypto_day)
                     )
                     row = cursor.fetchone()
                     first_close = row[0] if row else None
@@ -962,10 +1020,12 @@ class CryptoApp:
             
             # Save snapshot for UI
             snapshot = {
-                'day': date.today().isoformat(),
-                'updated_at': datetime.now().isoformat(),
+                'day': crypto_day,
+                'updated_at': datetime.utcnow().isoformat() + 'Z',  # UTC timestamp
                 'row_count': len(snapshot_rows),
-                'rows': snapshot_rows
+                'rows': snapshot_rows,
+                'market_open_utc': get_crypto_market_open_ts(),
+                'ist_time': get_ist_now().isoformat()
             }
             
             snapshot_file = OUT_DIR / 'crypto_snapshot.json'
@@ -977,9 +1037,178 @@ class CryptoApp:
         except Exception as e:
             log(f"Snapshot error: {e}")
     
+    def run_paper_cycle(self):
+        """
+        Run paper trading cycle - analyze and simulate trades
+        CRYPTO: Runs 24/7 (no market close)
+        """
+        try:
+            crypto_day = get_crypto_day()
+            
+            # Get all symbols with first closes
+            with sqlite3.connect(DB_FILE) as conn:
+                conn.row_factory = sqlite3.Row
+                cursor = conn.execute(
+                    """SELECT fc.symbol, fc.first_5m_close, t.price as ltp
+                       FROM first_closes fc
+                       LEFT JOIN (
+                           SELECT symbol, price, timestamp,
+                                  ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY timestamp DESC) as rn
+                           FROM ticks
+                       ) t ON fc.symbol = t.symbol AND t.rn = 1
+                       WHERE fc.day = ? AND t.price IS NOT NULL
+                       LIMIT 50""",
+                    (crypto_day,)
+                )
+                rows = [dict(row) for row in cursor.fetchall()]
+            
+            trade_count = 0
+            for row in rows:
+                symbol = row['symbol']
+                ltp = float(row['ltp'])
+                close = float(row['first_5m_close'])
+                
+                # Run strategy analysis
+                analysis = self.strategy.analyze_setup(ltp, close, symbol)
+                
+                # Check for entry signal
+                if analysis['primary_signal']:
+                    signal = analysis['primary_signal']
+                    ts_signal = signal.get('traderscope_signal', {})
+                    
+                    # Entry conditions:
+                    # 1. In BU1-BU5 range
+                    # 2. Trend is UP
+                    # 3. Signal strength HIGH or MEDIUM
+                    # 4. Zone is not resistance
+                    if (analysis['levels']['bu1'] <= ltp <= analysis['levels']['bu5'] and
+                        ts_signal.get('strength') in ['HIGH', 'MEDIUM'] and
+                        ts_signal.get('action') not in ['AVOID_ENTRY', 'EXIT_OR_REVERSE']):
+                        
+                        # Check if not already in open trade
+                        with sqlite3.connect(DB_FILE) as conn:
+                            cursor = conn.execute(
+                                "SELECT COUNT(*) FROM paper_trades WHERE symbol = ? AND status = 'OPEN'",
+                                (symbol,)
+                            )
+                            if cursor.fetchone()[0] > 0:
+                                continue
+                        
+                        # Open paper trade
+                        self.open_paper_trade(symbol, ltp, close, analysis, crypto_day)
+                        trade_count += 1
+            
+            if trade_count > 0:
+                log(f"Paper cycle: {trade_count} new trades opened")
+                
+        except Exception as e:
+            log(f"Paper cycle error: {e}")
+    
+    def open_paper_trade(self, symbol: str, entry_price: float, close: float, analysis: dict, day: str):
+        """Open a paper trade"""
+        try:
+            levels = analysis['levels']
+            signal = analysis['primary_signal']
+            ts_signal = signal.get('traderscope_signal', {}) if signal else {}
+            
+            # Set SL at BE1, TP based on zone
+            sl_price = levels['be1']
+            
+            # TP selection based on zone
+            zone_name = ts_signal.get('zone', '') if ts_signal else ''
+            if zone_name in ['trend_fast', 'decision']:
+                tp_price = levels['bu5']  # Go for full target
+            elif zone_name in ['fib_major']:
+                tp_price = levels['bu4']  # Conservative target
+            else:
+                tp_price = levels['bu3']  # Standard target
+            
+            now = datetime.utcnow().isoformat()
+            
+            with sqlite3.connect(DB_FILE) as conn:
+                conn.execute("""
+                    INSERT INTO paper_trades 
+                    (symbol, side, quantity, entry_price, entry_time, status, 
+                     sl_price, tp_price, day, updated_at)
+                    VALUES (?, 'BUY', 1, ?, ?, 'OPEN', ?, ?, ?, ?)
+                """, (symbol, entry_price, now, sl_price, tp_price, day, now))
+                conn.commit()
+            
+            log(f"🚀 PAPER TRADE OPENED: {symbol} @ {entry_price:.2f} | SL: {sl_price:.2f} | TP: {tp_price:.2f} | Zone: {zone_name}")
+            
+        except Exception as e:
+            log(f"Error opening paper trade: {e}")
+    
+    def update_open_trades(self):
+        """Update open trades with current prices and check SL/TP"""
+        try:
+            with sqlite3.connect(DB_FILE) as conn:
+                conn.row_factory = sqlite3.Row
+                
+                # Get open trades
+                cursor = conn.execute(
+                    "SELECT * FROM paper_trades WHERE status = 'OPEN'"
+                )
+                open_trades = [dict(row) for row in cursor.fetchall()]
+                
+                for trade in open_trades:
+                    symbol = trade['symbol']
+                    
+                    # Get latest price
+                    cursor = conn.execute(
+                        "SELECT price FROM ticks WHERE symbol = ? ORDER BY timestamp DESC LIMIT 1",
+                        (symbol,)
+                    )
+                    row = cursor.fetchone()
+                    if not row:
+                        continue
+                    
+                    current_price = float(row['price'])
+                    sl_price = float(trade['sl_price'])
+                    tp_price = float(trade['tp_price'])
+                    entry_price = float(trade['entry_price'])
+                    
+                    # Check SL
+                    if current_price <= sl_price:
+                        pnl = current_price - entry_price
+                        pnl_pct = (pnl / entry_price) * 100
+                        now = datetime.utcnow().isoformat()
+                        
+                        conn.execute("""
+                            UPDATE paper_trades 
+                            SET status = 'CLOSED', exit_price = ?, exit_time = ?, 
+                                pnl = ?, pnl_pct = ?, updated_at = ?
+                            WHERE id = ?
+                        """, (current_price, now, pnl, pnl_pct, now, trade['id']))
+                        conn.commit()
+                        
+                        log(f"🔴 STOP LOSS: {symbol} @ {current_price:.2f} | PnL: {pnl:.2f} ({pnl_pct:.2f}%)")
+                    
+                    # Check TP
+                    elif current_price >= tp_price:
+                        pnl = current_price - entry_price
+                        pnl_pct = (pnl / entry_price) * 100
+                        now = datetime.utcnow().isoformat()
+                        
+                        conn.execute("""
+                            UPDATE paper_trades 
+                            SET status = 'CLOSED', exit_price = ?, exit_time = ?, 
+                                pnl = ?, pnl_pct = ?, updated_at = ?
+                            WHERE id = ?
+                        """, (current_price, now, pnl, pnl_pct, now, trade['id']))
+                        conn.commit()
+                        
+                        log(f"🎯 TARGET HIT: {symbol} @ {current_price:.2f} | PnL: {pnl:.2f} ({pnl_pct:.2f}%)")
+                        
+        except Exception as e:
+            log(f"Error updating trades: {e}")
+    
     def run(self):
         """Main application loop"""
-        log("Starting Crypto App...")
+        log("=" * 70)
+        log("CRYPTO TRADING APP - Delta India Exchange")
+        log("Market Open: 00:00 UTC (5:30 AM IST) | 24/7 Trading")
+        log("=" * 70)
         
         if not self.initialize():
             log("Initialization failed!")
@@ -988,27 +1217,47 @@ class CryptoApp:
         self.running = True
         
         # Start WebSocket in background thread
-        log("Starting WebSocket...")
+        log("Starting WebSocket for real-time data...")
         self.ws = DeltaWebSocket(self.auth, self.symbols)
         self.ws.add_callback(self.on_market_data)
         
         ws_thread = threading.Thread(target=self.ws.connect, daemon=True)
         ws_thread.start()
         
+        # Wait for WebSocket to connect
+        time.sleep(3)
+        
         # Fetch initial data
+        log("Fetching first closes (00:00 UTC / 5:30 AM IST)...")
         self.fetch_first_closes()
         
         # Main loop
         last_snapshot = time.time()
+        last_paper_cycle = time.time()
+        last_trade_update = time.time()
+        
+        log("Main loop started - Running 24/7")
         
         try:
             while self.running:
                 time.sleep(1)
                 
+                now = time.time()
+                
                 # Generate snapshot every 5 seconds
-                if time.time() - last_snapshot >= 5:
+                if now - last_snapshot >= 5:
                     self.generate_snapshot()
-                    last_snapshot = time.time()
+                    last_snapshot = now
+                
+                # Paper trading cycle every 3 seconds
+                if now - last_paper_cycle >= 3:
+                    self.run_paper_cycle()
+                    last_paper_cycle = now
+                
+                # Update open trades every 2 seconds
+                if now - last_trade_update >= 2:
+                    self.update_open_trades()
+                    last_trade_update = now
                 
         except KeyboardInterrupt:
             log("Shutting down...")
