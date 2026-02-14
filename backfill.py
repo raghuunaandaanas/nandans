@@ -45,18 +45,30 @@ def log(msg):
     print(f"[{datetime.now().strftime('%H:%M:%S')}] {msg}")
 
 def kill_all():
-    """Kill all Python and Node processes aggressively"""
+    """Kill all Python and Node processes aggressively (except this one)"""
     log("Killing all Python and Node processes...")
     
-    # Multiple methods to ensure everything is killed
-    for cmd in [
-        "taskkill /F /IM python.exe /T 2>nul",
-        "taskkill /F /IM pythonw.exe /T 2>nul", 
-        "taskkill /F /IM node.exe /T 2>nul",
-        'taskkill /F /FI "WINDOWTITLE eq *history*" 2>nul',
-        'taskkill /F /FI "WINDOWTITLE eq *crypto*" 2>nul',
-    ]:
-        subprocess.run(cmd, shell=True, capture_output=True)
+    import os
+    my_pid = os.getpid()
+    
+    # Get list of Python PIDs first (excluding self)
+    try:
+        result = subprocess.run("tasklist /FI \"IMAGENAME eq python.exe\" /FO CSV /NH", shell=True, capture_output=True, text=True)
+        for line in result.stdout.strip().split('\n'):
+            if 'python.exe' in line:
+                parts = line.split('","')
+                if len(parts) >= 2:
+                    try:
+                        pid = int(parts[1])
+                        if pid != my_pid:
+                            subprocess.run(f"taskkill /F /PID {pid} 2>nul", shell=True, capture_output=True)
+                    except:
+                        pass
+    except:
+        pass
+    
+    # Kill Node processes
+    subprocess.run("taskkill /F /IM node.exe /T 2>nul", shell=True, capture_output=True)
     
     # Kill processes on ports
     try:
@@ -65,7 +77,9 @@ def kill_all():
             if 'LISTENING' in line:
                 parts = line.split()
                 if len(parts) >= 5:
-                    subprocess.run(f"taskkill /F /PID {parts[-1]} 2>nul", shell=True, capture_output=True)
+                    pid = parts[-1]
+                    if pid != str(my_pid):
+                        subprocess.run(f"taskkill /F /PID {pid} 2>nul", shell=True, capture_output=True)
     except:
         pass
     
@@ -171,6 +185,7 @@ def main():
     parser.add_argument('--eco', action='store_true', help='Eco mode (4 workers, slow but safe)')
     parser.add_argument('--status', action='store_true', help='Show status only')
     parser.add_argument('--kill', action='store_true', help='Kill all processes first')
+    parser.add_argument('--yes', '-y', action='store_true', help='Skip confirmation')
     
     args = parser.parse_args()
     
@@ -198,10 +213,11 @@ def main():
     if mode_config['kill'] or args.kill:
         print("WARNING: This will KILL all running trading systems!")
         print()
-        response = input("Continue? (yes/no): ")
-        if response.lower() != 'yes':
-            print("Aborted")
-            return
+        if not args.yes:
+            response = input("Continue? (yes/no): ")
+            if response.lower() != 'yes':
+                print("Aborted")
+                return
         print()
         kill_all()
         clean_temp_files()
