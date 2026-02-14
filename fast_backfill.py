@@ -39,6 +39,14 @@ from historyapp import (
 # FAST BACKFILL CONFIGURATION
 # =============================================================================
 
+# Set environment variables for historyapp BEFORE importing
+os.environ['CPU_PROFILE'] = 'max'
+os.environ['HISTORY_FETCH_WORKERS'] = os.getenv('FAST_WORKERS', '50')
+os.environ['HISTORY_BATCH'] = os.getenv('FAST_BATCH', '2000')
+os.environ['HISTORY_SLEEP'] = os.getenv('FAST_SLEEP', '0.5')
+os.environ['HISTORY_MAX_LOOKBACK_DAYS'] = os.getenv('FAST_LOOKBACK', '5000')
+os.environ['HISTORY_WS_THROTTLE'] = '0'
+
 FAST_WORKERS = int(os.getenv("FAST_WORKERS", "50"))
 FAST_BATCH = int(os.getenv("FAST_BATCH", "2000"))
 FAST_SLEEP = float(os.getenv("FAST_SLEEP", "0.5"))
