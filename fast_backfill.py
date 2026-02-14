@@ -28,10 +28,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 # Import from historyapp
+import historyapp
 from historyapp import (
-    load_credentials, init_clients, symbol_map, rest_clients,
+    login, symbol_map,
     fetch_window_closes, db_get_history_batch, db_upsert_first_close, 
-    db_update_history_state, init_db, OUT_DIR, log
+    db_update_history_state, init_db, load_symbols, OUT_DIR, log
 )
 
 # =============================================================================
@@ -58,11 +59,16 @@ print("=" * 70)
 # INITIALIZATION
 # =============================================================================
 
-init_db()
-load_credentials()
-init_clients()
+# Load symbols first
+symbol_map.update(load_symbols())
+if not symbol_map:
+    print("ERROR: No symbols found")
+    sys.exit(1)
 
-if not rest_clients:
+init_db()
+login()
+
+if not historyapp.rest_clients:
     print("ERROR: No REST clients available")
     sys.exit(1)
 
@@ -119,7 +125,7 @@ while True:
     with ThreadPoolExecutor(max_workers=workers) as pool:
         fut_map = {}
         for i, bucket in enumerate(buckets):
-            client = rest_clients[i % len(rest_clients)]
+            client = historyapp.rest_clients[i % len(historyapp.rest_clients)]
             fut_map[pool.submit(fetch_history_partition_fast, client, bucket)] = bucket
         
         for fut in as_completed(fut_map):
@@ -188,3 +194,11 @@ while True:
     time.sleep(FAST_SLEEP)
 
 print(f"\nTotal time: {(time.time() - start_time) / 3600:.2f} hours")
+
+
+def split_round_robin(items, n):
+    """Split items into n buckets round-robin style"""
+    buckets = [[] for _ in range(n)]
+    for i, item in enumerate(items):
+        buckets[i % n].append(item)
+    return buckets
