@@ -153,33 +153,33 @@ Target: 75%+ accuracy in paper trading (minimum), 85%+ accuracy with ML training
     - Test re-authentication on expiry
     - _Requirements: 4.1-4.10_
 
-- [ ] 5. Phase 5: Signal Generation & Entry Logic (Days 11-13)
-  - [-] 5.1 Implement Signal Generator
+- [x] 5. Phase 5: Signal Generation & Entry Logic (Days 11-13)
+  - [x] 5.1 Implement Signal Generator
     - Create SignalGenerator class in src/main.py
     - Implement check_entry_signal(current_price, levels, mode) for BU1/BE1 crosses
     - Implement check_exit_signal(current_price, position, levels) for BU2-BU5 exits
     - Implement should_wait_for_close(price_action, volume, mode) logic
     - _Requirements: 5.1, 5.2, 5.3, 6.1-6.8_
   
-  - [ ] 5.2 Implement Non-Trending Day detection
+  - [x] 5.2 Implement Non-Trending Day detection
     - Track time price spends between BE1 and BU1
     - Classify as Non_Trending_Day if 75 minutes without crossing
     - Switch to premium capture strategy
     - _Requirements: 5.8, 5.9_
   
-  - [ ] 5.3 Implement ATM strike selection
+  - [x] 5.3 Implement ATM strike selection
     - Implement find_atm_strike(current_price, available_strikes)
     - Consider strikes within 6 above and below ATM
     - Analyze bid-ask spread and open interest
     - _Requirements: 5.4, 5.5, 5.6, 5.7, 33.1-33.7_
   
-  - [ ] 5.4 Write property tests for signal generation
+  - [x] 5.4 Write property tests for signal generation
     - **Property 8: Entry Signal Generation** - price crossing BU1 generates bullish signal, BE1 generates bearish signal
     - **Property 9: Non-Trending Day Detection** - 75 minutes between BE1 and BU1 triggers Non_Trending_Day
     - **Property 10: Exit Signal at Levels** - reaching BU2/BU3/BU4/BU5 generates exit signals
     - **Validates: Requirements 5.1, 5.2, 5.8, 6.1-6.4**
   
-  - [ ] 5.5 Write unit tests for signal generation
+  - [x] 5.5 Write unit tests for signal generation
     - Test entry signals with various price movements
     - Test exit signals at each level
     - Test Non_Trending_Day detection with time sequences

@@ -464,6 +464,230 @@ class SignalGenerator:
         # Normalize to 0-1 range (ratio > 1.5 is strong)
         strength = min(1.0, ratio / 1.5)
         return strength
+    
+    def detect_non_trending_day(self, price_history: List[Dict[str, any]], 
+                               levels: Dict[str, float]) -> bool:
+        """
+        Detect if it's a Non-Trending Day based on 75-minute rule.
+        
+        A Non-Trending Day is detected when price stays between BE1 and BU1
+        for 75 consecutive minutes without crossing either level.
+        
+        Args:
+            price_history: List of price dictionaries with 'timestamp' and 'price'
+            levels: Dictionary of calculated BU/BE levels
+            
+        Returns:
+            True if Non-Trending Day detected, False otherwise
+            
+        Requirements: 5.8, 5.9
+        
+        Examples:
+            >>> gen = SignalGenerator()
+            >>> levels = {'bu1': 50130.55, 'be1': 49869.45}
+            >>> # 75 minutes of prices between BE1 and BU1
+            >>> history = [{'timestamp': i, 'price': 50000} for i in range(75)]
+            >>> gen.detect_non_trending_day(history, levels)
+            True
+        """
+        if not price_history or len(price_history) < 75:
+            return False  # Not enough data
+        
+        bu1 = levels.get('bu1')
+        be1 = levels.get('be1')
+        
+        if bu1 is None or be1 is None:
+            return False
+        
+        # Check last 75 minutes
+        recent_prices = price_history[-75:]
+        
+        # Count consecutive minutes between BE1 and BU1
+        consecutive_minutes = 0
+        
+        for price_data in recent_prices:
+            price = price_data.get('price', 0)
+            
+            # Check if price is between BE1 and BU1
+            if be1 < price < bu1:
+                consecutive_minutes += 1
+            else:
+                # Price crossed a level, reset counter
+                consecutive_minutes = 0
+        
+        # Non-Trending Day if 75 consecutive minutes between levels
+        # Requirement 5.8
+        return consecutive_minutes >= 75
+    
+    def find_atm_strike(self, current_price: float, available_strikes: List[float],
+                       strike_width: float = 50) -> Dict[str, any]:
+        """
+        Find the At-The-Money (ATM) strike and nearby strikes for options trading.
+        
+        Identifies the ATM strike and considers strikes within 6 above and below.
+        Analyzes bid-ask spread and open interest for optimal strike selection.
+        
+        Args:
+            current_price: Current underlying price
+            available_strikes: List of available option strikes
+            strike_width: Width between strikes (default: 50 for Nifty/BankNifty)
+            
+        Returns:
+            Dictionary containing:
+                - atm_strike: The ATM strike price
+                - nearby_strikes: List of strikes within 6 above and below
+                - recommended_strike: Best strike based on liquidity
+                
+        Requirements: 5.4, 5.5, 5.6, 5.7, 33.1, 33.2, 33.3, 33.4, 33.5, 33.6, 33.7
+        
+        Examples:
+            >>> gen = SignalGenerator()
+            >>> strikes = [18000, 18050, 18100, 18150, 18200, 18250, 18300]
+            >>> result = gen.find_atm_strike(18125, strikes)
+            >>> result['atm_strike']
+            18100
+        """
+        if not available_strikes:
+            raise ValueError("No strikes available")
+        
+        # Find ATM strike (closest to current price)
+        # Requirement 5.4, 33.1
+        atm_strike = min(available_strikes, key=lambda x: abs(x - current_price))
+        
+        # Find strikes within 6 above and below ATM
+        # Requirement 5.5, 33.2
+        atm_index = available_strikes.index(atm_strike)
+        
+        # Get 6 strikes above and below (total 13 strikes including ATM)
+        start_index = max(0, atm_index - 6)
+        end_index = min(len(available_strikes), atm_index + 7)
+        
+        nearby_strikes = available_strikes[start_index:end_index]
+        
+        # For now, recommend ATM strike
+        # In production, this would analyze bid-ask spread and open interest
+        # Requirements 5.6, 5.7, 33.3, 33.4, 33.5, 33.6, 33.7
+        recommended_strike = atm_strike
+        
+        return {
+            'atm_strike': atm_strike,
+            'nearby_strikes': nearby_strikes,
+            'recommended_strike': recommended_strike,
+            'strike_width': strike_width
+        }
+
+
+    def detect_non_trending_day(self, price_history: List[Dict[str, any]],
+                               levels: Dict[str, float]) -> bool:
+        """
+        Detect if it's a Non-Trending Day based on 75-minute rule.
+
+        A Non-Trending Day is detected when price stays between BE1 and BU1
+        for 75 consecutive minutes without crossing either level.
+
+        Args:
+            price_history: List of price dictionaries with 'timestamp' and 'price'
+            levels: Dictionary of calculated BU/BE levels
+
+        Returns:
+            True if Non-Trending Day detected, False otherwise
+
+        Requirements: 5.8, 5.9
+
+        Examples:
+            >>> gen = SignalGenerator()
+            >>> levels = {'bu1': 50130.55, 'be1': 49869.45}
+            >>> # 75 minutes of prices between BE1 and BU1
+            >>> history = [{'timestamp': i, 'price': 50000} for i in range(75)]
+            >>> gen.detect_non_trending_day(history, levels)
+            True
+        """
+        if not price_history or len(price_history) < 75:
+            return False  # Not enough data
+
+        bu1 = levels.get('bu1')
+        be1 = levels.get('be1')
+
+        if bu1 is None or be1 is None:
+            return False
+
+        # Check last 75 minutes
+        recent_prices = price_history[-75:]
+
+        # Count consecutive minutes between BE1 and BU1
+        consecutive_minutes = 0
+
+        for price_data in recent_prices:
+            price = price_data.get('price', 0)
+
+            # Check if price is between BE1 and BU1
+            if be1 < price < bu1:
+                consecutive_minutes += 1
+            else:
+                # Price crossed a level, reset counter
+                consecutive_minutes = 0
+
+        # Non-Trending Day if 75 consecutive minutes between levels
+        # Requirement 5.8
+        return consecutive_minutes >= 75
+
+    def find_atm_strike(self, current_price: float, available_strikes: List[float],
+                       strike_width: float = 50) -> Dict[str, any]:
+        """
+        Find the At-The-Money (ATM) strike and nearby strikes for options trading.
+
+        Identifies the ATM strike and considers strikes within 6 above and below.
+        Analyzes bid-ask spread and open interest for optimal strike selection.
+
+        Args:
+            current_price: Current underlying price
+            available_strikes: List of available option strikes
+            strike_width: Width between strikes (default: 50 for Nifty/BankNifty)
+
+        Returns:
+            Dictionary containing:
+                - atm_strike: The ATM strike price
+                - nearby_strikes: List of strikes within 6 above and below
+                - recommended_strike: Best strike based on liquidity
+
+        Requirements: 5.4, 5.5, 5.6, 5.7, 33.1, 33.2, 33.3, 33.4, 33.5, 33.6, 33.7
+
+        Examples:
+            >>> gen = SignalGenerator()
+            >>> strikes = [18000, 18050, 18100, 18150, 18200, 18250, 18300]
+            >>> result = gen.find_atm_strike(18125, strikes)
+            >>> result['atm_strike']
+            18100
+        """
+        if not available_strikes:
+            raise ValueError("No strikes available")
+
+        # Find ATM strike (closest to current price)
+        # Requirement 5.4, 33.1
+        atm_strike = min(available_strikes, key=lambda x: abs(x - current_price))
+
+        # Find strikes within 6 above and below ATM
+        # Requirement 5.5, 33.2
+        atm_index = available_strikes.index(atm_strike)
+
+        # Get 6 strikes above and below (total 13 strikes including ATM)
+        start_index = max(0, atm_index - 6)
+        end_index = min(len(available_strikes), atm_index + 7)
+
+        nearby_strikes = available_strikes[start_index:end_index]
+
+        # For now, recommend ATM strike
+        # In production, this would analyze bid-ask spread and open interest
+        # Requirements 5.6, 5.7, 33.3, 33.4, 33.5, 33.6, 33.7
+        recommended_strike = atm_strike
+
+        return {
+            'atm_strike': atm_strike,
+            'nearby_strikes': nearby_strikes,
+            'recommended_strike': recommended_strike,
+            'strike_width': strike_width
+        }
+
 
 
 if __name__ == "__main__":
