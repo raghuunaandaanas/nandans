@@ -27,8 +27,8 @@ from src.database import DatabaseManager
 
 def get_candle_close(symbol: str, resolution: str, base_url: str = "https://api.india.delta.exchange") -> float:
     """
-    Get the last closed candle's close price for a given symbol and resolution.
-    Uses the same logic as delta_btc_options.py
+    Get the FIRST candle's close price at market open (5:30 AM IST).
+    Uses the same logic as delta_btc_options.py but returns FIRST candle, not last.
     
     Args:
         symbol: Trading symbol (e.g., 'BTCUSDT')
@@ -36,7 +36,7 @@ def get_candle_close(symbol: str, resolution: str, base_url: str = "https://api.
         base_url: Delta Exchange API base URL
         
     Returns:
-        Last candle close price or None if not available
+        First candle close price at market open or None if not available
     """
     try:
         import requests
@@ -58,7 +58,8 @@ def get_candle_close(symbol: str, resolution: str, base_url: str = "https://api.
             if result.get('success') and result.get('result'):
                 candles = result['result']
                 if candles:
-                    return float(candles[-1].get('close', 0))
+                    # Return FIRST candle close (index 0), not last (index -1)
+                    return float(candles[0].get('close', 0))
         return None
     except:
         return None
@@ -110,6 +111,9 @@ class LiveTradingBot:
         self.levels = {}
         self.levels_5m = {}
         self.levels_15m = {}
+        
+        # Cache for first candle closes (fetched once per trading day)
+        self.first_candle_cache = {}
         
     def connect_to_exchange(self) -> bool:
         """
@@ -169,7 +173,7 @@ class LiveTradingBot:
                                        market_open_time: str = '00:00') -> Dict[str, float]:
         """
         Calculate B5 Factor levels using first candle close at market open.
-        Automatically fetches from API using get_candle_close() function.
+        Automatically fetches from API and caches for the trading day.
         
         Args:
             symbol: Trading symbol
@@ -180,16 +184,27 @@ class LiveTradingBot:
             Dict with calculated levels
         """
         try:
-            # Automatically fetch first candle close using get_candle_close()
-            print(f"\n[AUTO-FETCH] Fetching {timeframe} first candle close for {symbol}...")
-            base_price = get_candle_close(symbol, timeframe)
-            
-            if base_price and base_price > 0:
-                print(f"[OK] {timeframe} first candle close: {base_price:.2f}")
+            # Check cache first (fetch once per trading day)
+            cache_key = f"{symbol}_{timeframe}"
+            if cache_key in self.first_candle_cache:
+                base_price = self.first_candle_cache[cache_key]
+                print(f"\n[CACHE] Using cached {timeframe} base: {base_price:.2f}")
             else:
-                # Fallback to current price if first candle not available
-                print(f"[WARN] {timeframe} first candle not available, using current price")
-                base_price = self.get_real_time_price(symbol)
+                # Fetch from API
+                print(f"\n[AUTO-FETCH] Fetching {timeframe} first candle close for {symbol}...")
+                base_price = get_candle_close(symbol, timeframe)
+                
+                if base_price and base_price > 0:
+                    print(f"[OK] {timeframe} first candle close: {base_price:.2f}")
+                    # Cache it
+                    self.first_candle_cache[cache_key] = base_price
+                else:
+                    # Fallback to current price if first candle not available
+                    print(f"[WARN] {timeframe} first candle not available, using current price")
+                    base_price = self.get_real_time_price(symbol)
+                    # Cache current price too (so it doesn't change every iteration)
+                    if base_price > 0:
+                        self.first_candle_cache[cache_key] = base_price
             
             if base_price > 0:
                 # Calculate levels from base price
