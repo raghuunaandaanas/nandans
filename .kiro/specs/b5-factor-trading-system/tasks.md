@@ -231,31 +231,34 @@ Target: 75%+ accuracy in paper trading (minimum), 85%+ accuracy with ML training
   - [x] Verify position sizing and risk management enforce limits - 50 tests passing
   - [x] All core modules validated and working
 
-- [ ] 8. Phase 7: AUTO SENSE v1.0 - Rule-Based (Days 17-19)
-  - [ ] 8.1 Implement rule-based AUTO SENSE
-    - Create AutoSenseEngine class in src/ml_engine.py
-    - Implement select_optimal_factor(base_price, volatility) using rules
-    - Implement predict_entry_timing(price_action, volume) using momentum analysis
-    - Implement predict_exit_percentages(level, rejection_history) using historical data
+- [x] 8. Phase 7: AUTO SENSE v1.0 - Rule-Based (Days 17-19)
+  - [x] 8.1 Implement rule-based AUTO SENSE
+    - [x] Create AutoSenseEngine class in src/main.py
+    - [x] Implement select_optimal_factor(base_price, volatility) using rules
+    - [x] Implement predict_entry_timing(price_action, volume) using momentum analysis
+    - [x] Implement predict_exit_percentages(level, rejection_history) using historical data
     - _Requirements: 9.1-9.8, 10.1-10.8, 11.1-11.8_
   
-  - [ ] 8.2 Implement Spike Detector
-    - Create SpikeDetector class in src/ml_engine.py
-    - Implement detect_spike(candle, levels) checking for 2× Points movement
-    - Analyze volume ratio vs average
-    - Analyze candle close position relative to extremes
-    - Classify as real or fake spike
+  - [x] 8.2 Implement Spike Detector
+    - [x] Create SpikeDetector class in src/main.py
+    - [x] Implement detect_spike(candle, levels) checking for 2× Points movement
+    - [x] Analyze volume ratio vs average
+    - [x] Analyze candle close position relative to extremes
+    - [x] Classify as real or fake spike
     - _Requirements: 12.1-12.10_
   
-  - [ ] 8.3 Write property tests for AUTO SENSE
-    - **Property 17: Spike Classification** - movement > 2× Points classified as spike
-    - **Validates: Requirements 12.1**
+  - [x] 8.3 Write property tests for AUTO SENSE
+    - [x] **Property 17: Spike Classification** - movement > 2× Points classified as spike
+    - [x] **Validates: Requirements 12.1**
   
-  - [ ] 8.4 Write unit tests for AUTO SENSE
-    - Test factor selection with various volatility levels
-    - Test entry timing prediction with different momentum values
-    - Test exit percentage calculation with rejection rates
-    - Test spike detection with high/low volume candles
+  - [x] 8.4 Write unit tests for AUTO SENSE
+    - [x] Test factor selection with various volatility levels (8 tests)
+    - [x] Test entry timing prediction with different momentum values (8 tests)
+    - [x] Test exit percentage calculation with rejection rates (9 tests)
+    - [x] Test spike detection with high/low volume candles (22 tests)
+    - [x] Test momentum and volume analysis (8 tests)
+    - [x] Test property-based tests (16 tests)
+    - [x] Total: 73 tests passing
     - _Requirements: 9.1-9.8, 10.1-10.8, 11.1-11.8, 12.1-12.10_
 
 - [ ] 9. Phase 8: Order Execution & Trading Modes (Days 20-22)

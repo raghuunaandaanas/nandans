@@ -1126,6 +1126,406 @@ class RiskManager:
         self.consecutive_losses = 0
 
 
+
+
+
+class AutoSenseEngine:
+    """
+    AUTO SENSE v1.0 - Rule-Based Intelligence
+
+    Automatically determines:
+    - Optimal factor selection based on volatility
+    - Entry timing based on momentum and price action
+    - Exit percentages based on rejection history
+
+    This is the rule-based version. ML version will be implemented in Phase 11.
+    """
+
+    def __init__(self):
+        """Initialize AUTO SENSE engine with default parameters."""
+        self.volatility_threshold_low = 0.01  # 1% volatility
+        self.volatility_threshold_high = 0.03  # 3% volatility
+        self.momentum_threshold_strong = 0.5
+        self.momentum_threshold_weak = 0.2
+
+    def select_optimal_factor(self, base_price: float, volatility: float,
+                            historical_performance: Dict[str, float] = None) -> float:
+        """
+        Select optimal factor based on price range and volatility.
+
+        Args:
+            base_price: Current base price
+            volatility: Current volatility (0.0 to 1.0)
+            historical_performance: Optional dict with factor performance data
+
+        Returns:
+            Optimal factor as decimal (0.002611, 0.0261, or 0.2611)
+
+        Raises:
+            ValueError: If base_price <= 0 or volatility < 0
+        """
+        if base_price <= 0:
+            raise ValueError("base_price must be positive")
+        if volatility < 0:
+            raise ValueError("volatility must be non-negative")
+
+        # Base factor selection by price range
+        if base_price < 1000:
+            base_factor = 0.2611
+        elif base_price < 10000:
+            base_factor = 0.0261
+        else:
+            base_factor = 0.002611
+
+        # Adjust for volatility (cap at reasonable limits)
+        if volatility > self.volatility_threshold_high:
+            # High volatility: use larger factor for wider levels (max 1.3x)
+            adjustment = min(1.3, 1.0 + (volatility - self.volatility_threshold_high) * 2)
+        elif volatility < self.volatility_threshold_low:
+            # Low volatility: use smaller factor for tighter levels (min 0.7x)
+            adjustment = max(0.7, 1.0 - (self.volatility_threshold_low - volatility) * 2)
+        else:
+            # Normal volatility: use standard factor
+            adjustment = 1.0
+
+        # Consider historical performance if available
+        if historical_performance:
+            # If a specific factor has performed better, weight towards it
+            best_factor = max(historical_performance.items(), key=lambda x: x[1])[0]
+            if best_factor != base_factor:
+                # Blend 70% base, 30% historical best
+                adjustment *= 0.85
+
+        return base_factor * adjustment
+
+    def predict_entry_timing(self, price_action: List[float], volume: List[float],
+                           current_price: float, level: float) -> Dict[str, any]:
+        """
+        Predict optimal entry timing based on price action and volume.
+
+        Args:
+            price_action: Recent price movements (last 5-10 candles)
+            volume: Recent volume data
+            current_price: Current price
+            level: Level being crossed (BU1 or BE1)
+
+        Returns:
+            Dict with:
+                - timing: 'immediate' or 'wait_for_close'
+                - confidence: 0.0 to 1.0
+                - reason: explanation
+
+        Raises:
+            ValueError: If inputs are invalid
+        """
+        if not price_action or len(price_action) < 2:
+            raise ValueError("price_action must have at least 2 data points")
+        if not volume or len(volume) != len(price_action):
+            raise ValueError("volume must match price_action length")
+        if current_price <= 0 or level <= 0:
+            raise ValueError("prices must be positive")
+
+        # Calculate momentum
+        momentum = self._calculate_momentum(price_action)
+
+        # Analyze volume strength
+        volume_strength = self._analyze_volume_strength(volume)
+
+        # Calculate distance from level
+        distance_pct = abs(current_price - level) / level
+
+        # Decision logic
+        if momentum > self.momentum_threshold_strong and volume_strength > 0.7:
+            # Strong momentum + high volume = immediate entry
+            return {
+                'timing': 'immediate',
+                'confidence': min(0.9, momentum * volume_strength),
+                'reason': 'Strong momentum with high volume'
+            }
+        elif momentum < self.momentum_threshold_weak or volume_strength < 0.3:
+            # Weak momentum or low volume = wait for confirmation
+            return {
+                'timing': 'wait_for_close',
+                'confidence': 0.4,
+                'reason': 'Weak momentum or low volume - need confirmation'
+            }
+        else:
+            # Moderate conditions = wait if close to level, immediate if far
+            if distance_pct < 0.005:  # Within 0.5% of level
+                return {
+                    'timing': 'wait_for_close',
+                    'confidence': 0.6,
+                    'reason': 'Close to level - wait for confirmation'
+                }
+            else:
+                return {
+                    'timing': 'immediate',
+                    'confidence': 0.7,
+                    'reason': 'Moderate momentum with decent volume'
+                }
+
+    def _calculate_momentum(self, price_action: List[float]) -> float:
+        """Calculate momentum from price action (0.0 to 1.0)."""
+        if len(price_action) < 2:
+            return 0.0
+
+        # Calculate rate of change
+        changes = [price_action[i] - price_action[i-1] for i in range(1, len(price_action))]
+        avg_change = sum(changes) / len(changes)
+
+        # Normalize to 0-1 range (assuming max 5% change is strong)
+        momentum = min(1.0, abs(avg_change / price_action[0]) / 0.05)
+
+        return momentum
+
+    def _analyze_volume_strength(self, volume: List[float]) -> float:
+        """Analyze volume strength (0.0 to 1.0)."""
+        if len(volume) < 2:
+            return 0.5
+
+        # Compare recent volume to average
+        avg_volume = sum(volume[:-1]) / len(volume[:-1])
+        current_volume = volume[-1]
+
+        if avg_volume == 0:
+            return 0.5
+
+        # Ratio of current to average
+        ratio = current_volume / avg_volume
+
+        # Normalize to 0-1 range (2x average = strong)
+        strength = min(1.0, ratio / 2.0)
+
+        return strength
+
+    def predict_exit_percentages(self, level: str, rejection_history: Dict[str, float],
+                                current_trend_strength: float) -> Dict[str, float]:
+        """
+        Predict optimal exit percentages at each level.
+
+        Args:
+            level: Current level reached (BU2, BU3, BU4, BU5)
+            rejection_history: Historical rejection rates at each level
+            current_trend_strength: Current trend strength (0.0 to 1.0)
+
+        Returns:
+            Dict with exit percentages for remaining levels
+
+        Raises:
+            ValueError: If inputs are invalid
+        """
+        if level not in ['BU2', 'BU3', 'BU4', 'BU5', 'BE2', 'BE3', 'BE4', 'BE5']:
+            raise ValueError(f"Invalid level: {level}")
+        if current_trend_strength < 0 or current_trend_strength > 1:
+            raise ValueError("current_trend_strength must be between 0 and 1")
+
+        # Default baseline: 25% at each level
+        baseline_exit = 0.25
+
+        # Get rejection rate for this level
+        rejection_rate = rejection_history.get(level, 0.5) if rejection_history else 0.5
+
+        # Adjust based on rejection history
+        if rejection_rate > 0.7:
+            # High rejection: exit more aggressively
+            exit_pct = baseline_exit * 1.5
+        elif rejection_rate < 0.3:
+            # Low rejection: hold more
+            exit_pct = baseline_exit * 0.5
+        else:
+            # Normal rejection: use baseline
+            exit_pct = baseline_exit
+
+        # Adjust based on trend strength
+        if current_trend_strength > 0.7:
+            # Strong trend: hold more
+            exit_pct *= 0.8
+        elif current_trend_strength < 0.3:
+            # Weak trend: exit more
+            exit_pct *= 1.2
+
+        # Ensure we don't exceed 100% total
+        exit_pct = min(1.0, exit_pct)
+
+        # Calculate remaining percentages
+        levels_map = {
+            'BU2': ['BU3', 'BU4', 'BU5'],
+            'BU3': ['BU4', 'BU5'],
+            'BU4': ['BU5'],
+            'BU5': [],
+            'BE2': ['BE3', 'BE4', 'BE5'],
+            'BE3': ['BE4', 'BE5'],
+            'BE4': ['BE5'],
+            'BE5': []
+        }
+
+        remaining_levels = levels_map[level]
+        result = {level: exit_pct}
+
+        # Distribute remaining percentage across other levels
+        if remaining_levels:
+            remaining_pct = 1.0 - exit_pct
+            pct_per_level = remaining_pct / len(remaining_levels)
+            for lvl in remaining_levels:
+                result[lvl] = pct_per_level
+
+        return result
+
+
+class SpikeDetector:
+    """
+    Detects and classifies price spikes as real or fake.
+
+    Real spikes: High volume, closes near extreme, aligns with levels
+    Fake spikes: Low volume, closes far from extreme, contradicts levels
+    """
+
+    def __init__(self):
+        """Initialize spike detector with default thresholds."""
+        self.spike_threshold = 2.0  # 2x Points = spike
+        self.volume_ratio_high = 2.0  # 2x average volume
+        self.volume_ratio_low = 0.5  # 0.5x average volume
+        self.close_position_threshold = 0.7  # Close within 70% of spike range
+
+    def detect_spike(self, candle: Dict[str, float], levels: Dict[str, float],
+                    avg_volume: float) -> Dict[str, any]:
+        """
+        Detect if candle represents a spike and classify it.
+
+        Args:
+            candle: Dict with 'open', 'high', 'low', 'close', 'volume'
+            levels: Dict with BU/BE levels including 'points'
+            avg_volume: Average volume over recent period
+
+        Returns:
+            Dict with:
+                - is_spike: bool
+                - spike_type: 'real', 'fake', or None
+                - magnitude: spike size in Points
+                - confidence: 0.0 to 1.0
+                - reason: explanation
+
+        Raises:
+            ValueError: If inputs are invalid
+        """
+        # Validate inputs
+        required_candle_keys = ['open', 'high', 'low', 'close', 'volume']
+        for key in required_candle_keys:
+            if key not in candle:
+                raise ValueError(f"candle missing required key: {key}")
+
+        if 'points' not in levels:
+            raise ValueError("levels must contain 'points'")
+
+        if avg_volume <= 0:
+            raise ValueError("avg_volume must be positive")
+
+        # Calculate spike magnitude
+        candle_range = candle['high'] - candle['low']
+        points = levels['points']
+        magnitude = candle_range / points
+
+        # Check if it's a spike (> threshold, not >=)
+        if magnitude <= self.spike_threshold:
+            return {
+                'is_spike': False,
+                'spike_type': None,
+                'magnitude': magnitude,
+                'confidence': 0.0,
+                'reason': 'Movement at or below spike threshold'
+            }
+
+        # It's a spike - now classify as real or fake
+
+        # Analyze volume
+        volume_ratio = candle['volume'] / avg_volume if avg_volume > 0 else 1.0
+
+        # Analyze close position relative to spike
+        if candle['high'] != candle['low']:
+            close_position = (candle['close'] - candle['low']) / (candle['high'] - candle['low'])
+        else:
+            close_position = 0.5
+
+        # Analyze alignment with levels
+        base_price = levels.get('base', candle['open'])
+        level_alignment = self._check_level_alignment(candle, levels, base_price)
+
+        # Classification logic
+        real_indicators = 0
+        fake_indicators = 0
+
+        # Volume analysis
+        if volume_ratio > self.volume_ratio_high:
+            real_indicators += 2  # Strong indicator
+        elif volume_ratio < self.volume_ratio_low:
+            fake_indicators += 2
+        else:
+            real_indicators += 1  # Moderate volume
+
+        # Close position analysis
+        if candle['close'] > candle['open']:  # Bullish candle
+            if close_position > self.close_position_threshold:
+                real_indicators += 1
+            else:
+                fake_indicators += 1
+        else:  # Bearish candle
+            if close_position < (1 - self.close_position_threshold):
+                real_indicators += 1
+            else:
+                fake_indicators += 1
+
+        # Level alignment
+        if level_alignment:
+            real_indicators += 1
+        else:
+            fake_indicators += 1
+
+        # Make classification
+        total_indicators = real_indicators + fake_indicators
+        confidence = real_indicators / total_indicators if total_indicators > 0 else 0.5
+
+        if real_indicators > fake_indicators:
+            spike_type = 'real'
+            reason = f"High volume ({volume_ratio:.1f}x), good close position, aligns with levels"
+        else:
+            spike_type = 'fake'
+            reason = f"Low volume ({volume_ratio:.1f}x), poor close position, contradicts levels"
+
+        return {
+            'is_spike': True,
+            'spike_type': spike_type,
+            'magnitude': magnitude,
+            'confidence': confidence,
+            'reason': reason
+        }
+
+    def _check_level_alignment(self, candle: Dict[str, float],
+                              levels: Dict[str, float], base_price: float) -> bool:
+        """
+        Check if spike aligns with BU/BE levels.
+
+        Returns True if spike respects levels, False otherwise.
+        """
+        # Check if high/low touched any significant level
+        tolerance = levels['points'] * 0.1  # 10% tolerance
+
+        # Get all BU/BE levels
+        level_values = []
+        for key in ['BU1', 'BU2', 'BU3', 'BU4', 'BU5', 'BE1', 'BE2', 'BE3', 'BE4', 'BE5']:
+            if key in levels:
+                level_values.append(levels[key])
+
+        # Check if high or low is near any level
+        for level_value in level_values:
+            if abs(candle['high'] - level_value) < tolerance:
+                return True
+            if abs(candle['low'] - level_value) < tolerance:
+                return True
+
+        return False
+
+
+
 if __name__ == "__main__":
     # Example usage
     calculator = LevelCalculator()
@@ -1202,3 +1602,5 @@ if __name__ == "__main__":
     print(f"  Points: {levels_stock['points']}")
     print(f"  BU Levels: {levels_stock['bu1']}, {levels_stock['bu2']}, {levels_stock['bu3']}, {levels_stock['bu4']}, {levels_stock['bu5']}")
     print(f"  BE Levels: {levels_stock['be1']}, {levels_stock['be2']}, {levels_stock['be3']}, {levels_stock['be4']}, {levels_stock['be5']}")
+
+
