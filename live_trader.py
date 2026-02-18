@@ -3,10 +3,19 @@ B5 Factor Live Trading Bot
 Connects to real exchanges and trades with real data.
 """
 
+import sys
 import time
 import json
 from datetime import datetime
 from typing import Dict, List
+
+# Set UTF-8 encoding for Windows console
+if sys.platform == 'win32':
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except:
+        pass
+
 from src.main import (
     LevelCalculator, SignalGenerator, PositionManager, RiskManager,
     AutoSenseEngine, OrderManager, TradingModeManager, LiveTradingEngine
@@ -113,26 +122,58 @@ class LiveTradingBot:
             print(f"⚠️  Error getting price: {str(e)}")
             return 0.0
     
-    def calculate_levels_from_real_data(self, symbol: str, timeframe: str = '1m') -> Dict[str, float]:
+    def calculate_levels_from_real_data(self, symbol: str, timeframe: str = '1m', 
+                                       market_open_time: str = '00:00') -> Dict[str, float]:
         """
-        Calculate B5 Factor levels using real market data.
+        Calculate B5 Factor levels using first candle close at market open.
         
         Args:
             symbol: Trading symbol
             timeframe: Timeframe ('1m', '5m', '15m')
+            market_open_time: Market open time in IST format "HH:MM" (e.g., "05:30" for Indian markets)
             
         Returns:
             Dict with calculated levels
         """
         try:
-            # Get current price as base
-            current_price = self.get_real_time_price(symbol)
+            # Try to get first candle close at market open as base price
+            print(f"\n[INFO] Fetching first candle close at {market_open_time} IST...")
             
-            if current_price > 0:
-                # Calculate levels
-                levels = self.level_calculator.calculate_levels(current_price, timeframe)
+            base_price = None
+            
+            try:
+                if self.exchange == 'delta':
+                    # For crypto (24/7), use first candle of current day
+                    # For Indian markets, use 05:30 IST
+                    base_price = self.api_client.get_first_candle_close(
+                        symbol=symbol,
+                        resolution=timeframe,
+                        time_ist=market_open_time
+                    )
+                else:
+                    # For Shoonya (Indian markets), use 09:15 IST
+                    base_price = self.api_client.get_first_candle_close(
+                        exchange='NSE',
+                        symbol=symbol,
+                        timeframe=timeframe,
+                        time_ist=market_open_time
+                    )
+            except Exception as e:
+                print(f"[WARN] Could not fetch first candle (may need API auth): {str(e)[:100]}")
+                base_price = None
+            
+            # Fallback to current price if first candle not available
+            if base_price is None or base_price <= 0:
+                print(f"[INFO] Using current price as base (first candle not available)")
+                base_price = self.get_real_time_price(symbol)
+            else:
+                print(f"[OK] First candle close: {base_price:.2f}")
+            
+            if base_price > 0:
+                # Calculate levels from base price
+                levels = self.level_calculator.calculate_levels(base_price, timeframe)
                 
-                print(f"\n📊 Levels calculated for {symbol} ({timeframe}):")
+                print(f"\n[LEVELS] Calculated for {symbol} ({timeframe}):")
                 print(f"   Base: {levels['base']:.2f}")
                 print(f"   BU1: {levels['bu1']:.2f} | BE1: {levels['be1']:.2f}")
                 print(f"   BU2: {levels['bu2']:.2f} | BE2: {levels['be2']:.2f}")
@@ -146,7 +187,9 @@ class LiveTradingBot:
             return {}
             
         except Exception as e:
-            print(f"❌ Error calculating levels: {str(e)}")
+            print(f"[ERROR] Error calculating levels: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return {}
     
     def check_for_signals(self, symbol: str, current_price: float, levels: Dict[str, float]) -> Dict[str, any]:
@@ -258,18 +301,20 @@ class LiveTradingBot:
             print(f"❌ Error executing trade: {str(e)}")
             return False
     
-    def run_trading_loop(self, symbol: str, interval: int = 5):
+    def run_trading_loop(self, symbol: str, interval: int = 5, market_open_time: str = '05:30'):
         """
         Main trading loop - monitors market and trades.
         
         Args:
             symbol: Trading symbol to monitor
             interval: Check interval in seconds
+            market_open_time: Market open time in IST format "HH:MM"
         """
         print(f"\n🎬 Starting trading loop...")
         print(f"   Symbol: {symbol}")
         print(f"   Interval: {interval}s")
         print(f"   Mode: {self.mode.upper()}")
+        print(f"   Market Open: {market_open_time} IST")
         print(f"\n⚠️  Press Ctrl+C to stop\n")
         
         self.is_running = True
@@ -290,9 +335,11 @@ class LiveTradingBot:
                 if current_price > 0:
                     print(f"💹 Current Price: {current_price:.2f}")
                     
-                    # Calculate levels if not already done
+                    # Calculate levels if not already done (using first candle close)
                     if not self.levels:
-                        self.levels = self.calculate_levels_from_real_data(symbol, '1m')
+                        self.levels = self.calculate_levels_from_real_data(
+                            symbol, '1m', market_open_time
+                        )
                     
                     if self.levels:
                         # Check for signals
@@ -347,19 +394,27 @@ class LiveTradingBot:
 def main():
     """Main entry point for live trading."""
     print("""
-╔══════════════════════════════════════════════════════════════╗
-║                                                              ║
-║           B5 FACTOR LIVE TRADING BOT                        ║
-║           Real-time Trading System                          ║
-║                                                              ║
-╚══════════════════════════════════════════════════════════════╝
+================================================================
+                                                              
+           B5 FACTOR LIVE TRADING BOT                        
+           Real-time Trading System                          
+                                                              
+================================================================
     """)
     
     # Configuration
-    EXCHANGE = 'delta'     # 'delta' or 'shoonya'
-    SYMBOL = 'BTCUSDT'     # Trading symbol
-    MODE = 'paper'         # 'paper' or 'live'
-    INTERVAL = 5           # Check every 5 seconds
+    EXCHANGE = 'delta'          # 'delta' or 'shoonya'
+    SYMBOL = 'BTCUSDT'          # Trading symbol
+    MODE = 'paper'              # 'paper' or 'live'
+    INTERVAL = 5                # Check every 5 seconds
+    MARKET_OPEN_TIME = '05:30'  # IST time for first candle (05:30 for Indian markets, 00:00 for crypto 24/7)
+    
+    print(f"⚙️  Configuration:")
+    print(f"   Exchange: {EXCHANGE}")
+    print(f"   Symbol: {SYMBOL}")
+    print(f"   Mode: {MODE}")
+    print(f"   Market Open Time: {MARKET_OPEN_TIME} IST")
+    print(f"   Check Interval: {INTERVAL}s")
     
     # Create bot
     bot = LiveTradingBot(exchange=EXCHANGE, mode=MODE)
@@ -376,7 +431,7 @@ def main():
             return
     
     # Start trading
-    bot.run_trading_loop(symbol=SYMBOL, interval=INTERVAL)
+    bot.run_trading_loop(symbol=SYMBOL, interval=INTERVAL, market_open_time=MARKET_OPEN_TIME)
     
     print("\n✅ Trading session ended")
 
