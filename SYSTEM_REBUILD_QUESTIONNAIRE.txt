@@ -18,49 +18,130 @@ SECTION 1: SYSTEM OVERVIEW
 
 1.4 Programming Languages Used: python and ui web
 
-1.5 System Accuracy Rate: ______________________________________________
+1.5 System Accuracy Rate: 85%+
 
-1.6 Average Daily Trades: ______________________________________________
+1.6 Average Daily Trades: lot and lot as it was a self trading and hft trading 
 
-1.7 Average Trade Size (USD): __________________________________________
+1.7 Average Trade Size (USD): starts from 0.01
 
-1.8 Maximum Position Size (USD): _______________________________________
+1.8 Maximum Position Size (USD): 100x of initial trade size with pyramidding
 
-1.9 Trading Hours (IST): _______________________________________________
+1.9 Trading Hours (IST): Indian MCX at 9, NSE/BSE at 9:15 and delta gmt +530 so 5:30am is 1st candle
 
 1.10 Instruments Traded (check all):
-     [ ] BTC Options
-     [ ] BTC Futures
-     [ ] Nifty Options
-     [ ] Nifty Futures
-     [ ] Bank Nifty Options
-     [ ] Bank Nifty Futures
-     [ ] Other: _______________________________________________________
+     [ Y] BTC Options
+     [ y] BTC Futures
+     [y ] Nifty Options
+     [ y] Nifty Futures
+     [ y] Bank Nifty Options
+     [ y] Bank Nifty Futures
+     [ y] Other: _all stock options and index options of NFO (stocks and index) and BFO (only index)
 
 =============================================================================
 SECTION 2: TRADING STRATEGY
 =============================================================================
 
 2.1 Strategy Type (check all that apply):
-    [ ] Levels-based trading
+    [ Y] Levels-based trading
     [ ] Arbitrage
     [ ] Market making
-    [ ] Trend following
+    [ Y] Trend following
     [ ] Mean reversion
-    [ ] Other: ________________________________________________________
+    [ ] Other: Fib number trading with B5 factor by Raghuu Naandaana S (Inventor)
 
 2.2 Primary Timeframes Used:
-    [ ] 1 minute
-    [ ] 5 minutes
-    [ ] 15 minutes
+    [Y ] 1 minute- always 1st candle
+    [Y ] 5 minutes- always 1st candle
+    [Y ] 15 minutes -always 1st candle
     [ ] 1 hour
-    [ ] Other: ________________________________________________________
+    [ Y] Other: 1st trading day of the month and 1st month of the year
 
 2.3 Entry Signal Logic (describe in detail):
-___________________________________________________________________________
-___________________________________________________________________________
-___________________________________________________________________________
-___________________________________________________________________________
+Basically inventor has provided us the following info only If any stocks , futures, options,
+anything in market works with numbers and levels NO INDICATOR or Any other tech tools are used.
+Inventor of this stratergy is from Mysore India. He had cracked market Behaviour with numbers
+he has provided us his prop stratergy.
+
+there was a machine learning which was recording all patterns on the lines 
+BU1-BU5 (for Bullish) and Be5 ( for reversals turning from earish to bullish)
+
+his master key number is 0.2611 the same number is used in all the complete trading this is used 
+by multiple variations like 0.2611,2.61,26.11 but at the end its the same number which if u add 
+stands 1 2+6+1+1=10=1
+
+any stocks works in a range and to cross the range it need to pass through these levels. 
+if x stock is 123456.00  or 12345,1234,123,12,1 each number has a micro fib which is numbers. 
+for example for 100 seeries  (0.0,     11.8,     23.6,     38.2,     50.0,     61.8,     78.2,     100.0)
+he had this fixed number fib if any range shifts it was trading alsong with retesting 
+and non restesting trades. and ML used to learn and improvide these numbers and was 
+showing based on numbers early entry and early exists
+inside this also he had system like he had given clew to ML  system the 95,45 rejections , 18 is support 
+28 and 78( rally zonees. ) if 3 touch to 20 and not reversed below 14.5 then there will be a rally 
+on that number from 29-46 extending upto 60  teh same applies for 78-96 and extending till 113
+
+
+level calculation 
+
+from the 1st close prices where market started from that close price it has to move 0.2611% and above
+to trend so close price (base price of timeframe) x0.2611%= points . once you get the points 
+add again back with base price = BU1 and if you less the points with Base price is BE1. 
+which is the side ways zone. If any stock has to trend either on bullish side or bearish side 
+it has to cross atlease 0.2611% and this number can be used in multiple combinational ways
+1 . 0.2611% (10000-99999), 2.61%(1000-9999), 3. 26.11%(0-999)
+how you can manage the volatality and trend and trade you can you any of these
+for example nifty futures is 26000 as base price so 26000*0.2611% = 67.886 so to trend it has to leave 
+26067.88 and above to trend bullish and 25933.00 and below to trend bearish
+and for the same ce and pe of it works like lets assume a premium of 100 so = 100*0.2611%= points(micro)
+ and also 100*2.61% = points(mini) and 100*26.11%= points(mega) and same after this it was calculating 
+ bu1/BE1 based on the same timeframes like first which is most important close price , 1, 5 ,15 and 
+ then based on this it was HFT trading keeping the 50%( based on close only )if candle closes of same timeframe 
+ if trading one 1min then 1min candle close below the base and BU1 50% and close is the SL
+ and targets would be baseprice*points*2=BU2,baseprice*points*3=BU3, baseprice*points*4=BU4 , baseprice*points*5=BU5
+BU5/BE5 are the major reversal zones based on this you can take the opp strike if a call is near BU5 so you can take a put option 
+pe and buy so you can get early bullish reversal entery the same is for be2,be3,be4. and same replicate
+in this way it was trading auto on all symbols based on this stratergy and it was 85%+ accurate and was having all the patterns on ML machine level learnt
+on these levels BU1-BU5 abd Be5 and FIB numbers
+
+it was doing option selling on delta when any options goes to bu1 and takes rejection it was selling buy
+and when a stock hits Be1 and Turns back he was selling puts.
+
+and there was one more catch . Most of the times tere were spikes which was taken care by spike manager. 
+along with ML it was knowing which is real and which is fake numbers of along fib attached.
+
+so based on volatality.. he was deciding numbers of fic. 
+if ltp is 123456.00 he was taking for HFT 6 last number and then same, slighty more price movement 56
+more 45 so after this he was taking stocks into long scalle options and monitoring the opposite strikes
+to swwing like and he called it traderscope he was the inventor of traderscope and b5 factor
+it was so intelligent it knew when to use what and mix and trade. 
+
+all his sl was based on same levels but he always concentrated on close price for any sl or tp and 
+the inventor also told a tp any of the range 50% is the reversals and continue stage .. check a pluse here
+
+Raghuu Naandaana s work fetched and started a small accont of 50rs on BTC with same it caputed 
+his predection was so accurate he pulled BTC from bumber 123600.00which if u see is 23.6 of 10000 as 
+fib number he pulled from these till 78600.00( which is here 78.6) from 123600. he created HFT was started checking from last 0
+till 0,0,6,3,2,1( its like 123600) and reverse engineered all nubers as movements and captured complete
+this was showing all levels and all trades on ui in different tabs
+and was auto paper and real trade same copied. 
+enable options to paper trade , treal trade and both 
+he had some db which is missing which backtested all symbols backtesting with history and ML was learning along 
+it knew BU1-BU5 is buying one BU5/BE5 are reversal zones. 
+
+he had also discovered. if the price doesnt move above or below BU1/BE1 for 75 min then that whole day
+the stock will not trend. and it will be premium day ( to capture premium)
+he decided stocks which may trend which may not trend. 
+
+he was using the same stratergy to find best investment option on stocks reversing from Be5 based 
+on 1st day of the month , 1st month of the year and also he was showing Bullish symbols of the month 
+and bullish stocks of the year based on stocks bu1-bu5. 
+he was always using close price. and he was reentering and pyramidding orders on this levels.
+
+(most of the times it was the same which was in future becomming support and resitance. 
+this was predecting before it happens and ML was learning that (this was in last stage) this was on teh 
+testing page.)-- TESTING STAGE
+
+
+
 
 2.4 Exit Signal Logic (describe in detail):
 ___________________________________________________________________________
@@ -504,9 +585,9 @@ ___________________________________________________________________________
 
 14.3 System Requirements:
      Python Version: ______________________________________________________
-     Operating System: ____________________________________________________
-     RAM Required: ________________________________________________________
-     Storage Required: ____________________________________________________
+     Operating System: __Windows__________________________________________________
+     RAM Required: ___________6GB _____________________________________________
+     Storage Required: _______50GB_____________________________________________
 
 =============================================================================
 SECTION 15: ADDITIONAL FEATURES

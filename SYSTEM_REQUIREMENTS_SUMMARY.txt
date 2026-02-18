@@ -1,0 +1,326 @@
+SYSTEM REBUILD - REQUIREMENTS SUMMARY
+=====================================
+Based on Questionnaire Responses
+Date: February 18, 2026
+
+=============================================================================
+WHAT WE HAVE - CORE STRATEGY INFORMATION
+=============================================================================
+
+INVENTOR: Raghuu Naandaana S (Mysore, India)
+STRATEGY NAME: B5 Factor / Traderscope
+MASTER NUMBER: 0.2611 (sum = 2+6+1+1 = 10 = 1)
+
+CORE CONCEPT:
+- Market works with numbers and levels, NO indicators
+- Stocks move in ranges and must pass through specific levels to trend
+- Uses Fibonacci-like numbers with 0.2611 as the key factor
+
+LEVEL CALCULATION:
+- Base Price = 1st candle close price of timeframe (1m, 5m, 15m)
+- Points = Base Price × Factor
+- Factor variations based on price range:
+  * 0-999: 26.11% (mega)
+  * 1000-9999: 2.61% (mini)
+  * 10000-99999: 0.2611% (micro)
+
+- BU Levels (Bullish):
+  * BU1 = Base + (Points × 1)
+  * BU2 = Base + (Points × 2)
+  * BU3 = Base + (Points × 3)
+  * BU4 = Base + (Points × 4)
+  * BU5 = Base + (Points × 5)
+
+- BE Levels (Bearish):
+  * BE1 = Base - (Points × 1)
+  * BE2 = Base - (Points × 2)
+  * BE3 = Base - (Points × 3)
+  * BE4 = Base - (Points × 4)
+  * BE5 = Base - (Points × 5)
+
+KEY ZONES:
+- BU1/BE1: Sideways zone - must cross to trend
+- BU5/BE5: Major reversal zones
+- 50% of any range: Reversal and continuation stage
+
+FIBONACCI NUMBERS FOR 100 SERIES:
+0.0, 11.8, 23.6, 38.2, 50.0, 61.8, 78.2, 100.0
+
+SPECIAL NUMBERS:
+- 95, 45: Rejection zones
+- 18: Support
+- 28, 78: Rally zones
+- 3 touches to 20 without reversing below 14.5 = rally from 29-46 extending to 60
+- Same applies for 78-96 extending to 113
+
+TRADING RULES:
+1. Entry: When price crosses BU1 (bullish) or BE1 (bearish)
+2. Stop Loss: 50% between Base and BU1, based on candle close
+3. Targets: BU2, BU3, BU4, BU5
+4. Reversal Trading: Sell calls at BU5, sell puts at BE5
+5. Re-entry: Pyramid on levels
+6. Non-Trending Day: If price doesn't move above/below BU1/BE1 for 75 minutes
+
+HFT LOGIC:
+- Uses last digits of price (e.g., 123456.00 → uses 6, then 56, then 456)
+- Spike manager to detect real vs fake movements
+- ML learns patterns on BU1-BU5 and BE5 levels
+
+TIMEFRAMES:
+- Always uses 1st candle close of: 1m, 5m, 15m
+- Also: 1st day of month, 1st month of year
+
+INSTRUMENTS:
+- BTC Options & Futures (Delta Exchange, starts 5:30 AM IST)
+- Nifty & Bank Nifty Options & Futures (NSE, starts 9:15 AM)
+- All NFO stocks and index options
+- All BFO index options
+
+SYSTEM FEATURES:
+- Auto paper trading
+- Auto real trading
+- HFT mode
+- Machine Learning pattern recognition
+- Backtesting with historical data
+- Investment recommendations (stocks reversing from BE5)
+- Monthly and yearly bullish stock predictions
+
+ACCURACY: 85%+
+
+FAMOUS TRADE:
+- Started with 50 Rs on BTC
+- Predicted BTC move from 123600 (23.6 fib) to 78600 (78.6 fib)
+- Used reverse engineering of numbers
+
+=============================================================================
+WHAT WE NEED - MISSING CRITICAL INFORMATION
+=============================================================================
+
+SECTION 1: EXACT FORMULAS & CALCULATIONS
+-----------------------------------------
+1. How to determine which factor to use (0.2611%, 2.61%, or 26.11%)?
+   - Is it based on absolute price value?
+   - Or based on volatility?
+   - Or user-selectable?
+
+2. Spike Manager Logic:
+   - How does it detect real vs fake spikes?
+   - What are the criteria?
+
+3. ML Pattern Recognition:
+   - What patterns does it learn?
+   - How does it store learned patterns?
+   - What triggers pattern-based trades?
+
+4. Fibonacci Number Application:
+   - How are the fib numbers (0.0, 11.8, 23.6, etc.) used in trading?
+   - When to use which fib level?
+
+5. Last Digit HFT Logic:
+   - Exact rules for using 6, 56, 456 from 123456.00
+   - When to switch between them?
+
+SECTION 2: RISK MANAGEMENT
+---------------------------
+6. Maximum Daily Loss Limit: ?
+7. Maximum Per-Trade Loss: ?
+8. Position Sizing Formula: ?
+9. Pyramiding Rules:
+   - How many times to pyramid?
+   - At which levels?
+   - Position size for each pyramid?
+
+10. Circuit Breaker Conditions: ?
+
+SECTION 3: ORDER MANAGEMENT
+----------------------------
+11. Order Types Used:
+    - Market or Limit orders?
+    - Stop loss orders?
+
+12. Order Placement Timing:
+    - Immediate on signal?
+    - Wait for candle close?
+
+13. Order Modification:
+    - When to modify orders?
+    - How to modify?
+
+14. Slippage Tolerance: ?
+15. Order Timeout: ?
+
+SECTION 4: HFT SPECIFICS
+-------------------------
+16. HFT Trade Frequency:
+    - Trades per second/minute?
+
+17. HFT Position Holding Time: ?
+18. HFT Profit Target per Trade: ?
+19. HFT Stop Loss: ?
+
+SECTION 5: MACHINE LEARNING
+----------------------------
+20. ML Algorithm Type:
+    - Neural network?
+    - Decision tree?
+    - Other?
+
+21. ML Training Data:
+    - What historical period?
+    - How often retrained?
+
+22. ML Features:
+    - What data points does it learn from?
+
+23. ML Predictions:
+    - What does it predict?
+    - How are predictions used?
+
+SECTION 6: SHOONYA INTEGRATION
+-------------------------------
+24. Shoonya API Endpoints Used: ?
+25. Shoonya Authentication: ?
+26. Shoonya WebSocket: Yes/No?
+27. Shoonya Order Placement Method: ?
+28. Shoonya Error Handling: ?
+
+SECTION 7: DELTA INTEGRATION
+-----------------------------
+29. Delta API Endpoints Used: ?
+30. Delta Authentication: ?
+31. Delta WebSocket: Yes/No?
+32. Delta Order Placement Method: ?
+33. Delta Error Handling: ?
+34. Delta Candle Data:
+    - How to get 1st candle of 5:30 AM IST?
+    - API endpoint and parameters?
+
+SECTION 8: UI/DISPLAY
+----------------------
+35. UI Framework: Web-based? Desktop?
+36. Real-time Updates: How frequent?
+37. What data to display:
+    - Current levels?
+    - Open positions?
+    - P&L?
+    - Charts?
+
+38. Tabs/Sections:
+    - What different tabs were there?
+    - What did each show?
+
+SECTION 9: DATA STORAGE
+------------------------
+39. Database Type: SQLite? PostgreSQL? CSV?
+40. What data is stored:
+    - Trade history?
+    - ML patterns?
+    - Performance metrics?
+
+41. Backup System: ?
+
+SECTION 10: SYSTEM MODES
+-------------------------
+42. Paper Trading Mode:
+    - How is it enabled?
+    - What's different from live?
+
+43. Live Trading Mode:
+    - Safety checks before enabling?
+    - Confirmation required?
+
+44. HFT Mode:
+    - How to enable/disable?
+    - Different from regular mode how?
+
+SECTION 11: SPECIAL FEATURES
+-----------------------------
+45. Investment Recommendations:
+    - How are stocks selected?
+    - Criteria for BE5 reversal stocks?
+
+46. Monthly/Yearly Predictions:
+    - How calculated?
+    - Based on what data?
+
+47. Backtesting:
+    - How to run backtest?
+    - What parameters?
+    - How to view results?
+
+48. Testing Page:
+    - What was being tested?
+    - Support/Resistance prediction logic?
+
+SECTION 12: CONFIGURATION
+--------------------------
+49. Configuration Files:
+    - What parameters are configurable?
+    - Default values?
+
+50. Credentials:
+    - How are they stored?
+    - Encryption?
+
+=============================================================================
+PRIORITY QUESTIONS (ANSWER THESE FIRST)
+=============================================================================
+
+TOP PRIORITY - NEED THESE TO START CODING:
+
+1. LEVEL CALCULATION - Which factor to use when?
+   For BTC at 67000: Use 0.2611% or 2.61% or 26.11%?
+   For Nifty at 26000: Use 0.2611% or 2.61% or 26.11%?
+   For Option at 100: Use 0.2611% or 2.61% or 26.11%?
+
+2. ENTRY SIGNAL - Exact condition:
+   - Enter when price crosses BU1?
+   - Or wait for candle close above BU1?
+   - Or something else?
+
+3. EXIT SIGNAL - Exact condition:
+   - Exit at BU2/BU3/BU4/BU5?
+   - Or when price crosses back below BU1?
+   - Or based on time?
+
+4. STOP LOSS - Exact calculation:
+   - You said "50% between Base and BU1"
+   - So SL = Base + (Points × 0.5)?
+   - And must wait for candle close below SL?
+
+5. POSITION SIZE - How much to trade:
+   - Fixed amount?
+   - Percentage of capital?
+   - Based on volatility?
+
+6. DELTA CANDLE DATA - How to get 1st candle:
+   - What API endpoint?
+   - What parameters?
+   - How to ensure it's the 5:30 AM IST candle?
+
+=============================================================================
+NEXT STEPS
+=============================================================================
+
+Please provide answers to the PRIORITY QUESTIONS above, and as many of the
+50 missing items as possible.
+
+Once I have this information, I will:
+1. Start coding the core level calculation system
+2. Add entry/exit logic
+3. Add risk management
+4. Add order management
+5. Integrate Shoonya and Delta APIs
+6. Add HFT mode
+7. Add ML system
+8. Add UI
+9. Add all other features
+
+Each component will be:
+- Committed to git with detailed comments
+- Tested before moving to next component
+- Documented
+
+=============================================================================
+END OF SUMMARY
+=============================================================================
