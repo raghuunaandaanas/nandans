@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\narwhals\typing.py
+# hypothesis_version: 6.151.9
+
+['CompliantDataFrame', 'CompliantLazyFrame', 'CompliantSeries', 'DataFrameLike', 'DataFrameT', 'DataFrame[Any]', 'Expr', 'Frame', 'FrameT', 'IntoDataFrame', 'IntoDataFrameT', 'IntoExpr', 'IntoFrame', 'IntoFrameT', 'IntoLazyFrame', 'IntoLazyFrameT', 'IntoSeries', 'IntoSeriesT', 'LazyFrameT', 'LazyFrame[Any]', 'NativeFrame', 'NativeSeries', 'Series[Any]', '_NDArray[tuple[int]]', '_ShapeT', 'b', 'bytes', 'gb', 'gigabytes', 'kb', 'kilobytes', 'mb', 'megabytes', 'ms', 'np.generic[Any]', 'ns', 's', 'tb', 'terabytes', 'tuple[int, ...]', 'us']

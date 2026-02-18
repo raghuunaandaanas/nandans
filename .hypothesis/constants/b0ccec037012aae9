@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\pip\_internal\models\direct_url.py
+# hypothesis_version: 6.151.9
+
+['=', '@', 'ArchiveInfo', 'DirInfo', 'DirectUrl', 'T', 'VcsInfo', 'archive_info', 'commit_id', 'dir_info', 'direct_url.json', 'editable', 'git', 'hash', 'hashes', 'requested_revision', 'subdirectory', 'url', 'vcs', 'vcs_info']

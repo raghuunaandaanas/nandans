@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\pip\_vendor\urllib3\util\proxy.py
+# hypothesis_version: 6.151.9
+
+['http', 'https', 'load_default_certs']

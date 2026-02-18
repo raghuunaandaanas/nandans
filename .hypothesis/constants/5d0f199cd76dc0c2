@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\pip\_vendor\urllib3\filepost.py
+# hypothesis_version: 6.151.9
+
+[b'\r\n', '--%s\r\n', '--%s--\r\n', 'ascii', 'utf-8']

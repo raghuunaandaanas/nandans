@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\pip\_internal\locations\_sysconfig.py
+# hypothesis_version: 6.151.9
+
+['--home', '--prefix', '--user', '/System/Library/', '/usr/local/bin', 'UNKNOWN', 'base', 'darwin', 'data', 'exec_prefix', 'get_preferred_scheme', 'home', 'include', 'installed_base', 'installed_platbase', 'osx_framework_user', 'platbase', 'platlib', 'posix_home', 'posix_prefix', 'posix_user', 'prefix', 'purelib', 'scripts', 'site', 'user', 'userbase']

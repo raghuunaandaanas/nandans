@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\pip\_internal\network\session.py
+# hypothesis_version: 6.151.9
+
+[b' ', b'rustc ', 0.25, 0.5, 200, 404, 500, 502, 503, 520, 527, '*', '+', ',', '--version', '.', '/', '127.0.0.0/8', ':', '::1/128', 'BUILD_BUILDID', 'BUILD_ID', 'CI', 'CPython', 'Content-Length', 'Content-Type', 'IronPython', 'Jython', 'Last-Modified', 'PIP_IS_CI', 'PyPy', 'User-Agent', 'ci', 'cpu', 'darwin', 'distro', 'file', 'file://', 'final', 'http', 'http://', 'https', 'https://', 'id', 'ignore', 'implementation', 'installer', 'lib', 'libc', 'linux', 'localhost', 'macOS', 'name', 'openssl_version', 'pip', 'proxies', 'python', 'rb', 'release', 'rustc', 'rustc_version', 'setuptools', 'setuptools_version', 'ssh', 'ssl_context', 'system', 'text/plain', 'timeout', 'user_data', 'version']

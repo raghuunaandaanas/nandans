@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\pip\_vendor\pyproject_hooks\_impl.py
+# hypothesis_version: 6.151.9
+
+['SubprocessRunner', '_allow_fallback', '_supported_features', 'backend_error', 'build_editable', 'build_sdist', 'build_wheel', 'config_settings', 'hook_missing', 'input.json', 'kwargs', 'metadata_directory', 'missing_hook_name', 'no_backend', 'output.json', 'return_val', 'sdist_directory', 'traceback', 'unsupported', 'utf-8', 'w', 'wheel_directory']

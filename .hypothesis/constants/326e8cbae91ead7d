@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\pip\_internal\vcs\bazaar.py
+# hypothesis_version: 6.151.9
+
+['--lightweight', '--quiet', '-q', '-r', '.bzr', 'Standalone ', 'bind', 'branch', 'bzr', 'bzr+', 'bzr+file', 'bzr+ftp', 'bzr+http', 'bzr+https', 'bzr+lp', 'bzr+sftp', 'bzr+ssh', 'checkout', 'checkout of branch: ', 'info', 'parent branch: ', 'revno', 'ssh://', 'switch', 'update']

@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\pip\_internal\utils\compat.py
+# hypothesis_version: 6.151.9
+
+['O_NOFOLLOW', 'WINDOWS', 'argparse', 'cli', 'get_path_uid', 'nt', 'python', 'r', 'stdlib_pkgs', 'strict', 'tomllib', 'utf-8', 'win', 'wsgiref']

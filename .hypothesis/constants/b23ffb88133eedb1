@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\pip\_internal\cli\spinners.py
+# hypothesis_version: 6.151.9
+
+[60.0, '\x08', '\x1b[?25h', '\x1b[?25l', ' ... ', '%s: %s', '-\\|/', 'canceled', 'done', 'error', 'started', 'still running...']

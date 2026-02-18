@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\pip\_vendor\cachecontrol\controller.py
+# hypothesis_version: 6.151.9
+
+[200, 203, 300, 301, 308, 86400, '%i > %i', '*', ',', '/', '://', '=', '?', 'Cache-Control', 'Caching due to etag', 'ETag', 'If-Modified-Since', 'If-None-Match', 'Last-Modified', 'Range', 'cache-control', 'content-length', 'date', 'etag', 'expires', 'last-modified', 'max-age', 'max-stale', 'min-fresh', 'must-revalidate', 'no-cache', 'no-store', 'no-transform', 'only-if-cached', 'private', 'proxy-revalidate', 'public', 's-maxage', 'vary']

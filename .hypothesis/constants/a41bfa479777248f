@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\jedi\inference\gradual\generics.py
+# hypothesis_version: 6.151.9
+
+[', ', '...', '<LazyG>[%s]', '<TupG>[%s]', '[%s]']

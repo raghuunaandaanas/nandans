@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\astroid\helpers.py
+# hypothesis_version: 6.151.9
+
+['__index__', '__len__', 'builtins', 'builtins.int', 'function', 'method', 'module', 'type']

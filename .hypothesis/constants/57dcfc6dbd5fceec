@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\astroid\nodes\as_string.py
+# hypothesis_version: 6.151.9
+
+['\x00', '\n@', '\n{}"""{}"""', ' -> ', ' = ', ' | ', '!', '"', '"""', "'", "'''", '({} {})', '*', '**', ', ', '.', '...', ':', '@%s\n', 'Const', '[]', '[{} {}]', '_', 'async def', 'break', 'continue', 'def', 'except', 'except*', 'f', 'for {} in {}:\n{}', 'from {} import {}', 'index', 'metaclass=', 'not', 'not ', 'parent', 'pass', 'raise', 'return', 't', 'tuple', 'yield', 'yield from', '{', '{%s}', '{{', '{{{} {}}}', '{{{}: {} {}}}', '{} if {} else {}', '}', '}}']

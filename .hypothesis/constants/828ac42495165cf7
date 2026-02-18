@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\pip\_internal\models\link.py
+# hypothesis_version: 6.151.9
+
+[13157, '#', '(@|%2F)', '/', '//', '///', '26.0', '=', '?', '@', '[#&]egg=([^&]*)', '\\\\', '_hashes', '_parsed_url', '_path', '_url', 'cache_link_parsing', 'comes_from', 'core-metadata', 'data-core-metadata', 'data-requires-python', 'data-yanked', 'dist-info-metadata', 'egg', 'egg_fragment', 'file', 'hashes', 'href', 'http://', 'https://', 'localhost', 'md5', 'metadata_file_data', 'requires-python', 'requires_python', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512', 'subdirectory', 'true', 'url', 'yanked', 'yanked_reason', '|']

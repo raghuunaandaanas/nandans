@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\astroid\brain\brain_six.py
+# hypothesis_version: 6.151.9
+
+['.', '_', 'expr', 'six', 'six.add_metaclass', 'six.moves', 'six.with_metaclass', 'with_metaclass']

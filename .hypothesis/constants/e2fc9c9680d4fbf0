@@ -1,0 +1,4 @@
+# file: D:\modular\src\api_integrations.py
+# hypothesis_version: 6.151.9
+
+[1.0, 300, 401, 403, 429, '&', '/v2/orders', '/v2/positions', '/v2/products', ':', 'Asia/Kolkata', 'Content-Type', 'DELETE', 'GET', 'POST', 'PUT', 'Retry-After', 'api-key', 'api_key', 'api_secret', 'application/json', 'close', 'delta_cred.json', 'end', 'limit_order', 'limit_price', 'order_type', 'product_symbol', 'r', 'resolution', 'result', 'side', 'signature', 'size', 'start', 'symbol', 'time', 'timestamp', 'utf-8']

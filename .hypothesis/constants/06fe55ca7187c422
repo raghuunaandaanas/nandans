@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\narwhals\_compliant\series.py
+# hypothesis_version: 6.151.9
+
+['CompliantSeries', 'EagerSeries', 'Into1DArray', '_1DArray', 'average', 'backward', 'both', 'dense', 'forward', 'higher', 'left', 'linear', 'lower', 'max', 'midpoint', 'min', 'nearest', 'none', 'ordinal', 'right']

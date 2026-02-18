@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\astroid\rebuilder.py
+# hypothesis_version: 6.151.9
+
+['.', '=', 'Arguments', 'Comprehension', 'ExceptHandler', 'GenExprFor', 'Keyword', 'ListCompFor', 'MatchCase', 'T_Doc', '_ForT', '_FunctionT', '_WithT', 'arguments', 'async', 'class', 'col_offset', 'comprehension', 'def', 'end_col_offset', 'end_lineno', 'excepthandler', 'keyword', 'lineno', 'match_case', 'metaclass', 'visit_']

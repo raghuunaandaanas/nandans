@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\astroid\brain\brain_dataclasses.py
+# hypothesis_version: 6.151.9
+
+[' = ', '*, ', ', ', ': ', 'Dict', 'FrozenSet', 'InitVar', 'List', 'Set', 'Tuple', '_HAS_DEFAULT_FACTORY', '__init__', '_collections_abc', '_replace', 'builtins.property', 'dataclass', 'dataclasses', 'default', 'default_factory', 'field', 'init', 'kw_only', 'name', 'pass', 'pydantic.dataclasses', 'replace', 'self', 'self, ', 'typing']

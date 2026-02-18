@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\astroid\interpreter\objectmodel.py
+# hypothesis_version: 6.151.9
+
+[',\n', '.setter', '__dict__', '__init__.py', '__path__', '__subclasses__', 'async_generator', 'attr_', 'builtins.ImportError', 'builtins.OSError', 'builtins.SyntaxError', 'cname', 'deleter', 'fget', 'fields', 'fset', 'generator', 'getter', 'items', 'keys', 'mro', 'object', 'return', 'setter', 'type', 'value', 'values']

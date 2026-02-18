@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\pip\_internal\utils\logging.py
+# hypothesis_version: 6.151.9
+
+['%(message)s', '%Y-%m-%dT%H:%M:%S', '()', '/dev/null', 'DEBUG', 'ERROR', 'ERROR: ', 'INFO', 'WARNING', 'WARNING: ', 'add_timestamp', 'class', 'console', 'console_errors', 'console_subprocess', 'delay', 'encoding', 'exclude_subprocess', 'exclude_warnings', 'file', 'filename', 'filters', 'format', 'formatter', 'formatters', 'handlers', 'ignore', 'indent', 'indentation', 'level', 'loggers', 'logging.Filter', 'name', 'pip._vendor', 'pip.subprocessor', 'red', 'rich', 'root', 'stream', 'user_log', 'utf-8', 'version', 'yellow']

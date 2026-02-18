@@ -1,0 +1,4 @@
+# file: D:\modular\src\api_integrations.py
+# hypothesis_version: 6.151.9
+
+['Content-Type', 'GET', 'api-key', 'api_key', 'api_secret', 'application/json', 'delta_cred.json', 'r', 'signature', 'timestamp', 'utf-8']

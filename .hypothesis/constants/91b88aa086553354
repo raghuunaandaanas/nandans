@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\narwhals\_compliant\typing.py
+# hypothesis_version: 6.151.9
+
+['AliasName', 'AliasNames', 'CompliantDataFrameT', 'CompliantExprT', 'CompliantExprT_co', 'CompliantFrameT', 'CompliantFrameT_co', 'CompliantLazyFrameT', 'CompliantSeriesT', 'CompliantSeriesT_co', 'CompliantSeries[Any]', 'DepthTrackingExprT', 'EagerDataFrameT', 'EagerExprT', 'EagerExprT_contra', 'EagerExpr[Any, Any]', 'EagerSeriesT', 'EagerSeriesT_co', 'EagerSeries[Any]', 'IntoCompliantExpr', 'LazyExprT', 'LazyExprT_contra', 'LazyExpr[Any, Any]', 'NativeExpr', 'NativeExprT', 'NativeExprT_co', 'NativeFrame', 'NativeFrameT_co', 'NativeSeries', 'NativeSeriesT', 'NativeSeriesT_co']

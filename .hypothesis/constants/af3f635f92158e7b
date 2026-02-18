@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\pip\_internal\metadata\__init__.py
+# hypothesis_version: 6.151.9
+
+[13317, '26.3', 'BaseDistribution', 'BaseEnvironment', 'FilesystemWheel', 'MemoryWheel', 'Wheel', 'get_environment', 'importlib', 'pkg_resources', 'select_backend']

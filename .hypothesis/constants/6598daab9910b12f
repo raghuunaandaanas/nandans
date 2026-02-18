@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\pip\_vendor\msgpack\fallback.py
+# hypothesis_version: 6.151.9
+
+[b'\xc0', b'\xc2', b'\xc3', b'\xc7', b'\xc8', b'\xc9', b'\xd4', b'\xd5', b'\xd6', b'\xd7', b'\xd8', -9223372036854775808, -2147483648, -32768, -128, 100, 127, 128, 144, 160, 192, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 240, 255, 511, 1024, 65535, 4294967295, 18446744073709551615, '%s is too large', '>BB', '>BH', '>BI', '>BQ', '>Bb', '>Bd', '>Bf', '>Bh', '>Bi', '>Bq', '>H', '>Hb', '>I', '>Ib', '>Q', '>d', '>f', '>h', '>i', '>q', 'Array is too large', 'B', 'BB', 'Bb', 'Bin is too large', 'Dict is too large', 'Expected array', 'Expected map', 'Raw is too large', 'String is too large', 'Too large data', 'Unknown header: 0x%x', 'b', 'b16s', 'b1s', 'b2s', 'b4s', 'b8s', 'pypy_version_info', 'strict', 'utf-8', 'utf_8']

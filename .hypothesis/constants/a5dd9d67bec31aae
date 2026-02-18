@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\pip\_vendor\packaging\utils.py
+# hypothesis_version: 6.151.9
+
+['(\\d+)(.*)', '-', '.tar.gz', '.whl', '.zip', 'NormalizedName', '[-_.]+', '^[\\w\\d._]*$', '__']

@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\astroid\builder.py
+# hypothesis_version: 6.151.9
+
+['#@', '#\\s+type:', '*', '.', '.__init__', '.py', '.pyc', '.pyo', '<?>', '__', '__file__', '__future__', '__init__', '__loader__', 'builtins.object', 'ignore', 'rb', 'utf-8']

@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\astroid\raw_building.py
+# hypothesis_version: 6.151.9
+
+['<no-name>', 'AsyncGeneratorType', 'Ellipsis', 'NoneType', 'NotImplementedType', 'UnionType', '__all__', '__class__', '__class_getitem__', '__dict__', '__file__', '__module__', '__name__', '__new__', '__path__', '__subclasshook__', '_io', 'builtins', 'co_filename', 'gtk', 'gtk_gtk', 'ignore']

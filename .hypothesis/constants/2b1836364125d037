@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\dash\dcc\Slider.py
+# hypothesis_version: 6.151.9
+
+['ComponentType', 'Marks', 'Slider', 'Tooltip', '_explicit_args', 'always_visible', 'bottom', 'bottomLeft', 'bottomRight', 'children', 'className', 'dash_core_components', 'disabled', 'dots', 'drag', 'drag_value', 'id', 'included', 'label', 'left', 'local', 'marks', 'max', 'memory', 'min', 'mouseup', 'persisted_props', 'persistence', 'persistence_type', 'placement', 'right', 'session', 'step', 'style', 'template', 'tooltip', 'top', 'topLeft', 'topRight', 'transform', 'updatemode', 'value', 'vertical', 'verticalHeight']

@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\pip\_internal\locations\__init__.py
+# hypothesis_version: 6.151.9
+
+['$base/', '$platbase/', '$usersite', '/$platlibdir/', '/lib/', '/lib64/', 'Additional context:', 'Lib', 'USER_CACHE_DIR', '_PIP_USE_SYSCONFIG', 'bin_prefix', 'deb_system', 'get_bin_prefix', 'get_bin_user', 'get_platlib', 'get_purelib', 'get_scheme', 'get_src_prefix', 'headers', 'home = %r', 'include', 'lib', 'local', 'nt', 'platinclude', 'platlib', 'platlibdir', 'posix_user', 'prefix = %r', 'purelib', 'pypy', 'python', 'root = %r', 'site-packages', 'site_packages', 'unix_home', 'unix_local', 'unix_prefix', 'unix_user', 'user = %r', 'user_site', 'usr']

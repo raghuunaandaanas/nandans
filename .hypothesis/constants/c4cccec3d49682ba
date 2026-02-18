@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\pip\_vendor\urllib3\contrib\_appengine_environ.py
+# hypothesis_version: 6.151.9
+
+['APPENGINE_RUNTIME', 'Development/', 'Google App Engine/', 'SERVER_SOFTWARE', 'python27']

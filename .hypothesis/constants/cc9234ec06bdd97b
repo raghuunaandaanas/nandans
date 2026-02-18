@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\pip\_vendor\urllib3\__init__.py
+# hypothesis_version: 6.151.9
+
+['HTTPConnectionPool', 'HTTPResponse', 'HTTPSConnectionPool', 'MIT', 'PoolManager', 'ProxyManager', 'Retry', 'Timeout', 'add_stderr_logger', 'always', 'connection_from_url', 'default', 'disable_warnings', 'get_host', 'ignore', 'make_headers', 'proxy_from_url']

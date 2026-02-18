@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\pip\_vendor\urllib3\_collections.py
+# hypothesis_version: 6.151.9
+
+['%s(%s)', ', ', ':', 'Content-Encoding', 'Content-Language', 'Content-Length', 'Content-Location', 'Content-Type', 'Digest', 'HTTPHeaderDict', 'Last-Modified', 'keys']

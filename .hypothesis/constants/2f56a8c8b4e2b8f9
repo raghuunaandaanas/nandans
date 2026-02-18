@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\pip\_vendor\urllib3\connectionpool.py
+# hypothesis_version: 6.151.9
+
+[303, '%s(host=%r, port=%r)', '/', '443', '80', 'Connection aborted.', 'GET', 'HTTP/?', 'No host specified.', 'Pool is closed.', 'Redirecting %s -> %s', 'Retry-After', 'Retry: %s', '[', '[^a-z]', ']', '_http_vsn_str', 'auto_open', 'errno', 'http', 'https', 'preload_content', 'proxy', 'proxy_config', 'proxy_is_verified', 'record layer failure', 'request_method', 'sock', 'socket_options', 'timed out', 'unknown protocol', 'wrong version number']

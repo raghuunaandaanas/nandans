@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\astroid\brain\brain_qt.py
+# hypothesis_version: 6.151.9
+
+['.', 'NotPySideSignal', 'PyQt4.QtCore', 'PySide.QtCore.Signal', 'PySide2', 'PySide6', 'Signal', '__class__', 'connect', 'disconnect', 'emit', 'pyqtSignal']

@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\pip\_internal\vcs\subversion.py
+# hypothesis_version: 6.151.9
+
+['-', '--force-interactive', '--non-interactive', '--password', '--quiet', '--username', '--version', '--xml', '-r', '.', '.svn', '/', '10', '8', '9', '<?xml', '<url>(.*)</url>', '\\s*revision="(\\d+)"', 'checkout', 'entries', 'info', 'ssh', 'ssh://', 'svn', 'svn+', 'svn+file', 'svn+http', 'svn+https', 'svn+ssh', 'svn+svn', 'svn, version ', 'switch', 'update', 'url="([^"]+)"']

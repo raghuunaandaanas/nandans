@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\astroid\protocols.py
+# hypothesis_version: 6.151.9
+
+[100000.0, 100000000.0, '%', '&', '*', '**', '+', '-', '/', '//', '<<', '=', '>>', '@', '^', '_TupleListNodeT', '__enter__', '__init__', '_proxied', 'assign_path', 'classmethod', 'context', 'elts', 'exceptions', 'getitem', 'is_async', 'itered', 'metaclass', 'method', 'name', 'node', 'not', 'staticmethod', 'unknown', '|', '~']

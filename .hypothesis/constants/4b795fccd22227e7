@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\zmq\sugar\socket.py
+# hypothesis_version: 6.151.9
+
+[100, 49152, 65536, ' closed', '...', ':', 'Socket', 'SocketReturnType', 'SyncSocket', 'UNKNOWN', '_SocketType', '_repr_cls', 'ascii', 'bind', 'connect', 'group', 'replace', 'routing_id', 'str objects only', 'subscribe', 'type', 'unsubscribe', 'utf-8', 'utf8', 'win32', 'zmq.Socket']

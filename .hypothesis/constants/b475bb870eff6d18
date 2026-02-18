@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\plotly\__init__.py
+# hypothesis_version: 6.151.9
+
+['.colors', '.data', '.graph_objects', '.graph_objs', '.io', '.offline', '.tools', '.utils', '.version.__version__', '__version__', 'area', 'ax', 'bar', 'barh', 'bins', 'box', 'by', 'c', 'colors', 'column', 'data', 'density_contour', 'density_heatmap', 'figsize', 'fontsize', 'funnel', 'graph_objs', 'grid', 'h', 'heatmap', 'hist', 'histogram', 'imshow', 'io', 'layout', 'legend', 'line', 'offline', 'plotly', 'return_type', 'rot', 's', 'scatter', 'sharex', 'sharey', 'stacked', 'strip', 'tools', 'utils', 'violin', 'xlabelsize', 'xrot', 'ylabelsize', 'yrot']

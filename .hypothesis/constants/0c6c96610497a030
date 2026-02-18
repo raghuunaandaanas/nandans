@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\astroid\brain\brain_pathlib.py
+# hypothesis_version: 6.151.9
+
+['builtins.tuple', 'parents', 'pathlib._PathParents']

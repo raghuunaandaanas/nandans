@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\pip\_vendor\urllib3\connection.py
+# hypothesis_version: 6.151.9
+
+[b'\r\n', b'0\r\n\r\n', 443, 2024, "', '", '.', 'TLSv1', 'TLSv1.1', 'Transfer-Encoding', 'User-Agent', '_tunnel_host', 'accept-encoding', 'check_hostname', 'chunked', 'host', 'http', 'https', 'load_default_certs', 'proxy', 'proxy_config', 'python-urllib3/%s', 'sock', 'socket_options', 'source_address', 'strict', 'subjectAltName', 'transfer-encoding', 'u[]', 'user-agent', 'utf8', 'version']

@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\pip\_vendor\urllib3\util\ssl_.py
+# hypothesis_version: 6.151.9
+
+[16384, 131072, 16777216, 33554432, '!DSS', '!MD5', '!aNULL', '!eNULL', ':', 'CERT_', 'DH+AES', 'DH+AESGCM', 'DHE+AESGCM', 'DHE+CHACHA20', 'ECDH+AES', 'ECDH+AESGCM', 'ECDHE+AESGCM', 'ECDHE+CHACHA20', 'ENCRYPTED', 'PROTOCOL_', 'RSA+AES', 'RSA+AESGCM', 'SSLKEYLOGFILE', 'ascii', 'ca_certs', 'cert_reqs', 'certfile', 'check_hostname', 'compare_digest', 'http/1.1', 'keyfile', 'keylog_filename', 'load_default_certs', 'md5', 'post_handshake_auth', 'r', 'server_side', 'set_alpn_protocols', 'sha1', 'sha256', 'ssl_version']

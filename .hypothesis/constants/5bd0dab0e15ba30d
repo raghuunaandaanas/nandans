@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\astroid\context.py
+# hypothesis_version: 6.151.9
+
+[100, ',\n    ', '_nodes_inferred', 'args', 'boundnode', 'callcontext', 'callee', 'constraints', 'extra_context', 'keywords', 'lookupname', 'nodes.NodeNG', 'path', '{}({})']

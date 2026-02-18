@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\pip\_vendor\truststore\__init__.py
+# hypothesis_version: 6.151.9
+
+['0.10.4', 'SSLContext', 'cpython', 'extract_from_ssl', 'get_unverified_chain', 'inject_into_ssl', 'pypy']

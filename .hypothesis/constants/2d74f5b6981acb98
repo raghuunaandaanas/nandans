@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\astroid\exceptions.py
+# hypothesis_version: 6.151.9
+
+[', ', 'AstroidBuildingError', 'AstroidError', 'AstroidImportError', 'AstroidIndexError', 'AstroidSyntaxError', 'AstroidTypeError', 'AstroidValueError', 'DuplicateBasesError', 'InconsistentMroError', 'InferenceError', 'MroError', 'NameInferenceError', 'NoDefault', 'NotFoundError', 'ParentMissingError', 'ResolveError', 'StatementMissing', 'SuperError', 'TooManyLevelsError', 'UnresolvableName', 'UseInferenceDefault']

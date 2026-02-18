@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\tornado\queues.py
+# hypothesis_version: 6.151.9
+
+[' getters[%s]', ' putters[%s]', ' queue=%r', ' tasks=%s', '<%s %s>', '<%s at %s %s>', 'Future[None]', 'LifoQueue', 'PriorityQueue', 'Queue', 'QueueEmpty', 'QueueFull', 'Queue[_T]', '_T', '_queue', 'maxsize=%r']

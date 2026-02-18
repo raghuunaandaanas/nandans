@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\pip\_internal\vcs\mercurial.py
+# hypothesis_version: 6.151.9
+
+['--debug', '--noupdate', '--quiet', '--template={node}', '--template={rev}', '--verbose', '-q', '.hg', 'clone', 'default', 'hg', 'hg+file', 'hg+http', 'hg+https', 'hg+ssh', 'hg+static-http', 'hgrc', 'parents', 'paths', 'paths.default', 'pull', 'raise', 'root', 'showconfig', 'update', 'w']

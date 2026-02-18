@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\astroid\_ast.py
+# hypothesis_version: 6.151.9
+
+['!=', '%', '&', '*', '**', '+', '-', '/', '//', '<', '<<', '<=', '<type_comment>', '==', '>', '>=', '>>', '@', '^', 'and', 'func_type', 'in', 'is', 'is not', 'not', 'not in', 'or', '|', '~']

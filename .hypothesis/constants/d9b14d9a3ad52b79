@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\pip\_internal\exceptions.py
+# hypothesis_version: 6.151.9
+
+['    or', '    {} --hash={}:{}', ', ', '-', 'Error', 'Failed to read %s', 'No available output.', '[cyan bold]hint[/]: ', '[red]×[/] ', '^[a-z]+(-[a-z]+)*$', '_', 'could not be loaded', 'error', 'externally-managed', 'green', 'ignore', 'incomplete-download', 'pip', 'red', 'reference', 'req', 'request', 'requirement', 'resolution-too-deep', 'unknown package', 'utf-8', 'version', 'warning', 'yellow']

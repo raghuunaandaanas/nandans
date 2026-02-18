@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\astroid\brain\brain_builtin_inference.py
+# hypothesis_version: 6.151.9
+
+["''", '<property>', 'Match', 'Pattern', 'TypeError: ', '__class__', "b''", 'bool', 'bytes', 'callable', 'classmethod', 'col_offset', 'copy', 'dict', 'dict.fromkeys', 'doc_node', 'format', 'fromkeys', 'frozenset', 'getattr', 'hasattr', 'igetattr', 'int', 'isinstance', 'issubclass', 'len', 'list', 'method', 'object.__new__', 'property', 're', 'set', 'slice', 'str', 'super', 'tuple', 'type', 'whatever']

@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\prompt_toolkit\completion\base.py
+# hypothesis_version: 6.151.9
+
+['CompleteEvent', 'Completer', 'Completion', 'ConditionalCompleter', 'DummyCompleter', 'DummyCompleter()', 'DynamicCompleter', 'ThreadedCompleter', 'merge_completers']

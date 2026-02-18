@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\narwhals\_compliant\dataframe.py
+# hypothesis_version: 6.151.9
+
+['CompliantDataFrame', 'CompliantLazyFrame', 'EagerDataFrame', 'IntoArrowTable', 'T', '_2DArray', 'anti', 'any', 'backward', 'cross', 'first', 'forward', 'full', 'inner', 'last', 'left', 'nearest', 'none', 'pa.Table', 'semi']

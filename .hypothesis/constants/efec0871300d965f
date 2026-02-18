@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\astroid\typing.py
+# hypothesis_version: 6.151.9
+
+['InferenceContext', 'bases.Proxy', 'nodes.AugAssign', 'nodes.BinOp', 'nodes.Const', 'nodes.Dict', 'nodes.EmptyNode', 'nodes.List', 'nodes.NodeNG', 'nodes.Set', 'nodes.Tuple', 'util.UninferableBase']

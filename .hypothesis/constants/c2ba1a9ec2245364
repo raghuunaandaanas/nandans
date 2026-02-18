@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\pip\_vendor\__init__.py
+# hypothesis_version: 6.151.9
+
+['*.whl', '.', 'cachecontrol', 'certifi', 'dependency-groups', 'distlib', 'distro', 'packaging', 'packaging.specifiers', 'packaging.version', 'pkg_resources', 'platformdirs', 'progress', 'pyproject_hooks', 'requests', 'requests.exceptions', 'requests.packages', 'resolvelib', 'rich', 'rich.console', 'rich.highlighter', 'rich.logging', 'rich.markup', 'rich.progress', 'rich.segment', 'rich.style', 'rich.text', 'rich.traceback', 'tomli', 'truststore', 'urllib3', '{0}.{1}']

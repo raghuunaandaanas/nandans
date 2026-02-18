@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\narwhals\_compliant\group_by.py
+# hypothesis_version: 6.151.9
+
+['(\\w+->)', 'CompliantGroupBy', 'DepthTrackingGroupBy', 'EagerGroupBy', 'LazyGroupBy', 'NarwhalsAggregation', 'count', 'len', 'max', 'mean', 'median', 'min', 'n_unique', 'std', 'sum', 'var']

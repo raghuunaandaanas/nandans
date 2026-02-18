@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\zmq\backend\select.py
+# hypothesis_version: 6.151.9
+
+['Context', 'Frame', 'IPC_PATH_MAX_LEN', 'Message', 'Socket', 'curve_keypair', 'curve_public', 'device', 'has', 'monitored_queue', 'proxy', 'proxy_steerable', 'strerror', 'zmq_errno', 'zmq_poll', 'zmq_version_info']

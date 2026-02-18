@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\pip\_internal\vcs\git.py
+# hypothesis_version: 6.151.9
+
+['+', '--filter=blob:none', '--get-regexp', '--git-dir', '--hard', '--init', '--progress', '--quiet', '--recursive', '--show-toplevel', '--tags', '--track', '--verbose', '--verify', '-b', '-q', '..', '.git', '.gitmodules', '/', '0', '://', 'Cloning %s%s to %s', 'FETCH_HEAD', 'GIT_DIR', 'GIT_SSH_COMMAND', 'GIT_TERMINAL_PROMPT', 'GIT_WORK_TREE', 'HEAD', 'PIP_NO_INPUT', '\\', '\\w+://', '^[a-fA-F0-9]{40}$', 'branch_name', 'checkout', 'clone', 'config', 'extra_environ', 'fetch', 'file', 'file:', 'git', 'git version', 'git+', 'git+file', 'git+git', 'git+http', 'git+https', 'git+ssh', 'git+ssh://', 'ignore', 'raise', 'refs/', 'refs/heads/', 'remote.origin.url', 'remote.origin.url ', 'remote\\..*\\.url', 'reset', 'rev-parse', 'sha^', 'show-ref', 'ssh -oBatchMode=yes', 'ssh://', 'ssh://\\1\\2/\\3', 'submodule', 'symbolic-ref', 'update', 'version']

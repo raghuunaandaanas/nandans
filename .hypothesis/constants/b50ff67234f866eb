@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\jupyter_client\multikernelmanager.py
+# hypothesis_version: 6.151.9
+
+[0.1, 'Kernel restarted: %s', 'Kernel shutdown: %s', 'context', 'idle', 'kernel-%s.json', 'kernel_id', 'kernel_manager_class', 'kernel_name', 'kernel_spec_manager', 'key', 'restart', 'use_pending_kernels', 'zmq.Context', 'zmq.asyncio.Context']
