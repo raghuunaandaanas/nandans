@@ -2420,3 +2420,713 @@ class LiveTradingEngine:
             'can_place': True,
             'reason': 'Live trading active'
         }
+
+
+class HFTMicroTickTrader:
+    """
+    High-frequency trading using micro tick patterns and last digit analysis.
+    Implements B5 Factor at micro level for rapid trades.
+    """
+    
+    def __init__(self, profit_target: float = 0.003, stop_loss: float = 0.0005,
+                 max_hold_seconds: int = 60):
+        """
+        Initialize HFT Micro Tick Trader.
+        
+        Args:
+            profit_target: Target profit percentage (default 0.3%)
+            stop_loss: Stop loss percentage (default 0.05%)
+            max_hold_seconds: Maximum hold time in seconds (default 60)
+        """
+        self.B5_FACTOR = 0.002611  # Master number for micro levels
+        self.profit_target = profit_target
+        self.stop_loss = stop_loss
+        self.max_hold_seconds = max_hold_seconds
+        self.active_hft_trades = []
+        
+    def extract_micro_levels(self, price: float) -> Dict[str, float]:
+        """
+        Extract last 1, 2, 3 digits from price for micro level analysis.
+        
+        Args:
+            price: Current price
+            
+        Returns:
+            Dict with last_digit, last_2_digits, last_3_digits
+        """
+        price_str = f"{price:.2f}".replace('.', '')
+        
+        # Extract digits
+        last_digit = int(price_str[-1]) if len(price_str) >= 1 else 0
+        last_2_digits = int(price_str[-2:]) if len(price_str) >= 2 else 0
+        last_3_digits = int(price_str[-3:]) if len(price_str) >= 3 else 0
+        
+        return {
+            'last_digit': last_digit,
+            'last_2_digits': last_2_digits,
+            'last_3_digits': last_3_digits,
+            'price': price
+        }
+    
+    def calculate_micro_points(self, digits: Dict[str, float]) -> Dict[str, float]:
+        """
+        Calculate micro points using B5 Factor.
+        
+        Args:
+            digits: Dict with last_digit, last_2_digits, last_3_digits
+            
+        Returns:
+            Dict with micro_points, mini_points, standard_points
+        """
+        micro_points = digits['last_digit'] * self.B5_FACTOR
+        mini_points = digits['last_2_digits'] * self.B5_FACTOR
+        standard_points = digits['last_3_digits'] * self.B5_FACTOR
+        
+        return {
+            'micro_points': micro_points,
+            'mini_points': mini_points,
+            'standard_points': standard_points
+        }
+    
+    def should_hft_trade(self, current_price: float, micro_levels: Dict[str, float],
+                        previous_price: float = None) -> Dict[str, any]:
+        """
+        Determine if HFT trade should be taken based on micro level cross.
+        
+        Args:
+            current_price: Current price
+            micro_levels: Micro levels from calculate_micro_points
+            previous_price: Previous price for cross detection
+            
+        Returns:
+            Dict with should_trade (bool), direction (str), entry_price (float)
+        """
+        if previous_price is None:
+            return {
+                'should_trade': False,
+                'direction': None,
+                'entry_price': None,
+                'reason': 'No previous price for comparison'
+            }
+        
+        # Extract current and previous digits
+        current_digits = self.extract_micro_levels(current_price)
+        previous_digits = self.extract_micro_levels(previous_price)
+        
+        # Calculate micro points
+        current_points = self.calculate_micro_points(current_digits)
+        
+        # Check for micro level cross (last digit change)
+        if current_digits['last_digit'] != previous_digits['last_digit']:
+            # Bullish cross (digit increased)
+            if current_digits['last_digit'] > previous_digits['last_digit']:
+                return {
+                    'should_trade': True,
+                    'direction': 'long',
+                    'entry_price': current_price,
+                    'target_price': current_price * (1 + self.profit_target),
+                    'stop_loss_price': current_price * (1 - self.stop_loss),
+                    'micro_points': current_points['micro_points'],
+                    'reason': f"Micro level cross: {previous_digits['last_digit']} -> {current_digits['last_digit']}"
+                }
+            # Bearish cross (digit decreased)
+            else:
+                return {
+                    'should_trade': True,
+                    'direction': 'short',
+                    'entry_price': current_price,
+                    'target_price': current_price * (1 - self.profit_target),
+                    'stop_loss_price': current_price * (1 + self.stop_loss),
+                    'micro_points': current_points['micro_points'],
+                    'reason': f"Micro level cross: {previous_digits['last_digit']} -> {current_digits['last_digit']}"
+                }
+        
+        return {
+            'should_trade': False,
+            'direction': None,
+            'entry_price': None,
+            'reason': 'No micro level cross detected'
+        }
+    
+    def check_hft_exit(self, trade: Dict[str, any], current_price: float,
+                      elapsed_seconds: float) -> Dict[str, any]:
+        """
+        Check if HFT trade should be exited.
+        
+        Args:
+            trade: Active HFT trade dict
+            current_price: Current price
+            elapsed_seconds: Time since trade entry
+            
+        Returns:
+            Dict with should_exit (bool), reason (str), pnl (float)
+        """
+        direction = trade['direction']
+        entry_price = trade['entry_price']
+        target_price = trade['target_price']
+        stop_loss_price = trade['stop_loss_price']
+        
+        # Calculate current P&L
+        if direction == 'long':
+            pnl_pct = (current_price - entry_price) / entry_price
+        else:  # short
+            pnl_pct = (entry_price - current_price) / entry_price
+        
+        # Check profit target
+        if direction == 'long' and current_price >= target_price:
+            return {
+                'should_exit': True,
+                'reason': 'Profit target reached',
+                'pnl_pct': pnl_pct,
+                'exit_price': current_price
+            }
+        elif direction == 'short' and current_price <= target_price:
+            return {
+                'should_exit': True,
+                'reason': 'Profit target reached',
+                'pnl_pct': pnl_pct,
+                'exit_price': current_price
+            }
+        
+        # Check stop loss
+        if direction == 'long' and current_price <= stop_loss_price:
+            return {
+                'should_exit': True,
+                'reason': 'Stop loss triggered',
+                'pnl_pct': pnl_pct,
+                'exit_price': current_price
+            }
+        elif direction == 'short' and current_price >= stop_loss_price:
+            return {
+                'should_exit': True,
+                'reason': 'Stop loss triggered',
+                'pnl_pct': pnl_pct,
+                'exit_price': current_price
+            }
+        
+        # Check max hold time
+        if elapsed_seconds >= self.max_hold_seconds:
+            return {
+                'should_exit': True,
+                'reason': 'Max hold time reached',
+                'pnl_pct': pnl_pct,
+                'exit_price': current_price
+            }
+        
+        return {
+            'should_exit': False,
+            'reason': 'Trade still active',
+            'pnl_pct': pnl_pct,
+            'exit_price': None
+        }
+
+
+class FibonacciAnalyzer:
+    """
+    Integrates Fibonacci numbers with B5 Factor for enhanced signal quality.
+    Identifies key reversal, support, and rally zones.
+    """
+    
+    def __init__(self):
+        """Initialize Fibonacci Analyzer."""
+        self.FIB_NUMBERS = [0.0, 11.8, 23.6, 38.2, 50.0, 61.8, 78.2, 100.0]
+        self.REJECTION_ZONES = [95, 45]
+        self.SUPPORT_ZONES = [18]
+        self.RALLY_ZONES = [28, 78]
+        
+    def recognize_fib_numbers(self, price: float) -> Dict[str, any]:
+        """
+        Recognize Fibonacci numbers in price digits.
+        
+        Args:
+            price: Current price
+            
+        Returns:
+            Dict with fib_found (bool), fib_type (str), fib_value (float)
+        """
+        price_str = f"{price:.2f}".replace('.', '')
+        
+        # Check for Fibonacci patterns in price (skip 0.0 as it matches everything)
+        for fib in self.FIB_NUMBERS:
+            if fib == 0.0:
+                continue  # Skip 0.0 as it's too generic
+            
+            fib_str = str(int(fib * 10))  # Convert 23.6 to "236"
+            if fib_str in price_str:
+                fib_type = 'support' if fib < 50.0 else 'resistance'
+                return {
+                    'fib_found': True,
+                    'fib_type': fib_type,
+                    'fib_value': fib,
+                    'price': price,
+                    'pattern': fib_str
+                }
+        
+        return {
+            'fib_found': False,
+            'fib_type': None,
+            'fib_value': None,
+            'price': price
+        }
+    
+    def identify_rejection_zones(self, price: float) -> Dict[str, any]:
+        """
+        Identify if price is in rejection zone (95, 45).
+        
+        Args:
+            price: Current price
+            
+        Returns:
+            Dict with in_rejection_zone (bool), zone_value (int)
+        """
+        price_str = f"{price:.2f}".replace('.', '')
+        
+        for zone in self.REJECTION_ZONES:
+            if str(zone) in price_str:
+                return {
+                    'in_rejection_zone': True,
+                    'zone_value': zone,
+                    'price': price,
+                    'action': 'expect_reversal'
+                }
+        
+        return {
+            'in_rejection_zone': False,
+            'zone_value': None,
+            'price': price
+        }
+    
+    def identify_support_zones(self, price: float) -> Dict[str, any]:
+        """
+        Identify if price is in support zone (18).
+        
+        Args:
+            price: Current price
+            
+        Returns:
+            Dict with in_support_zone (bool), zone_value (int)
+        """
+        price_str = f"{price:.2f}".replace('.', '')
+        
+        for zone in self.SUPPORT_ZONES:
+            if str(zone) in price_str:
+                return {
+                    'in_support_zone': True,
+                    'zone_value': zone,
+                    'price': price,
+                    'action': 'expect_bounce'
+                }
+        
+        return {
+            'in_support_zone': False,
+            'zone_value': None,
+            'price': price
+        }
+    
+    def identify_rally_zones(self, price: float) -> Dict[str, any]:
+        """
+        Identify if price is in rally zone (28, 78).
+        
+        Args:
+            price: Current price
+            
+        Returns:
+            Dict with in_rally_zone (bool), zone_value (int)
+        """
+        price_str = f"{price:.2f}".replace('.', '')
+        
+        for zone in self.RALLY_ZONES:
+            if str(zone) in price_str:
+                return {
+                    'in_rally_zone': True,
+                    'zone_value': zone,
+                    'price': price,
+                    'action': 'expect_rally'
+                }
+        
+        return {
+            'in_rally_zone': False,
+            'zone_value': None,
+            'price': price
+        }
+    
+    def predict_rally(self, price_touches: List[Dict[str, float]], level: float,
+                     reversal_threshold: float = None) -> Dict[str, any]:
+        """
+        Predict rally based on 3-touch pattern.
+        
+        Args:
+            price_touches: List of price touch events with timestamp and price
+            level: Level being touched (e.g., 20, 78)
+            reversal_threshold: Price below which reversal invalidates pattern
+            
+        Returns:
+            Dict with rally_predicted (bool), target_range (tuple), confidence (float)
+        """
+        if len(price_touches) < 3:
+            return {
+                'rally_predicted': False,
+                'reason': 'Insufficient touches (need 3)',
+                'touches': len(price_touches)
+            }
+        
+        # Check if all touches are at the level
+        touches_at_level = [t for t in price_touches if abs(t['price'] - level) / level < 0.01]
+        
+        if len(touches_at_level) < 3:
+            return {
+                'rally_predicted': False,
+                'reason': 'Not enough touches at level',
+                'touches_at_level': len(touches_at_level)
+            }
+        
+        # Check if price stayed above reversal threshold
+        if reversal_threshold:
+            below_threshold = [t for t in price_touches if t['price'] < reversal_threshold]
+            if below_threshold:
+                return {
+                    'rally_predicted': False,
+                    'reason': 'Price reversed below threshold',
+                    'reversal_threshold': reversal_threshold
+                }
+        
+        # Predict rally based on level
+        if level == 20:
+            return {
+                'rally_predicted': True,
+                'level': level,
+                'target_range': (29, 46),
+                'extended_target': 60,
+                'confidence': 0.75,
+                'touches': len(touches_at_level)
+            }
+        elif level == 78:
+            return {
+                'rally_predicted': True,
+                'level': level,
+                'target_range': (78, 96),
+                'extended_target': 113,
+                'confidence': 0.80,
+                'touches': len(touches_at_level)
+            }
+        else:
+            return {
+                'rally_predicted': True,
+                'level': level,
+                'target_range': (level * 1.1, level * 1.3),
+                'extended_target': level * 1.5,
+                'confidence': 0.65,
+                'touches': len(touches_at_level)
+            }
+    
+    def combine_with_levels(self, price: float, bu_be_levels: Dict[str, float]) -> Dict[str, any]:
+        """
+        Combine Fibonacci zones with BU/BE levels for enhanced signals.
+        
+        Args:
+            price: Current price
+            bu_be_levels: Dict with BU1-BU5 and BE1-BE5 levels
+            
+        Returns:
+            Dict with enhanced signal quality and position size recommendation
+        """
+        fib_analysis = self.recognize_fib_numbers(price)
+        rejection_analysis = self.identify_rejection_zones(price)
+        support_analysis = self.identify_support_zones(price)
+        rally_analysis = self.identify_rally_zones(price)
+        
+        # Check alignment with BU/BE levels
+        aligned_levels = []
+        for level_name, level_price in bu_be_levels.items():
+            if abs(price - level_price) / level_price < 0.01:  # Within 1%
+                aligned_levels.append(level_name)
+        
+        # Calculate signal strength
+        signal_strength = 0.0
+        reasons = []
+        
+        if fib_analysis['fib_found']:
+            signal_strength += 0.3
+            reasons.append(f"Fibonacci {fib_analysis['fib_value']} detected")
+        
+        if rejection_analysis['in_rejection_zone']:
+            signal_strength += 0.2
+            reasons.append(f"Rejection zone {rejection_analysis['zone_value']}")
+        
+        if support_analysis['in_support_zone']:
+            signal_strength += 0.2
+            reasons.append(f"Support zone {support_analysis['zone_value']}")
+        
+        if rally_analysis['in_rally_zone']:
+            signal_strength += 0.2
+            reasons.append(f"Rally zone {rally_analysis['zone_value']}")
+        
+        if aligned_levels:
+            signal_strength += 0.3 * len(aligned_levels)
+            reasons.append(f"Aligned with levels: {', '.join(aligned_levels)}")
+        
+        # Position size recommendation
+        if signal_strength >= 0.8:
+            position_multiplier = 1.5
+        elif signal_strength >= 0.5:
+            position_multiplier = 1.0
+        else:
+            position_multiplier = 0.5
+        
+        return {
+            'signal_strength': min(signal_strength, 1.0),
+            'position_multiplier': position_multiplier,
+            'aligned_levels': aligned_levels,
+            'reasons': reasons,
+            'fib_analysis': fib_analysis,
+            'rejection_analysis': rejection_analysis,
+            'support_analysis': support_analysis,
+            'rally_analysis': rally_analysis
+        }
+
+
+class MultiTimeframeCoordinator:
+    """
+    Coordinates signals across 1m, 5m, and 15m timeframes.
+    Uses 15m as trend filter, 5m for timing, 1m for execution.
+    """
+    
+    def __init__(self, level_calculator):
+        """
+        Initialize Multi-Timeframe Coordinator.
+        
+        Args:
+            level_calculator: LevelCalculator instance
+        """
+        self.level_calculator = level_calculator
+        self.timeframes = ['1m', '5m', '15m']
+        self.timeframe_weights = {
+            '15m': 0.5,  # Trend filter (highest weight)
+            '5m': 0.3,   # Timing
+            '1m': 0.2    # Execution
+        }
+        
+    def calculate_all_timeframe_levels(self, base_prices: Dict[str, float]) -> Dict[str, Dict[str, float]]:
+        """
+        Calculate levels for all timeframes.
+        
+        Args:
+            base_prices: Dict with '1m', '5m', '15m' base prices
+            
+        Returns:
+            Dict with levels for each timeframe
+        """
+        all_levels = {}
+        
+        for timeframe in self.timeframes:
+            if timeframe in base_prices:
+                all_levels[timeframe] = self.level_calculator.calculate_levels(
+                    base_prices[timeframe], timeframe
+                )
+        
+        return all_levels
+    
+    def check_timeframe_alignment(self, signals_1m: Dict[str, any],
+                                  signals_5m: Dict[str, any],
+                                  signals_15m: Dict[str, any]) -> Dict[str, any]:
+        """
+        Check if signals across timeframes are aligned.
+        
+        Args:
+            signals_1m: Signal dict from 1m timeframe
+            signals_5m: Signal dict from 5m timeframe
+            signals_15m: Signal dict from 15m timeframe
+            
+        Returns:
+            Dict with alignment status and position size adjustment
+        """
+        signals = {
+            '1m': signals_1m,
+            '5m': signals_5m,
+            '15m': signals_15m
+        }
+        
+        # Extract signal directions
+        directions = {}
+        for tf, signal in signals.items():
+            if signal and 'signal' in signal:
+                directions[tf] = signal['signal']
+            else:
+                directions[tf] = 'neutral'
+        
+        # Check for full alignment
+        bullish_count = sum(1 for d in directions.values() if d == 'bullish')
+        bearish_count = sum(1 for d in directions.values() if d == 'bearish')
+        
+        # All timeframes bullish
+        if bullish_count == 3:
+            return {
+                'aligned': True,
+                'direction': 'bullish',
+                'confidence': 0.95,
+                'position_multiplier': 1.5,
+                'reason': 'All timeframes bullish'
+            }
+        
+        # All timeframes bearish
+        if bearish_count == 3:
+            return {
+                'aligned': True,
+                'direction': 'bearish',
+                'confidence': 0.95,
+                'position_multiplier': 1.5,
+                'reason': 'All timeframes bearish'
+            }
+        
+        # Partial alignment (2 out of 3)
+        if bullish_count == 2:
+            return {
+                'aligned': True,
+                'direction': 'bullish',
+                'confidence': 0.75,
+                'position_multiplier': 1.0,
+                'reason': f'2 timeframes bullish: {[tf for tf, d in directions.items() if d == "bullish"]}'
+            }
+        
+        if bearish_count == 2:
+            return {
+                'aligned': True,
+                'direction': 'bearish',
+                'confidence': 0.75,
+                'position_multiplier': 1.0,
+                'reason': f'2 timeframes bearish: {[tf for tf, d in directions.items() if d == "bearish"]}'
+            }
+        
+        # Conflicting signals
+        return {
+            'aligned': False,
+            'direction': 'neutral',
+            'confidence': 0.3,
+            'position_multiplier': 0.5,
+            'reason': 'Timeframes conflicting',
+            'directions': directions
+        }
+    
+    def get_weighted_signal(self, signals_1m: Dict[str, any],
+                           signals_5m: Dict[str, any],
+                           signals_15m: Dict[str, any]) -> Dict[str, any]:
+        """
+        Calculate weighted signal based on timeframe importance.
+        
+        Args:
+            signals_1m: Signal dict from 1m timeframe
+            signals_5m: Signal dict from 5m timeframe
+            signals_15m: Signal dict from 15m timeframe
+            
+        Returns:
+            Dict with weighted signal and confidence
+        """
+        signals = {
+            '1m': signals_1m,
+            '5m': signals_5m,
+            '15m': signals_15m
+        }
+        
+        # Calculate weighted score
+        bullish_score = 0.0
+        bearish_score = 0.0
+        
+        for tf, signal in signals.items():
+            if signal and 'signal' in signal:
+                weight = self.timeframe_weights[tf]
+                if signal['signal'] == 'bullish':
+                    bullish_score += weight
+                elif signal['signal'] == 'bearish':
+                    bearish_score += weight
+        
+        # Determine final signal
+        if bullish_score > bearish_score and bullish_score >= 0.5:
+            return {
+                'signal': 'bullish',
+                'confidence': bullish_score,
+                'bullish_score': bullish_score,
+                'bearish_score': bearish_score,
+                'dominant_timeframe': '15m' if signals['15m'].get('signal') == 'bullish' else '5m'
+            }
+        elif bearish_score > bullish_score and bearish_score >= 0.5:
+            return {
+                'signal': 'bearish',
+                'confidence': bearish_score,
+                'bullish_score': bullish_score,
+                'bearish_score': bearish_score,
+                'dominant_timeframe': '15m' if signals['15m'].get('signal') == 'bearish' else '5m'
+            }
+        else:
+            return {
+                'signal': 'neutral',
+                'confidence': 0.0,
+                'bullish_score': bullish_score,
+                'bearish_score': bearish_score,
+                'reason': 'No clear direction'
+            }
+    
+    def get_entry_recommendation(self, current_price: float,
+                                all_levels: Dict[str, Dict[str, float]],
+                                alignment: Dict[str, any]) -> Dict[str, any]:
+        """
+        Get entry recommendation based on multi-timeframe analysis.
+        
+        Args:
+            current_price: Current price
+            all_levels: Levels for all timeframes
+            alignment: Alignment analysis from check_timeframe_alignment
+            
+        Returns:
+            Dict with entry recommendation
+        """
+        if not alignment['aligned']:
+            return {
+                'should_enter': False,
+                'reason': 'Timeframes not aligned',
+                'wait_for': 'alignment'
+            }
+        
+        # Use 15m as trend filter
+        if '15m' not in all_levels:
+            return {
+                'should_enter': False,
+                'reason': '15m levels not available'
+            }
+        
+        levels_15m = all_levels['15m']
+        
+        # Check if price is at entry level on 1m
+        if '1m' in all_levels:
+            levels_1m = all_levels['1m']
+            
+            if alignment['direction'] == 'bullish':
+                # Check if near bu1 on 1m
+                if abs(current_price - levels_1m['bu1']) / levels_1m['bu1'] < 0.005:
+                    return {
+                        'should_enter': True,
+                        'direction': 'long',
+                        'entry_price': current_price,
+                        'position_multiplier': alignment['position_multiplier'],
+                        'stop_loss': levels_1m['base'] - (levels_1m['points'] * 0.5),
+                        'targets': [levels_1m['bu2'], levels_1m['bu3'], levels_1m['bu4'], levels_1m['bu5']],
+                        'reason': f"Bullish alignment, price at 1m bu1, confidence {alignment['confidence']}"
+                    }
+            
+            elif alignment['direction'] == 'bearish':
+                # Check if near be1 on 1m
+                if abs(current_price - levels_1m['be1']) / levels_1m['be1'] < 0.005:
+                    return {
+                        'should_enter': True,
+                        'direction': 'short',
+                        'entry_price': current_price,
+                        'position_multiplier': alignment['position_multiplier'],
+                        'stop_loss': levels_1m['base'] + (levels_1m['points'] * 0.5),
+                        'targets': [levels_1m['be2'], levels_1m['be3'], levels_1m['be4'], levels_1m['be5']],
+                        'reason': f"Bearish alignment, price at 1m be1, confidence {alignment['confidence']}"
+                    }
+        
+        return {
+            'should_enter': False,
+            'reason': 'Waiting for precise entry on 1m',
+            'alignment': alignment
+        }
