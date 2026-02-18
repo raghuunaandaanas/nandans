@@ -690,6 +690,442 @@ class SignalGenerator:
 
 
 
+class PositionManager:
+    """
+    Manages position sizing, stop losses, pyramiding, and trailing stops.
+    
+    Calculates position sizes based on capital and risk parameters.
+    Manages stop loss placement and adjustment based on BU/BE levels.
+    Implements pyramiding logic for adding to winning positions.
+    """
+    
+    def calculate_position_size(self, capital: float, risk_percent: float, 
+                               stop_loss_distance: float, price: float) -> int:
+        """
+        Calculate position size based on capital and risk parameters.
+        
+        Position size = (capital × risk%) / stop_loss_distance
+        
+        Args:
+            capital: Total trading capital
+            risk_percent: Risk percentage per trade (e.g., 0.01 for 1%)
+            stop_loss_distance: Distance from entry to stop loss in price units
+            price: Current price (for calculating quantity)
+            
+        Returns:
+            Position size (quantity)
+            
+        Requirements: 7.1, 17.5
+        Property 14: Position Size Calculation
+        
+        Examples:
+            >>> pm = PositionManager()
+            >>> # Risk 1% of $10,000 with $50 stop loss distance
+            >>> pm.calculate_position_size(10000, 0.01, 50, 50000)
+            2
+        """
+        if capital <= 0:
+            raise ValueError("Capital must be positive")
+        
+        if risk_percent <= 0 or risk_percent > 1:
+            raise ValueError("Risk percent must be between 0 and 1")
+        
+        if stop_loss_distance <= 0:
+            raise ValueError("Stop loss distance must be positive")
+        
+        if price <= 0:
+            raise ValueError("Price must be positive")
+        
+        # Calculate risk amount in dollars
+        risk_amount = capital * risk_percent
+        
+        # Calculate position size
+        # size = risk_amount / stop_loss_distance
+        position_value = risk_amount / (stop_loss_distance / price)
+        
+        # Convert to quantity
+        quantity = int(position_value / price)
+        
+        return max(1, quantity)  # Minimum 1 unit
+    
+    def calculate_stop_loss(self, entry_price: float, levels: Dict[str, float], 
+                           direction: str) -> float:
+        """
+        Calculate stop loss based on entry price and levels.
+        
+        Stop loss = Base ± (Points × 0.5)
+        
+        For long positions: stop loss below entry
+        For short positions: stop loss above entry
+        
+        Args:
+            entry_price: Entry price of position
+            levels: Dictionary of calculated BU/BE levels
+            direction: 'long' or 'short'
+            
+        Returns:
+            Stop loss price
+            
+        Requirements: 7.2, 7.3
+        Property 11: Stop Loss Calculation
+        
+        Examples:
+            >>> pm = PositionManager()
+            >>> levels = {'base': 50000, 'points': 130.55}
+            >>> pm.calculate_stop_loss(50130, levels, 'long')
+            49934.725
+        """
+        if direction not in ['long', 'short']:
+            raise ValueError(f"Invalid direction: {direction}")
+        
+        base = levels.get('base')
+        points = levels.get('points')
+        
+        if base is None or points is None:
+            raise ValueError("Invalid levels dictionary")
+        
+        # Stop loss is 0.5 × Points away from base
+        # Requirement 7.2
+        stop_distance = points * 0.5
+        
+        if direction == 'long':
+            # Long stop loss below base
+            stop_loss = base - stop_distance
+        else:
+            # Short stop loss above base
+            stop_loss = base + stop_distance
+        
+        return round(stop_loss, 2)
+    
+    def should_pyramid(self, position: Dict[str, any], current_price: float, 
+                      levels: Dict[str, float]) -> Dict[str, any]:
+        """
+        Determine if should add to position (pyramid).
+        
+        Pyramiding occurs when:
+        - Position is profitable
+        - Price retraces to favorable level
+        - Total position size doesn't exceed 100× initial
+        
+        Args:
+            position: Dictionary with 'direction', 'entry_price', 'size', 'initial_size'
+            current_price: Current market price
+            levels: Dictionary of BU/BE levels
+            
+        Returns:
+            Dictionary with:
+                - should_pyramid: bool
+                - add_size: int (size to add)
+                - reason: str (explanation)
+                
+        Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 8.6
+        Property 13: Pyramiding Size Limit
+        
+        Examples:
+            >>> pm = PositionManager()
+            >>> position = {'direction': 'long', 'entry_price': 50130, 'size': 10, 'initial_size': 10}
+            >>> levels = {'bu1': 50130, 'bu2': 50261}
+            >>> result = pm.should_pyramid(position, 50261, levels)
+            >>> result['should_pyramid']
+            True
+        """
+        direction = position.get('direction')
+        entry_price = position.get('entry_price')
+        current_size = position.get('size', 0)
+        initial_size = position.get('initial_size', current_size)
+        
+        if direction not in ['long', 'short']:
+            return {'should_pyramid': False, 'add_size': 0, 'reason': 'Invalid direction'}
+        
+        # Check if position is profitable
+        if direction == 'long':
+            is_profitable = current_price > entry_price
+        else:
+            is_profitable = current_price < entry_price
+        
+        if not is_profitable:
+            return {'should_pyramid': False, 'add_size': 0, 'reason': 'Position not profitable'}
+        
+        # Check size limit: total size cannot exceed 100× initial
+        # Requirement 8.6, Property 13
+        max_size = initial_size * 100
+        if current_size >= max_size:
+            return {'should_pyramid': False, 'add_size': 0, 'reason': 'Max size reached (100× initial)'}
+        
+        # Calculate add size (typically same as initial size)
+        # Requirement 8.3
+        add_size = min(initial_size, max_size - current_size)
+        
+        return {
+            'should_pyramid': True,
+            'add_size': add_size,
+            'reason': 'Position profitable and within size limits'
+        }
+    
+    def adjust_stop_loss(self, position: Dict[str, any], current_price: float, 
+                        levels: Dict[str, float]) -> Dict[str, any]:
+        """
+        Adjust stop loss for trailing stops.
+        
+        Moves stop loss to breakeven at BU2/BE2.
+        Trails stop loss to previous level at BU3/BE3 and beyond.
+        
+        Args:
+            position: Dictionary with 'direction', 'entry_price', 'stop_loss'
+            current_price: Current market price
+            levels: Dictionary of BU/BE levels
+            
+        Returns:
+            Dictionary with:
+                - new_stop_loss: float
+                - reason: str (explanation)
+                
+        Requirements: 7.4, 7.5, 7.6, 7.7, 7.8, 25.1, 25.2, 25.3, 25.4
+        
+        Examples:
+            >>> pm = PositionManager()
+            >>> position = {'direction': 'long', 'entry_price': 50130, 'stop_loss': 49935}
+            >>> levels = {'base': 50000, 'bu1': 50130, 'bu2': 50261, 'bu3': 50392}
+            >>> result = pm.adjust_stop_loss(position, 50261, levels)
+            >>> result['new_stop_loss']
+            50130.0
+        """
+        direction = position.get('direction')
+        entry_price = position.get('entry_price')
+        current_stop = position.get('stop_loss')
+        
+        if direction not in ['long', 'short']:
+            return {'new_stop_loss': current_stop, 'reason': 'Invalid direction'}
+        
+        base = levels.get('base')
+        
+        if direction == 'long':
+            bu2 = levels.get('bu2')
+            bu3 = levels.get('bu3')
+            
+            # At BU2: move stop to breakeven (entry price)
+            # Requirement 25.2
+            if current_price >= bu2 and current_stop < entry_price:
+                return {
+                    'new_stop_loss': entry_price,
+                    'reason': 'Moved to breakeven at BU2'
+                }
+            
+            # At BU3: trail stop to BU1
+            # Requirement 25.3
+            if current_price >= bu3:
+                bu1 = levels.get('bu1')
+                if current_stop < bu1:
+                    return {
+                        'new_stop_loss': bu1,
+                        'reason': 'Trailing stop to BU1 at BU3'
+                    }
+        
+        else:  # short
+            be2 = levels.get('be2')
+            be3 = levels.get('be3')
+            
+            # At BE2: move stop to breakeven (entry price)
+            if current_price <= be2 and current_stop > entry_price:
+                return {
+                    'new_stop_loss': entry_price,
+                    'reason': 'Moved to breakeven at BE2'
+                }
+            
+            # At BE3: trail stop to BE1
+            if current_price <= be3:
+                be1 = levels.get('be1')
+                if current_stop > be1:
+                    return {
+                        'new_stop_loss': be1,
+                        'reason': 'Trailing stop to BE1 at BE3'
+                    }
+        
+        # No adjustment needed
+        return {'new_stop_loss': current_stop, 'reason': 'No adjustment needed'}
+
+
+class RiskManager:
+    """
+    Manages risk limits and circuit breakers.
+    
+    Enforces daily loss limits, per-trade loss limits, exposure limits,
+    and circuit breakers for consecutive losses.
+    """
+    
+    def __init__(self, daily_loss_limit: float = 0.05, per_trade_loss_limit: float = 0.02,
+                 max_exposure: float = 0.5, circuit_breaker_losses: int = 5):
+        """
+        Initialize risk manager with limits.
+        
+        Args:
+            daily_loss_limit: Maximum daily loss as percentage of capital (default: 5%)
+            per_trade_loss_limit: Maximum loss per trade as percentage (default: 2%)
+            max_exposure: Maximum exposure as percentage of capital (default: 50%)
+            circuit_breaker_losses: Number of consecutive losses to trigger circuit breaker
+        """
+        self.daily_loss_limit = daily_loss_limit
+        self.per_trade_loss_limit = per_trade_loss_limit
+        self.max_exposure = max_exposure
+        self.circuit_breaker_losses = circuit_breaker_losses
+        self.consecutive_losses = 0
+    
+    def check_daily_loss_limit(self, current_pnl: float, capital: float) -> Dict[str, any]:
+        """
+        Check if daily loss limit has been reached.
+        
+        Args:
+            current_pnl: Current day's P&L (negative for loss)
+            capital: Total trading capital
+            
+        Returns:
+            Dictionary with:
+                - limit_reached: bool
+                - current_loss_pct: float
+                - limit_pct: float
+                - message: str
+                
+        Requirements: 17.1, 17.2
+        Property 15: Daily Loss Limit Enforcement
+        
+        Examples:
+            >>> rm = RiskManager(daily_loss_limit=0.05)
+            >>> result = rm.check_daily_loss_limit(-600, 10000)
+            >>> result['limit_reached']
+            True
+        """
+        if capital <= 0:
+            raise ValueError("Capital must be positive")
+        
+        loss_pct = abs(current_pnl) / capital if current_pnl < 0 else 0
+        limit_reached = loss_pct >= self.daily_loss_limit
+        
+        return {
+            'limit_reached': limit_reached,
+            'current_loss_pct': loss_pct,
+            'limit_pct': self.daily_loss_limit,
+            'message': f"Daily loss limit {'REACHED' if limit_reached else 'OK'}: {loss_pct*100:.2f}% / {self.daily_loss_limit*100:.2f}%"
+        }
+    
+    def check_per_trade_loss_limit(self, trade_loss: float, capital: float) -> Dict[str, any]:
+        """
+        Check if per-trade loss limit has been reached.
+        
+        Args:
+            trade_loss: Loss on current trade (negative value)
+            capital: Total trading capital
+            
+        Returns:
+            Dictionary with:
+                - limit_reached: bool
+                - loss_pct: float
+                - limit_pct: float
+                - message: str
+                
+        Requirements: 17.3, 17.4
+        Property 16: Per-Trade Loss Limit Enforcement
+        
+        Examples:
+            >>> rm = RiskManager(per_trade_loss_limit=0.02)
+            >>> result = rm.check_per_trade_loss_limit(-250, 10000)
+            >>> result['limit_reached']
+            True
+        """
+        if capital <= 0:
+            raise ValueError("Capital must be positive")
+        
+        loss_pct = abs(trade_loss) / capital if trade_loss < 0 else 0
+        limit_reached = loss_pct >= self.per_trade_loss_limit
+        
+        return {
+            'limit_reached': limit_reached,
+            'loss_pct': loss_pct,
+            'limit_pct': self.per_trade_loss_limit,
+            'message': f"Per-trade loss limit {'REACHED' if limit_reached else 'OK'}: {loss_pct*100:.2f}% / {self.per_trade_loss_limit*100:.2f}%"
+        }
+    
+    def check_exposure_limits(self, positions: List[Dict[str, any]], capital: float) -> Dict[str, any]:
+        """
+        Check if exposure limits are exceeded.
+        
+        Args:
+            positions: List of position dictionaries with 'size' and 'price'
+            capital: Total trading capital
+            
+        Returns:
+            Dictionary with:
+                - limit_exceeded: bool
+                - current_exposure_pct: float
+                - limit_pct: float
+                - message: str
+                
+        Requirements: 17.5, 17.6
+        
+        Examples:
+            >>> rm = RiskManager(max_exposure=0.5)
+            >>> positions = [{'size': 10, 'price': 50000}]
+            >>> result = rm.check_exposure_limits(positions, 10000)
+            >>> result['limit_exceeded']
+            True
+        """
+        if capital <= 0:
+            raise ValueError("Capital must be positive")
+        
+        # Calculate total exposure
+        total_exposure = sum(pos.get('size', 0) * pos.get('price', 0) for pos in positions)
+        exposure_pct = total_exposure / capital
+        
+        limit_exceeded = exposure_pct > self.max_exposure
+        
+        return {
+            'limit_exceeded': limit_exceeded,
+            'current_exposure_pct': exposure_pct,
+            'limit_pct': self.max_exposure,
+            'message': f"Exposure limit {'EXCEEDED' if limit_exceeded else 'OK'}: {exposure_pct*100:.2f}% / {self.max_exposure*100:.2f}%"
+        }
+    
+    def circuit_breaker(self, trade_result: str) -> Dict[str, any]:
+        """
+        Check circuit breaker for consecutive losses.
+        
+        Args:
+            trade_result: 'win' or 'loss'
+            
+        Returns:
+            Dictionary with:
+                - triggered: bool
+                - consecutive_losses: int
+                - threshold: int
+                - message: str
+                
+        Requirements: 17.7, 17.8, 17.9
+        
+        Examples:
+            >>> rm = RiskManager(circuit_breaker_losses=5)
+            >>> for i in range(5):
+            ...     result = rm.circuit_breaker('loss')
+            >>> result['triggered']
+            True
+        """
+        if trade_result == 'loss':
+            self.consecutive_losses += 1
+        elif trade_result == 'win':
+            self.consecutive_losses = 0
+        
+        triggered = self.consecutive_losses >= self.circuit_breaker_losses
+        
+        return {
+            'triggered': triggered,
+            'consecutive_losses': self.consecutive_losses,
+            'threshold': self.circuit_breaker_losses,
+            'message': f"Circuit breaker {'TRIGGERED' if triggered else 'OK'}: {self.consecutive_losses} / {self.circuit_breaker_losses} consecutive losses"
+        }
+    
+    def reset_circuit_breaker(self):
+        """Reset circuit breaker counter."""
+        self.consecutive_losses = 0
+
+
 if __name__ == "__main__":
     # Example usage
     calculator = LevelCalculator()

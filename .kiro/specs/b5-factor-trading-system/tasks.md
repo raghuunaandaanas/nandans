@@ -186,8 +186,8 @@ Target: 75%+ accuracy in paper trading (minimum), 85%+ accuracy with ML training
     - Test ATM strike selection with mock option chains
     - _Requirements: 5.1-5.9, 6.1-6.11_
 
-- [ ] 6. Phase 6: Position Management & Risk (Days 14-16)
-  - [ ] 6.1 Implement Position Manager
+- [x] 6. Phase 6: Position Management & Risk (Days 14-16)
+  - [x] 6.1 Implement Position Manager
     - Create PositionManager class in src/main.py
     - Implement calculate_position_size(capital, risk_percent, stop_loss_distance)
     - Implement calculate_stop_loss(entry_price, levels, direction)
@@ -195,7 +195,7 @@ Target: 75%+ accuracy in paper trading (minimum), 85%+ accuracy with ML training
     - Implement adjust_stop_loss(position, current_price, levels) for trailing stops
     - _Requirements: 7.1-7.8, 8.1-8.10_
   
-  - [ ] 6.2 Implement Risk Manager
+  - [x] 6.2 Implement Risk Manager
     - Create RiskManager class in src/main.py
     - Implement check_daily_loss_limit(current_pnl, limit)
     - Implement check_per_trade_loss_limit(trade_loss, limit)
@@ -203,19 +203,19 @@ Target: 75%+ accuracy in paper trading (minimum), 85%+ accuracy with ML training
     - Implement circuit_breaker(consecutive_losses)
     - _Requirements: 17.1-17.12_
   
-  - [ ] 6.3 Write property tests for position management
+  - [x] 6.3 Write property tests for position management
     - **Property 11: Stop Loss Calculation** - stop loss = Base ± (Points × 0.5)
     - **Property 12: Stop Loss Trigger on Close Only** - wicks don't trigger stop loss
     - **Property 13: Pyramiding Size Limit** - total size never exceeds 100× initial
     - **Property 14: Position Size Calculation** - size = (capital × risk%) / stop_loss_distance
     - **Validates: Requirements 7.1, 7.2, 7.3, 8.6, 17.5**
   
-  - [ ] 6.4 Write property tests for risk management
+  - [x] 6.4 Write property tests for risk management
     - **Property 15: Daily Loss Limit Enforcement** - no new positions when daily limit reached
     - **Property 16: Per-Trade Loss Limit Enforcement** - position closed when per-trade limit reached
     - **Validates: Requirements 17.1, 17.2, 17.3, 17.4**
   
-  - [ ] 6.5 Write unit tests for position and risk management
+  - [x] 6.5 Write unit tests for position and risk management
     - Test position sizing with various capital and risk values
     - Test stop loss calculation for long and short positions
     - Test pyramiding logic with retracements
