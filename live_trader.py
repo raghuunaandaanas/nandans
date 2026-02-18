@@ -1,11 +1,14 @@
 """
 B5 Factor Live Trading Bot
 Connects to real exchanges and trades with real data.
+Uses exact same get_candle_close logic as delta_btc_options.py
 """
 
 import sys
 import time
 import json
+import requests
+import datetime as dt
 from datetime import datetime
 from typing import Dict, List
 
@@ -25,41 +28,27 @@ from src.api_integrations import DeltaExchangeClient, ShoonyaClient
 from src.database import DatabaseManager
 
 
-def get_candle_close(symbol: str, resolution: str, base_url: str = "https://api.india.delta.exchange") -> float:
-    """
-    Get the FIRST candle's close price at market open (5:30 AM IST).
-    Uses the same logic as delta_btc_options.py but returns FIRST candle, not last.
-    
-    Args:
-        symbol: Trading symbol (e.g., 'BTCUSDT')
-        resolution: Timeframe ('1m', '5m', '15m')
-        base_url: Delta Exchange API base URL
-        
-    Returns:
-        First candle close price at market open or None if not available
-    """
+# EXACT copy from delta_btc_options - Copy.py
+base_url = "https://api.india.delta.exchange"
+
+def get_candle_close(symbol, resolution):
+    """Get the last closed candle's close price for a given symbol and resolution"""
     try:
-        import requests
-        import datetime as dt
-        
         now_utc = dt.datetime.now(dt.timezone.utc)
         now_ist = now_utc + dt.timedelta(hours=5, minutes=30)
         today_ist = now_ist.replace(hour=5, minute=30, second=0, microsecond=0)
         today_utc = today_ist - dt.timedelta(hours=5, minutes=30)
         start = int(today_utc.timestamp())
         end = start + 3600
-        
         url = f"{base_url}/v2/history/candles"
         params = {'symbol': symbol, 'resolution': resolution, 'start': start, 'end': end}
-        response = requests.get(url, params=params, timeout=10)
-        
+        response = requests.get(url, params=params)
         if response.status_code == 200:
             result = response.json()
             if result.get('success') and result.get('result'):
                 candles = result['result']
                 if candles:
-                    # Return FIRST candle close (index 0), not last (index -1)
-                    return float(candles[0].get('close', 0))
+                    return float(candles[-1].get('close', 0))
         return None
     except:
         return None
@@ -172,52 +161,32 @@ class LiveTradingBot:
     def calculate_levels_from_real_data(self, symbol: str, timeframe: str = '1m', 
                                        market_open_time: str = '00:00') -> Dict[str, float]:
         """
-        Calculate B5 Factor levels using first candle close at market open.
-        Automatically fetches from API and caches for the trading day.
+        Calculate B5 Factor levels using cached first candle close.
+        Base prices are fetched once at startup and cached.
         
         Args:
             symbol: Trading symbol
             timeframe: Timeframe ('1m', '5m', '15m')
-            market_open_time: Market open time in IST format "HH:MM" (e.g., "05:30" for Indian markets)
+            market_open_time: Market open time (not used, kept for compatibility)
             
         Returns:
             Dict with calculated levels
         """
         try:
-            # Check cache first (fetch once per trading day)
+            # Get base price from cache (set at startup)
             cache_key = f"{symbol}_{timeframe}"
-            if cache_key in self.first_candle_cache:
-                base_price = self.first_candle_cache[cache_key]
-                print(f"\n[CACHE] Using cached {timeframe} base: {base_price:.2f}")
-            else:
-                # Fetch from API
-                print(f"\n[AUTO-FETCH] Fetching {timeframe} first candle close for {symbol}...")
-                base_price = get_candle_close(symbol, timeframe)
-                
-                if base_price and base_price > 0:
-                    print(f"[OK] {timeframe} first candle close: {base_price:.2f}")
-                    # Cache it
-                    self.first_candle_cache[cache_key] = base_price
-                else:
-                    # Fallback to current price if first candle not available
-                    print(f"[WARN] {timeframe} first candle not available, using current price")
-                    base_price = self.get_real_time_price(symbol)
-                    # Cache current price too (so it doesn't change every iteration)
-                    if base_price > 0:
-                        self.first_candle_cache[cache_key] = base_price
+            base_price = self.first_candle_cache.get(cache_key, 0)
             
             if base_price > 0:
                 # Calculate levels from base price
                 levels = self.level_calculator.calculate_levels(base_price, timeframe)
                 
-                print(f"\n[LEVELS] Calculated for {symbol} ({timeframe}):")
-                print(f"   Base: {levels['base']:.2f}")
+                print(f"\n[LEVELS] {symbol} ({timeframe}) - Base: {base_price:.2f}")
                 print(f"   BU1: {levels['bu1']:.2f} | BE1: {levels['be1']:.2f}")
                 print(f"   BU2: {levels['bu2']:.2f} | BE2: {levels['be2']:.2f}")
                 print(f"   BU3: {levels['bu3']:.2f} | BE3: {levels['be3']:.2f}")
                 print(f"   BU4: {levels['bu4']:.2f} | BE4: {levels['be4']:.2f}")
                 print(f"   BU5: {levels['bu5']:.2f} | BE5: {levels['be5']:.2f}")
-                print(f"   Points: {levels['points']:.2f}")
                 
                 return levels
             
@@ -225,8 +194,6 @@ class LiveTradingBot:
             
         except Exception as e:
             print(f"[ERROR] Error calculating levels: {str(e)}")
-            import traceback
-            traceback.print_exc()
             return {}
     
     def check_for_signals(self, symbol: str, current_price: float, levels: Dict[str, float]) -> Dict[str, any]:
@@ -486,10 +453,10 @@ def main():
     
     # Configuration
     EXCHANGE = 'delta'          # 'delta' or 'shoonya'
-    SYMBOL = 'BTCUSDT'          # Trading symbol
+    SYMBOL = 'BTCUSD'           # Trading symbol (Delta uses BTCUSD not BTCUSDT)
     MODE = 'paper'              # 'paper' or 'live'
     INTERVAL = 5                # Check every 5 seconds
-    MARKET_OPEN_TIME = '05:30'  # IST time for first candle (05:30 for Indian markets, 00:00 for crypto 24/7)
+    MARKET_OPEN_TIME = '05:30'  # IST time for first candle
     
     print(f"⚙️  Configuration:")
     print(f"   Exchange: {EXCHANGE}")
@@ -497,10 +464,62 @@ def main():
     print(f"   Mode: {MODE}")
     print(f"   Market Open Time: {MARKET_OPEN_TIME} IST")
     print(f"   Check Interval: {INTERVAL}s")
-    print(f"\n   ✅ AUTO-FETCH: First candle closes will be fetched automatically")
+    
+    # Fetch first candle closes ONCE at startup
+    print(f"\n📊 Fetching base prices...")
+    
+    # Try to get candle closes
+    btc_1m_close = get_candle_close(SYMBOL, '1m')
+    btc_5m_close = get_candle_close(SYMBOL, '5m')
+    btc_15m_close = get_candle_close(SYMBOL, '15m')
+    
+    # Get current price from ticker
+    btc_price = 0
+    try:
+        resp = requests.get(f"{base_url}/v2/tickers", timeout=10)
+        if resp.status_code == 200 and resp.json().get('success'):
+            for t in resp.json()['result']:
+                if t.get('symbol') == SYMBOL:
+                    btc_price = float(t.get('close', 0))
+                    break
+    except Exception as e:
+        print(f"   ⚠️  Error fetching current price: {e}")
+    
+    # Use current price as fallback for any missing candle closes
+    if not btc_1m_close or btc_1m_close == 0:
+        btc_1m_close = btc_price
+        print(f"   [1m] Using current price: {btc_1m_close:.2f}")
+    else:
+        print(f"   [1m] Candle close: {btc_1m_close:.2f}")
+    
+    if not btc_5m_close or btc_5m_close == 0:
+        btc_5m_close = btc_price
+        print(f"   [5m] Using current price: {btc_5m_close:.2f}")
+    else:
+        print(f"   [5m] Candle close: {btc_5m_close:.2f}")
+    
+    if not btc_15m_close or btc_15m_close == 0:
+        btc_15m_close = btc_price
+        print(f"   [15m] Using current price: {btc_15m_close:.2f}")
+    else:
+        print(f"   [15m] Candle close: {btc_15m_close:.2f}")
+    
+    if btc_1m_close == 0 or btc_5m_close == 0 or btc_15m_close == 0:
+        print(f"\n❌ ERROR: Could not fetch base prices. Exiting.")
+        return
+    
+    print(f"\n   ✅ Base Prices Set:")
+    print(f"      1m:  {btc_1m_close:.2f}")
+    print(f"      5m:  {btc_5m_close:.2f}")
+    print(f"      15m: {btc_15m_close:.2f}")
     
     # Create bot
     bot = LiveTradingBot(exchange=EXCHANGE, mode=MODE)
+    
+    # Set the base prices in cache
+    bot.first_candle_cache[f"{SYMBOL}_1m"] = btc_1m_close
+    bot.first_candle_cache[f"{SYMBOL}_5m"] = btc_5m_close
+    bot.first_candle_cache[f"{SYMBOL}_15m"] = btc_15m_close
     
     # Connect to exchange
     if not bot.connect_to_exchange():
