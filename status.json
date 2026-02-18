@@ -1,0 +1,24 @@
+{
+  "timestamp": "2026-02-16T15:14:07.989061",
+  "brokers": {
+    "shoonya": {
+      "login": "success",
+      "user": "RAGHU NANDAN SUDHINDRA",
+      "symbols": {
+        "BSE": 2,
+        "BFO": 1547,
+        "NFO": 40380,
+        "NSE": 2421,
+        "MCX": 8812
+      },
+      "total_symbols": 53162
+    },
+    "delta_india": {
+      "login": "success",
+      "symbols": {
+        "DELTA": 1297
+      },
+      "total_symbols": 1297
+    }
+  }
+}
