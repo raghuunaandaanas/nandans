@@ -25,6 +25,45 @@ from src.api_integrations import DeltaExchangeClient, ShoonyaClient
 from src.database import DatabaseManager
 
 
+def get_candle_close(symbol: str, resolution: str, base_url: str = "https://api.india.delta.exchange") -> float:
+    """
+    Get the last closed candle's close price for a given symbol and resolution.
+    Uses the same logic as delta_btc_options.py
+    
+    Args:
+        symbol: Trading symbol (e.g., 'BTCUSDT')
+        resolution: Timeframe ('1m', '5m', '15m')
+        base_url: Delta Exchange API base URL
+        
+    Returns:
+        Last candle close price or None if not available
+    """
+    try:
+        import requests
+        import datetime as dt
+        
+        now_utc = dt.datetime.now(dt.timezone.utc)
+        now_ist = now_utc + dt.timedelta(hours=5, minutes=30)
+        today_ist = now_ist.replace(hour=5, minute=30, second=0, microsecond=0)
+        today_utc = today_ist - dt.timedelta(hours=5, minutes=30)
+        start = int(today_utc.timestamp())
+        end = start + 3600
+        
+        url = f"{base_url}/v2/history/candles"
+        params = {'symbol': symbol, 'resolution': resolution, 'start': start, 'end': end}
+        response = requests.get(url, params=params, timeout=10)
+        
+        if response.status_code == 200:
+            result = response.json()
+            if result.get('success') and result.get('result'):
+                candles = result['result']
+                if candles:
+                    return float(candles[-1].get('close', 0))
+        return None
+    except:
+        return None
+
+
 class LiveTradingBot:
     """
     Live trading bot that connects to real exchanges.
@@ -71,9 +110,6 @@ class LiveTradingBot:
         self.levels = {}
         self.levels_5m = {}
         self.levels_15m = {}
-        self.manual_base_price = None  # Can be set manually
-        self.manual_base_price_5m = None
-        self.manual_base_price_15m = None
         
     def connect_to_exchange(self) -> bool:
         """
@@ -133,6 +169,7 @@ class LiveTradingBot:
                                        market_open_time: str = '00:00') -> Dict[str, float]:
         """
         Calculate B5 Factor levels using first candle close at market open.
+        Automatically fetches from API using get_candle_close() function.
         
         Args:
             symbol: Trading symbol
@@ -143,69 +180,16 @@ class LiveTradingBot:
             Dict with calculated levels
         """
         try:
-            # Use manual base price if set for this timeframe
-            manual_price = None
-            if timeframe == '1m' and self.manual_base_price:
-                manual_price = self.manual_base_price
-            elif timeframe == '5m' and self.manual_base_price_5m:
-                manual_price = self.manual_base_price_5m
-            elif timeframe == '15m' and self.manual_base_price_15m:
-                manual_price = self.manual_base_price_15m
+            # Automatically fetch first candle close using get_candle_close()
+            print(f"\n[AUTO-FETCH] Fetching {timeframe} first candle close for {symbol}...")
+            base_price = get_candle_close(symbol, timeframe)
             
-            if manual_price:
-                base_price = manual_price
-                print(f"\n[INFO] Using manual base price for {timeframe}: {base_price:.2f}")
+            if base_price and base_price > 0:
+                print(f"[OK] {timeframe} first candle close: {base_price:.2f}")
             else:
-                # Try to get first candle close at market open
-                print(f"\n[INFO] Fetching first candle close at {market_open_time} IST...")
-                
-                base_price = None
-                
-                try:
-                    # Use public API (no auth required) like delta_btc_options.py
-                    import datetime as dt
-                    
-                    # Calculate today's market open time in IST
-                    now_utc = dt.datetime.now(dt.timezone.utc)
-                    now_ist = now_utc + dt.timedelta(hours=5, minutes=30)
-                    
-                    # Parse market open time
-                    hour, minute = map(int, market_open_time.split(':'))
-                    today_ist = now_ist.replace(hour=hour, minute=minute, second=0, microsecond=0)
-                    today_utc = today_ist - dt.timedelta(hours=5, minutes=30)
-                    
-                    start = int(today_utc.timestamp())
-                    end = start + 3600  # 1 hour window
-                    
-                    # Fetch candles using public API (no auth)
-                    url = f"https://api.india.delta.exchange/v2/history/candles"
-                    params = {
-                        'symbol': symbol,
-                        'resolution': timeframe,
-                        'start': start,
-                        'end': end
-                    }
-                    
-                    import requests
-                    response = requests.get(url, params=params)
-                    
-                    if response.status_code == 200:
-                        result = response.json()
-                        if result.get('success') and result.get('result'):
-                            candles = result['result']
-                            if candles:
-                                # Get the first candle's close
-                                base_price = float(candles[0].get('close', 0))
-                                print(f"[OK] First candle close at {market_open_time} IST: {base_price:.2f}")
-                    
-                except Exception as e:
-                    print(f"[WARN] Could not fetch first candle: {str(e)[:100]}")
-                    base_price = None
-                
                 # Fallback to current price if first candle not available
-                if base_price is None or base_price <= 0:
-                    print(f"[INFO] Using current price as base (first candle not available)")
-                    base_price = self.get_real_time_price(symbol)
+                print(f"[WARN] {timeframe} first candle not available, using current price")
+                base_price = self.get_real_time_price(symbol)
             
             if base_price > 0:
                 # Calculate levels from base price
@@ -492,36 +476,16 @@ def main():
     INTERVAL = 5                # Check every 5 seconds
     MARKET_OPEN_TIME = '05:30'  # IST time for first candle (05:30 for Indian markets, 00:00 for crypto 24/7)
     
-    # MANUAL BASE PRICE (Set this to first candle close if known)
-    # If set, this will be used instead of fetching from API
-    # Example: MANUAL_BASE_PRICE = 67511.00  (first candle close at 5:30 AM IST)
-    MANUAL_BASE_PRICE = 67511.00  # 1m first candle close - Set to None to fetch automatically
-    MANUAL_BASE_PRICE_5M = 67511.00  # 5m first candle close
-    MANUAL_BASE_PRICE_15M = 67511.00  # 15m first candle close
-    
     print(f"⚙️  Configuration:")
     print(f"   Exchange: {EXCHANGE}")
     print(f"   Symbol: {SYMBOL}")
     print(f"   Mode: {MODE}")
     print(f"   Market Open Time: {MARKET_OPEN_TIME} IST")
-    if MANUAL_BASE_PRICE:
-        print(f"   Manual Base Price 1m: {MANUAL_BASE_PRICE} (First Candle Close)")
-    if MANUAL_BASE_PRICE_5M:
-        print(f"   Manual Base Price 5m: {MANUAL_BASE_PRICE_5M}")
-    if MANUAL_BASE_PRICE_15M:
-        print(f"   Manual Base Price 15m: {MANUAL_BASE_PRICE_15M}")
     print(f"   Check Interval: {INTERVAL}s")
+    print(f"\n   ✅ AUTO-FETCH: First candle closes will be fetched automatically")
     
     # Create bot
     bot = LiveTradingBot(exchange=EXCHANGE, mode=MODE)
-    
-    # Set manual base prices if provided
-    if MANUAL_BASE_PRICE:
-        bot.manual_base_price = MANUAL_BASE_PRICE
-    if MANUAL_BASE_PRICE_5M:
-        bot.manual_base_price_5m = MANUAL_BASE_PRICE_5M
-    if MANUAL_BASE_PRICE_15M:
-        bot.manual_base_price_15m = MANUAL_BASE_PRICE_15M
     
     # Connect to exchange
     if not bot.connect_to_exchange():
