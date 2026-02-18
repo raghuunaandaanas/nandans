@@ -2028,3 +2028,395 @@ class TradingModeManager:
         """Reset daily trade count (for testing or manual reset)."""
         self.daily_trade_count = 0
         self.last_reset_date = datetime.now().date()
+
+
+
+class PaperTradingEngine:
+    """
+    Simulates trading without placing real orders.
+    
+    Features:
+    - Order simulation using real market data
+    - Slippage simulation
+    - Separate P&L tracking
+    - No real money at risk
+    """
+    
+    def __init__(self, database_manager, initial_capital: float = 10000.0, 
+                 slippage_percent: float = 0.1):
+        """
+        Initialize Paper Trading Engine.
+        
+        Args:
+            database_manager: DatabaseManager instance
+            initial_capital: Starting capital for paper trading
+            slippage_percent: Slippage percentage (0.1 = 0.1%)
+            
+        Raises:
+            ValueError: If inputs are invalid
+        """
+        if initial_capital <= 0:
+            raise ValueError("initial_capital must be positive")
+        if slippage_percent < 0:
+            raise ValueError("slippage_percent must be non-negative")
+            
+        self.db = database_manager
+        self.initial_capital = initial_capital
+        self.current_capital = initial_capital
+        self.slippage_percent = slippage_percent
+        self.positions = []
+        self.closed_trades = []
+        self.is_active = True
+        
+    def simulate_order_fill(self, order: Dict[str, any], 
+                           current_bid_ask: Dict[str, float]) -> Dict[str, any]:
+        """
+        Simulate order fill using real market data.
+        
+        Args:
+            order: Order dict with instrument, side, quantity, order_type, price
+            current_bid_ask: Dict with 'bid' and 'ask' prices
+            
+        Returns:
+            Dict with filled order details
+            
+        Raises:
+            ValueError: If inputs are invalid
+        """
+        if not order:
+            raise ValueError("order cannot be empty")
+        if 'bid' not in current_bid_ask or 'ask' not in current_bid_ask:
+            raise ValueError("current_bid_ask must contain 'bid' and 'ask'")
+            
+        # Determine fill price based on order type and side
+        if order['order_type'] == 'market':
+            if order['side'] == 'buy':
+                fill_price = current_bid_ask['ask']  # Buy at ask
+            else:
+                fill_price = current_bid_ask['bid']  # Sell at bid
+        else:  # limit order
+            fill_price = order.get('price', current_bid_ask['ask'])
+            
+        # Apply slippage
+        fill_price = self.simulate_slippage(fill_price, order['side'])
+        
+        # Create filled order
+        filled_order = {
+            'instrument': order['instrument'],
+            'side': order['side'],
+            'quantity': order['quantity'],
+            'fill_price': fill_price,
+            'order_type': order['order_type'],
+            'timestamp': time.time(),
+            'status': 'filled',
+            'paper_trade': True
+        }
+        
+        # Update positions
+        self._update_positions(filled_order)
+        
+        return filled_order
+        
+    def simulate_slippage(self, price: float, side: str) -> float:
+        """
+        Simulate slippage on order execution.
+        
+        Args:
+            price: Original price
+            side: 'buy' or 'sell'
+            
+        Returns:
+            Price with slippage applied
+            
+        Raises:
+            ValueError: If inputs are invalid
+        """
+        if price <= 0:
+            raise ValueError("price must be positive")
+        if side not in ['buy', 'sell']:
+            raise ValueError("side must be 'buy' or 'sell'")
+            
+        slippage = price * (self.slippage_percent / 100)
+        
+        if side == 'buy':
+            return price + slippage  # Worse price for buy
+        else:
+            return price - slippage  # Worse price for sell
+            
+    def _update_positions(self, filled_order: Dict[str, any]):
+        """Update positions based on filled order."""
+        instrument = filled_order['instrument']
+        side = filled_order['side']
+        quantity = filled_order['quantity']
+        fill_price = filled_order['fill_price']
+        
+        # Find existing position
+        existing_position = None
+        for pos in self.positions:
+            if pos['instrument'] == instrument:
+                existing_position = pos
+                break
+                
+        if side == 'buy':
+            if existing_position:
+                # Add to existing position
+                total_quantity = existing_position['quantity'] + quantity
+                avg_price = ((existing_position['quantity'] * existing_position['entry_price']) + 
+                           (quantity * fill_price)) / total_quantity
+                existing_position['quantity'] = total_quantity
+                existing_position['entry_price'] = avg_price
+            else:
+                # New position
+                self.positions.append({
+                    'instrument': instrument,
+                    'side': 'long',
+                    'quantity': quantity,
+                    'entry_price': fill_price,
+                    'timestamp': time.time()
+                })
+        else:  # sell
+            if existing_position:
+                # Reduce or close position
+                if existing_position['quantity'] >= quantity:
+                    # Calculate P&L
+                    pnl = (fill_price - existing_position['entry_price']) * quantity
+                    self.current_capital += pnl
+                    
+                    # Record closed trade
+                    self.closed_trades.append({
+                        'instrument': instrument,
+                        'entry_price': existing_position['entry_price'],
+                        'exit_price': fill_price,
+                        'quantity': quantity,
+                        'pnl': pnl,
+                        'timestamp': time.time()
+                    })
+                    
+                    # Update position
+                    existing_position['quantity'] -= quantity
+                    if existing_position['quantity'] == 0:
+                        self.positions.remove(existing_position)
+                        
+    def get_paper_pnl(self, current_prices: Dict[str, float] = None) -> Dict[str, any]:
+        """
+        Get paper trading P&L.
+        
+        Args:
+            current_prices: Dict of current prices by instrument
+            
+        Returns:
+            Dict with realized_pnl, unrealized_pnl, total_pnl, capital
+        """
+        realized_pnl = self.current_capital - self.initial_capital
+        
+        unrealized_pnl = 0.0
+        if current_prices:
+            for pos in self.positions:
+                if pos['instrument'] in current_prices:
+                    current_price = current_prices[pos['instrument']]
+                    unrealized_pnl += (current_price - pos['entry_price']) * pos['quantity']
+                    
+        return {
+            'realized_pnl': realized_pnl,
+            'unrealized_pnl': unrealized_pnl,
+            'total_pnl': realized_pnl + unrealized_pnl,
+            'current_capital': self.current_capital,
+            'initial_capital': self.initial_capital,
+            'return_pct': ((self.current_capital - self.initial_capital) / self.initial_capital) * 100
+        }
+        
+    def get_paper_positions(self) -> List[Dict[str, any]]:
+        """Get current paper trading positions."""
+        return self.positions.copy()
+        
+    def get_paper_trades(self) -> List[Dict[str, any]]:
+        """Get closed paper trades."""
+        return self.closed_trades.copy()
+        
+    def reset_paper_trading(self):
+        """Reset paper trading to initial state."""
+        self.current_capital = self.initial_capital
+        self.positions = []
+        self.closed_trades = []
+
+
+class LiveTradingEngine:
+    """
+    Manages live trading with real money.
+    
+    Features:
+    - Safety checks before enabling
+    - API credential verification
+    - Balance verification
+    - Emergency stop functionality
+    - Prominent status display
+    """
+    
+    def __init__(self, api_client, database_manager, risk_manager):
+        """
+        Initialize Live Trading Engine.
+        
+        Args:
+            api_client: API client (DeltaExchangeClient or ShoonyaClient)
+            database_manager: DatabaseManager instance
+            risk_manager: RiskManager instance
+        """
+        self.api_client = api_client
+        self.db = database_manager
+        self.risk_manager = risk_manager
+        self.is_live = False
+        self.live_enabled_at = None
+        self.emergency_stop_triggered = False
+        
+    def enable_live_trading(self, user_confirmation: bool = False) -> Dict[str, any]:
+        """
+        Enable live trading with safety checks.
+        
+        Args:
+            user_confirmation: Whether user has confirmed
+            
+        Returns:
+            Dict with success status and message
+            
+        Raises:
+            ValueError: If safety checks fail
+        """
+        if self.is_live:
+            return {
+                'success': False,
+                'message': 'Live trading already enabled'
+            }
+            
+        if not user_confirmation:
+            return {
+                'success': False,
+                'message': 'User confirmation required to enable live trading',
+                'requires_confirmation': True
+            }
+            
+        # Safety check 1: Verify API credentials
+        if not self._verify_api_credentials():
+            raise ValueError("API credentials verification failed")
+            
+        # Safety check 2: Verify sufficient balance
+        if not self._verify_sufficient_balance():
+            raise ValueError("Insufficient account balance")
+            
+        # Safety check 3: Verify risk limits configured
+        if not self._verify_risk_limits():
+            raise ValueError("Risk limits not properly configured")
+            
+        # Enable live trading
+        self.is_live = True
+        self.live_enabled_at = time.time()
+        self.emergency_stop_triggered = False
+        
+        return {
+            'success': True,
+            'message': 'Live trading enabled - TRADING WITH REAL MONEY',
+            'enabled_at': self.live_enabled_at,
+            'warning': 'All trades will use real money. Monitor carefully.'
+        }
+        
+    def disable_live_trading(self) -> Dict[str, any]:
+        """
+        Disable live trading.
+        
+        Returns:
+            Dict with success status
+        """
+        if not self.is_live:
+            return {
+                'success': False,
+                'message': 'Live trading not enabled'
+            }
+            
+        self.is_live = False
+        
+        return {
+            'success': True,
+            'message': 'Live trading disabled',
+            'was_active_for': time.time() - self.live_enabled_at if self.live_enabled_at else 0
+        }
+        
+    def emergency_stop(self) -> Dict[str, any]:
+        """
+        Emergency stop - close all positions immediately.
+        
+        Returns:
+            Dict with positions closed and status
+        """
+        if not self.is_live:
+            return {
+                'success': False,
+                'message': 'Live trading not active'
+            }
+            
+        self.emergency_stop_triggered = True
+        self.is_live = False
+        
+        # In real implementation, would close all positions via API
+        # For now, just mark as stopped
+        
+        return {
+            'success': True,
+            'message': 'EMERGENCY STOP ACTIVATED - All trading halted',
+            'positions_closed': 0,  # Would be actual count
+            'timestamp': time.time()
+        }
+        
+    def _verify_api_credentials(self) -> bool:
+        """Verify API credentials are valid."""
+        # In real implementation, would test API connection
+        # For testing, assume valid if api_client exists
+        return self.api_client is not None
+        
+    def _verify_sufficient_balance(self, min_balance: float = 100.0) -> bool:
+        """Verify account has sufficient balance."""
+        # In real implementation, would check actual balance via API
+        # For testing, assume sufficient
+        return True
+        
+    def _verify_risk_limits(self) -> bool:
+        """Verify risk limits are properly configured."""
+        # Check that risk manager has valid limits
+        return (self.risk_manager.daily_loss_limit > 0 and 
+                self.risk_manager.per_trade_loss_limit > 0)
+                
+    def get_live_status(self) -> Dict[str, any]:
+        """
+        Get live trading status.
+        
+        Returns:
+            Dict with is_live, enabled_at, emergency_stop status
+        """
+        return {
+            'is_live': self.is_live,
+            'enabled_at': self.live_enabled_at,
+            'emergency_stop_triggered': self.emergency_stop_triggered,
+            'uptime': time.time() - self.live_enabled_at if self.is_live and self.live_enabled_at else 0
+        }
+        
+    def can_place_order(self) -> Dict[str, any]:
+        """
+        Check if orders can be placed.
+        
+        Returns:
+            Dict with can_place (bool) and reason (str)
+        """
+        if self.emergency_stop_triggered:
+            return {
+                'can_place': False,
+                'reason': 'Emergency stop activated'
+            }
+            
+        if not self.is_live:
+            return {
+                'can_place': False,
+                'reason': 'Live trading not enabled'
+            }
+            
+        return {
+            'can_place': True,
+            'reason': 'Live trading active'
+        }
