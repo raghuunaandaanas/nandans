@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Delta BTC Options Chain</title>
+
+<style>
+
+/* ===== GLOBAL ===== */
+
+body{
+    margin:0;
+    background:#0b0e13;
+    font-family:Segoe UI, Arial;
+    color:#d0d6dc;
+}
+
+.container{
+    padding:20px;
+}
+
+/* ===== TOP BAR ===== */
+
+.topbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:15px;
+}
+
+.timeframe-group{
+    display:flex;
+    gap:10px;
+}
+
+.tf-btn{
+    background:#11151c;
+    border:1px solid #1f2630;
+    color:#d0d6dc;
+    padding:8px 14px;
+    border-radius:6px;
+    cursor:pointer;
+    font-size:13px;
+}
+
+.tf-btn.active{
+    background:#2b6cb0;
+    border-color:#2b6cb0;
+    color:white;
+}
+
+.status-group{
+    display:flex;
+    gap:20px;
+    font-size:13px;
+}
+
+.status{
+    display:flex;
+    align-items:center;
+    gap:6px;
+}
+
+.dot{
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:#2ecc71;
+}
+
+.dot.disconnected{
+    background:red;
+}
+
+/* ===== TABLE ===== */
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    background:#11151c;
+}
+
+th{
+    background:#161b22;
+    color:#8b949e;
+    padding:14px;
+    font-size:13px;
+}
+
+td{
+    padding:14px;
+    border-top:1px solid #1f2630;
+    text-align:center;
+}
+
+/* ===== SLIDER STRUCTURE ===== */
+
+.slider-wrapper{
+    position:relative;
+}
+
+.level-grid{
+    display:grid;
+    grid-template-columns:repeat(11,1fr);
+    gap:2px;
+}
+
+.level-label{
+    font-size:10px;
+    text-align:center;
+}
+
+.price-box{
+    background:#0f141a;
+    border:1px solid #1e2631;
+    font-size:11px;
+    padding:3px 0;
+    border-radius:3px;
+}
+
+.be-zone{ background:#2a1414; }
+.base-zone{
+    background:#1b1f27;
+    font-weight:bold;
+    color:white;
+}
+.bu-zone{ background:#13291a; }
+
+input[type=range]{
+    width:100%;
+    margin-top:10px;
+    appearance:none;
+    height:10px;
+    border-radius:20px;
+}
+
+.call-slider{
+    background:linear-gradient(to right,
+        #ff4d4d,#ff8c3a,#ffd166,#2ecc71,#2ecc71,
+        #2ecc71,#ffd166,#ff8c3a,#ff4d4d);
+}
+
+.put-slider{
+    background:linear-gradient(to right,
+        #2ecc71,#ffd166,#ff8c3a,#ff4d4d,#ff4d4d,
+        #ff4d4d,#ff8c3a,#ffd166,#2ecc71);
+}
+
+input[type=range]::-webkit-slider-thumb{
+    appearance:none;
+    width:18px;
+    height:18px;
+    border-radius:50%;
+    background:white;
+    border:3px solid black;
+    cursor:pointer;
+}
+
+.base-marker{
+    position:absolute;
+    left:50%;
+    height:18px;
+    width:2px;
+    background:white;
+    top:44px;
+}
+
+.ltp-marker{
+    position:absolute;
+    top:72px;
+    transform:translateX(-50%);
+    background:#1f2933;
+    padding:3px 6px;
+    border-radius:4px;
+    font-size:11px;
+    white-space:nowrap;
+}
+
+.symbol{
+    font-weight:bold;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<!-- ===== TOP BAR ===== -->
+
+<div class="topbar">
+
+    <div class="timeframe-group">
+        <button class="tf-btn" data-tf="1m">1 Min</button>
+        <button class="tf-btn" data-tf="5m">5 Min</button>
+        <button class="tf-btn" data-tf="15m">15 Min</button>
+    </div>
+
+    <div class="status-group">
+        <div class="status">
+            BTC Spot: <span id="btc-spot">--</span>
+        </div>
+        <div class="status">
+            1m: <span id="btc-1m">--</span>
+        </div>
+        <div class="status">
+            5m: <span id="btc-5m">--</span>
+        </div>
+        <div class="status">
+            15m: <span id="btc-15m">--</span>
+        </div>
+        <div class="status">
+            <div class="dot" id="delta-dot"></div>
+            <span id="delta-status">Connecting...</span>
+        </div>
+        <div class="status">
+            <span id="last-update">--:--:--</span>
+        </div>
+    </div>
+
+</div>
+
+<table>
+
+<thead>
+<tr>
+<th>Trading Symbol</th>
+<th>Future LTP</th>
+<th>Fib Range</th>
+<th>CALL</th>
+<th>STRIKE</th>
+<th>PUT</th>
+</tr>
+</thead>
+
+<tbody id="options-body">
+<!-- Rows will be inserted here -->
+</tbody>
+
+</table>
+
+</div>
+
+<script>
+
+let currentTimeframe = '1m';
+let latestData = null;
+
+function formatNumber(n){
+    if(!n || n === 0) return '-';
+    if(n >= 100) return Math.round(n).toLocaleString();
+    if(n >= 10) return n.toFixed(1);
+    return n.toFixed(2);
+}
+
+function buildSlider(ltp, be5, be4, be3, be2, be1, base, bu1, bu2, bu3, bu4, bu5, type){
+    if(!ltp || ltp === 0 || !base || base === 0){
+        return `<div class="slider-wrapper">
+            <div class="level-grid">
+                <div class="level-label">be5</div><div class="level-label">be4</div><div class="level-label">be3</div>
+                <div class="level-label">be2</div><div class="level-label">be1</div><div class="level-label base-zone">BASE</div>
+                <div class="level-label">bu1</div><div class="level-label">bu2</div><div class="level-label">bu3</div>
+                <div class="level-label">bu4</div><div class="level-label">bu5</div>
+            </div>
+            <div class="level-grid">
+                <div class="price-box be-zone">-</div><div class="price-box be-zone">-</div><div class="price-box be-zone">-</div>
+                <div class="price-box be-zone">-</div><div class="price-box be-zone">-</div><div class="price-box base-zone">-</div>
+                <div class="price-box bu-zone">-</div><div class="price-box bu-zone">-</div><div class="price-box bu-zone">-</div>
+                <div class="price-box bu-zone">-</div><div class="price-box bu-zone">-</div>
+            </div>
+            <div class="base-marker"></div>
+            <input type="range" min="0" max="10" value="5" class="${type}-slider slider" disabled>
+            <div class="ltp-marker">-</div>
+        </div>`;
+    }
+    
+    const min = be5;
+    const max = bu5;
+    const v = Math.min(Math.max(ltp, min), max);
+    const percent = ((v - min) / (max - min)) * 100;
+    
+    return `<div class="slider-wrapper">
+        <div class="level-grid">
+            <div class="level-label">be5</div><div class="level-label">be4</div><div class="level-label">be3</div>
+            <div class="level-label">be2</div><div class="level-label">be1</div><div class="level-label base-zone">BASE</div>
+            <div class="level-label">bu1</div><div class="level-label">bu2</div><div class="level-label">bu3</div>
+            <div class="level-label">bu4</div><div class="level-label">bu5</div>
+        </div>
+        <div class="level-grid">
+            <div class="price-box be-zone">${formatNumber(be5)}</div>
+            <div class="price-box be-zone">${formatNumber(be4)}</div>
+            <div class="price-box be-zone">${formatNumber(be3)}</div>
+            <div class="price-box be-zone">${formatNumber(be2)}</div>
+            <div class="price-box be-zone">${formatNumber(be1)}</div>
+            <div class="price-box base-zone">${formatNumber(base)}</div>
+            <div class="price-box bu-zone">${formatNumber(bu1)}</div>
+            <div class="price-box bu-zone">${formatNumber(bu2)}</div>
+            <div class="price-box bu-zone">${formatNumber(bu3)}</div>
+            <div class="price-box bu-zone">${formatNumber(bu4)}</div>
+            <div class="price-box bu-zone">${formatNumber(bu5)}</div>
+        </div>
+        <div class="base-marker"></div>
+        <input type="range" min="${min}" max="${max}" step="0.01" value="${v}" class="${type}-slider slider" disabled>
+        <div class="ltp-marker" style="left:${percent}%">${formatNumber(ltp)}</div>
+    </div>`;
+}
+
+function buildRow(opt, btcPrice, timeframe){
+    const tf = timeframe || '1m';
+    const prefix = tf === '1m' ? '' : tf === '5m' ? '5m_' : '15m_';
+    
+    const callSlider = buildSlider(
+        opt.call_ltp,
+        opt[`ce_${prefix}be5`], opt[`ce_${prefix}be4`], opt[`ce_${prefix}be3`], opt[`ce_${prefix}be2`], opt[`ce_${prefix}be1`],
+        opt[`ce_${prefix}base`],
+        opt[`ce_${prefix}bu1`], opt[`ce_${prefix}bu2`], opt[`ce_${prefix}bu3`], opt[`ce_${prefix}bu4`], opt[`ce_${prefix}bu5`],
+        'call'
+    );
+    
+    const putSlider = buildSlider(
+        opt.put_ltp,
+        opt[`pe_${prefix}be5`], opt[`pe_${prefix}be4`], opt[`pe_${prefix}be3`], opt[`pe_${prefix}be2`], opt[`pe_${prefix}be1`],
+        opt[`pe_${prefix}base`],
+        opt[`pe_${prefix}bu1`], opt[`pe_${prefix}bu2`], opt[`pe_${prefix}bu3`], opt[`pe_${prefix}bu4`], opt[`pe_${prefix}bu5`],
+        'put'
+    );
+    
+    const atmMarker = opt.is_atm ? ' ◉ ATM' : '';
+    
+    return `<tr>
+        <td class="symbol">BTC</td>
+        <td>${formatNumber(btcPrice)}</td>
+        <td>-</td>
+        <td>${callSlider}</td>
+        <td>${opt.strike.toLocaleString()}${atmMarker}</td>
+        <td>${putSlider}</td>
+    </tr>`;
+}
+
+async function updateData(){
+    try{
+        const resp = await fetch('/api/data');
+        if(!resp.ok){
+            document.getElementById('delta-status').textContent = 'Error';
+            document.getElementById('delta-dot').classList.add('disconnected');
+            return;
+        }
+        const data = await resp.json();
+        
+        if(!data || !data.options){
+            return;
+        }
+        
+        latestData = data;
+        
+        // Update BTC prices at top - NO ROUNDING
+        document.getElementById('btc-spot').textContent = data.btc_price;
+        document.getElementById('btc-1m').textContent = data.btc_1m;
+        document.getElementById('btc-5m').textContent = data.btc_5m;
+        document.getElementById('btc-15m').textContent = data.btc_15m;
+        
+        // Update status
+        document.getElementById('delta-status').textContent = 'Connected';
+        document.getElementById('delta-dot').classList.remove('disconnected');
+        document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+        
+        // Render rows
+        const tbody = document.getElementById('options-body');
+        const btcPrice = currentTimeframe === '1m' ? data.btc_1m : 
+                        currentTimeframe === '5m' ? data.btc_5m : data.btc_15m;
+        tbody.innerHTML = data.options.map(opt => buildRow(opt, btcPrice, currentTimeframe)).join('');
+        
+    }catch(e){
+        console.error('Update error:', e);
+        document.getElementById('delta-status').textContent = 'Error';
+        document.getElementById('delta-dot').classList.add('disconnected');
+    }
+}
+
+// Timeframe buttons
+document.querySelectorAll('.tf-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentTimeframe = btn.dataset.tf;
+        if(latestData){
+            const tbody = document.getElementById('options-body');
+            const btcPrice = currentTimeframe === '1m' ? latestData.btc_1m : 
+                            currentTimeframe === '5m' ? latestData.btc_5m : latestData.btc_15m;
+            tbody.innerHTML = latestData.options.map(opt => buildRow(opt, btcPrice, currentTimeframe)).join('');
+        }
+    });
+});
+
+// Set default active
+document.querySelector('.tf-btn[data-tf="1m"]').classList.add('active');
+
+// Initial load
+updateData();
+
+// Live update every 5 seconds
+setInterval(updateData, 5000);
+
+</script>
+
+</body>
+</html>

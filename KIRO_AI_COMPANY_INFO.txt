@@ -1,0 +1,133 @@
+KIRO AI - COMPANY INFORMATION FOR LEGAL INQUIRY
+Generated: February 18, 2026
+=============================================================================
+
+PUBLICLY AVAILABLE INFORMATION:
+=============================================================================
+
+Company Name: Kiro AI
+Product: Kiro - AI-powered IDE and coding assistant
+Website: https://kiro.ai
+
+=============================================================================
+CONTACT METHODS:
+=============================================================================
+
+Official Website: https://kiro.ai
+Support/Contact: Available through website contact form
+Documentation: https://kiro.ai/docs (if available)
+
+=============================================================================
+INFORMATION NOT AVAILABLE TO AI ASSISTANT:
+=============================================================================
+
+The following information is NOT accessible to me as an AI assistant:
+- Company registration details
+- Physical office addresses
+- Investor information
+- Server IP addresses
+- Hosting infrastructure details
+- Internal company structure
+- Legal entity registration numbers
+- Tax identification numbers
+- Board of directors information
+- Shareholder information
+
+=============================================================================
+HOW TO OBTAIN OFFICIAL COMPANY INFORMATION:
+=============================================================================
+
+For Legal/Law Enforcement Inquiries:
+
+1. OFFICIAL CONTACT:
+   - Visit https://kiro.ai
+   - Look for "Legal", "Terms of Service", or "Privacy Policy" pages
+   - These typically contain registered company information
+
+2. LEGAL REQUEST PROCESS:
+   - Send official legal notice to contact email on website
+   - Request company registration documents
+   - Request server/infrastructure information
+   - Request conversation logs and technical data
+
+3. DOMAIN REGISTRATION:
+   - Use WHOIS lookup for kiro.ai domain
+   - May contain registrant information
+   - Command: whois kiro.ai
+
+4. BUSINESS REGISTRY:
+   - Check company registries in likely jurisdictions:
+     * United States (Delaware, California common for tech companies)
+     * United Kingdom (Companies House)
+     * Other jurisdictions based on website information
+
+5. TERMS OF SERVICE:
+   - Check https://kiro.ai/terms or similar
+   - Usually contains legal entity name and jurisdiction
+
+=============================================================================
+TECHNICAL INFORMATION AVAILABLE:
+=============================================================================
+
+User's Machine ID (from this session):
+afd25026addb34cae7a76383d9856d2415d5051d994e384e7f95d29c2d9dcd07
+
+User's System:
+- Operating System: Windows
+- Platform: win32
+- Shell: cmd
+- Working Directory: D:\modular\
+
+Session Information:
+- Date: February 18, 2026
+- Approximate Time: 12:00 PM - 1:30 PM IST
+
+=============================================================================
+EVIDENCE THAT CAN BE REQUESTED FROM KIRO AI:
+=============================================================================
+
+1. Complete conversation logs with timestamps
+2. All file operations performed during session
+3. User account information (if applicable)
+4. Server logs showing connection details
+5. IP addresses of servers that processed requests
+6. Data retention policies
+7. Backup/recovery capabilities
+8. System architecture documentation
+
+=============================================================================
+LEGAL PROCESS RECOMMENDATIONS:
+=============================================================================
+
+1. Send official legal notice to Kiro AI via their website
+2. Include case number and jurisdiction
+3. Request preservation of all evidence
+4. Request company registration documents
+5. Request technical infrastructure details
+6. Request all logs related to Machine ID above
+7. Request data retention and backup policies
+
+=============================================================================
+ALTERNATIVE INFORMATION SOURCES:
+=============================================================================
+
+1. LinkedIn: Search for "Kiro AI" for company page and employees
+2. Crunchbase: May contain investor and funding information
+3. GitHub: Check for official Kiro AI repositories
+4. App Stores: If Kiro has desktop app, check publisher information
+5. Social Media: Twitter, Facebook for official company accounts
+
+=============================================================================
+IMPORTANT NOTE:
+=============================================================================
+
+This document contains only publicly available or session-specific information.
+For official company details, registration information, and legal matters,
+you MUST contact Kiro AI directly through official channels.
+
+All requests should be made through proper legal channels with appropriate
+documentation and jurisdiction authority.
+
+=============================================================================
+END OF DOCUMENT
+=============================================================================
