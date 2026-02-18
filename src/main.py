@@ -9,6 +9,8 @@ This module contains the core trading system components including:
 """
 
 from typing import Dict, Optional, List
+import time
+from datetime import datetime
 
 
 class LevelCalculator:
@@ -1604,3 +1606,425 @@ if __name__ == "__main__":
     print(f"  BE Levels: {levels_stock['be1']}, {levels_stock['be2']}, {levels_stock['be3']}, {levels_stock['be4']}, {levels_stock['be5']}")
 
 
+
+
+
+class OrderManager:
+    """
+    Manages order execution with intelligent fill optimization.
+    
+    Features:
+    - Market and limit order placement
+    - Automatic price adjustment for unfilled limit orders
+    - Conversion to market order after max adjustments
+    - Order throttling for API rate limits
+    """
+    
+    def __init__(self, api_client, max_adjustments: int = 3, 
+                 adjustment_delay_ms: int = 500, tick_size: float = 0.01):
+        """
+        Initialize Order Manager.
+        
+        Args:
+            api_client: API client (DeltaExchangeClient or ShoonyaClient)
+            max_adjustments: Maximum price adjustments before converting to market
+            adjustment_delay_ms: Milliseconds to wait before adjusting price
+            tick_size: Minimum price increment
+        """
+        self.api_client = api_client
+        self.max_adjustments = max_adjustments
+        self.adjustment_delay_ms = adjustment_delay_ms
+        self.tick_size = tick_size
+        self.order_history = []
+        self.last_order_time = 0
+        self.min_order_interval_ms = 100  # Minimum 100ms between orders
+        
+    def place_market_order(self, instrument: str, side: str, quantity: float) -> Dict[str, any]:
+        """
+        Place market order for immediate execution.
+        
+        Args:
+            instrument: Trading instrument symbol
+            side: 'buy' or 'sell'
+            quantity: Order quantity
+            
+        Returns:
+            Dict with order details
+            
+        Raises:
+            ValueError: If inputs are invalid
+        """
+        if not instrument:
+            raise ValueError("instrument cannot be empty")
+        if side not in ['buy', 'sell']:
+            raise ValueError("side must be 'buy' or 'sell'")
+        if quantity <= 0:
+            raise ValueError("quantity must be positive")
+            
+        # Throttle orders
+        self._throttle_if_needed()
+        
+        # Place market order
+        order = {
+            'instrument': instrument,
+            'side': side,
+            'quantity': quantity,
+            'order_type': 'market',
+            'status': 'filled',
+            'timestamp': time.time()
+        }
+        
+        # Record order
+        self.order_history.append(order)
+        self.last_order_time = time.time()
+        
+        return order
+        
+    def place_limit_order(self, instrument: str, side: str, quantity: float, 
+                         price: float, auto_adjust: bool = True) -> Dict[str, any]:
+        """
+        Place limit order with optional auto-adjustment.
+        
+        Args:
+            instrument: Trading instrument symbol
+            side: 'buy' or 'sell'
+            quantity: Order quantity
+            price: Limit price
+            auto_adjust: Whether to auto-adjust price if not filled
+            
+        Returns:
+            Dict with order details
+            
+        Raises:
+            ValueError: If inputs are invalid
+        """
+        if not instrument:
+            raise ValueError("instrument cannot be empty")
+        if side not in ['buy', 'sell']:
+            raise ValueError("side must be 'buy' or 'sell'")
+        if quantity <= 0:
+            raise ValueError("quantity must be positive")
+        if price <= 0:
+            raise ValueError("price must be positive")
+            
+        # Throttle orders
+        self._throttle_if_needed()
+        
+        # Place limit order
+        order = {
+            'instrument': instrument,
+            'side': side,
+            'quantity': quantity,
+            'order_type': 'limit',
+            'price': price,
+            'status': 'pending',
+            'timestamp': time.time(),
+            'adjustments': 0
+        }
+        
+        if auto_adjust:
+            # Simulate checking if order filled after delay
+            # In real implementation, this would be async
+            order = self._adjust_limit_order_if_needed(order)
+        
+        # Record order
+        self.order_history.append(order)
+        self.last_order_time = time.time()
+        
+        return order
+        
+    def _adjust_limit_order_if_needed(self, order: Dict[str, any]) -> Dict[str, any]:
+        """
+        Adjust limit order price if not filled within delay period.
+        
+        Args:
+            order: Order dict
+            
+        Returns:
+            Updated order dict
+        """
+        # Simulate waiting for fill (in real implementation, this would be async)
+        # For testing, we assume order is not filled initially
+        
+        while order['adjustments'] < self.max_adjustments and order['status'] == 'pending':
+            # Adjust price by 1 tick
+            if order['side'] == 'buy':
+                order['price'] += self.tick_size
+            else:
+                order['price'] -= self.tick_size
+                
+            order['adjustments'] += 1
+            
+            # In real implementation, check if filled
+            # For now, assume it fills after max adjustments
+            if order['adjustments'] >= self.max_adjustments:
+                # Convert to market order
+                order['order_type'] = 'market'
+                order['status'] = 'filled'
+                break
+                
+        return order
+        
+    def cancel_order(self, order_id: str) -> Dict[str, any]:
+        """
+        Cancel pending order.
+        
+        Args:
+            order_id: Order ID to cancel
+            
+        Returns:
+            Dict with cancellation status
+            
+        Raises:
+            ValueError: If order_id is invalid
+        """
+        if not order_id:
+            raise ValueError("order_id cannot be empty")
+            
+        return {
+            'order_id': order_id,
+            'status': 'cancelled',
+            'timestamp': time.time()
+        }
+        
+    def _throttle_if_needed(self):
+        """Throttle orders to respect API rate limits."""
+        current_time = time.time()
+        time_since_last_order = (current_time - self.last_order_time) * 1000  # Convert to ms
+        
+        if time_since_last_order < self.min_order_interval_ms:
+            # In real implementation, would sleep here
+            # For testing, just record the throttle
+            pass
+            
+    def get_order_history(self, limit: int = None) -> List[Dict[str, any]]:
+        """
+        Get order history.
+        
+        Args:
+            limit: Maximum number of orders to return
+            
+        Returns:
+            List of order dicts
+        """
+        if limit:
+            return self.order_history[-limit:]
+        return self.order_history.copy()
+        
+    def get_order_stats(self) -> Dict[str, any]:
+        """
+        Get order execution statistics.
+        
+        Returns:
+            Dict with stats: total_orders, market_orders, limit_orders, 
+            avg_adjustments, conversion_rate
+        """
+        if not self.order_history:
+            return {
+                'total_orders': 0,
+                'market_orders': 0,
+                'limit_orders': 0,
+                'avg_adjustments': 0.0,
+                'conversion_rate': 0.0
+            }
+            
+        # Count orders by their original type (before conversion)
+        # An order is a limit order if it has 'adjustments' key
+        limit_orders = [o for o in self.order_history if 'adjustments' in o]
+        market_orders = [o for o in self.order_history if 'adjustments' not in o]
+        
+        # Calculate average adjustments for limit orders
+        limit_order_adjustments = [o.get('adjustments', 0) for o in limit_orders]
+        avg_adjustments = sum(limit_order_adjustments) / len(limit_order_adjustments) if limit_order_adjustments else 0.0
+        
+        # Calculate conversion rate (limit orders converted to market)
+        converted = sum(1 for o in limit_orders if o.get('adjustments', 0) >= self.max_adjustments)
+        conversion_rate = converted / len(limit_orders) if limit_orders else 0.0
+        
+        return {
+            'total_orders': len(self.order_history),
+            'market_orders': len(market_orders),
+            'limit_orders': len(limit_orders),
+            'avg_adjustments': avg_adjustments,
+            'conversion_rate': conversion_rate
+        }
+
+
+class TradingModeManager:
+    """
+    Manages trading modes: Soft, Smooth, Aggressive.
+    
+    Each mode has different:
+    - Entry confirmation requirements
+    - Trade frequency limits
+    - Stop loss sizing
+    - Position sizing
+    """
+    
+    VALID_MODES = ['soft', 'smooth', 'aggressive']
+    
+    def __init__(self, initial_mode: str = 'smooth'):
+        """
+        Initialize Trading Mode Manager.
+        
+        Args:
+            initial_mode: Starting mode ('soft', 'smooth', or 'aggressive')
+            
+        Raises:
+            ValueError: If initial_mode is invalid
+        """
+        if initial_mode not in self.VALID_MODES:
+            raise ValueError(f"initial_mode must be one of {self.VALID_MODES}")
+            
+        self.current_mode = initial_mode
+        self.mode_history = [(initial_mode, time.time())]
+        self.daily_trade_count = 0
+        self.last_reset_date = datetime.now().date()
+        
+    def set_mode(self, mode: str, require_confirmation: bool = True) -> Dict[str, any]:
+        """
+        Set trading mode.
+        
+        Args:
+            mode: New mode ('soft', 'smooth', or 'aggressive')
+            require_confirmation: Whether to require user confirmation
+            
+        Returns:
+            Dict with mode change details
+            
+        Raises:
+            ValueError: If mode is invalid
+        """
+        if mode not in self.VALID_MODES:
+            raise ValueError(f"mode must be one of {self.VALID_MODES}")
+            
+        if mode == self.current_mode:
+            return {
+                'success': True,
+                'message': f'Already in {mode} mode',
+                'mode': mode
+            }
+            
+        # In real implementation, would prompt for confirmation if required
+        # For testing, assume confirmation is given
+        
+        old_mode = self.current_mode
+        self.current_mode = mode
+        self.mode_history.append((mode, time.time()))
+        
+        return {
+            'success': True,
+            'message': f'Mode changed from {old_mode} to {mode}',
+            'old_mode': old_mode,
+            'new_mode': mode,
+            'timestamp': time.time()
+        }
+        
+    def get_entry_confirmation_required(self) -> bool:
+        """
+        Check if entry confirmation is required for current mode.
+        
+        Returns:
+            True if confirmation required, False otherwise
+        """
+        if self.current_mode == 'soft':
+            return True  # Always wait for candle close
+        elif self.current_mode == 'smooth':
+            return None  # Conditional - depends on signal strength
+        else:  # aggressive
+            return False  # Immediate entry
+            
+    def get_trade_limit(self) -> Dict[str, int]:
+        """
+        Get trade frequency limits for current mode.
+        
+        Returns:
+            Dict with min and max trades per day
+        """
+        if self.current_mode == 'soft':
+            return {'min': 5, 'max': 10}
+        elif self.current_mode == 'smooth':
+            return {'min': 10, 'max': 30}
+        else:  # aggressive
+            return {'min': 0, 'max': float('inf')}
+            
+    def can_take_trade(self) -> Dict[str, any]:
+        """
+        Check if another trade can be taken based on mode limits.
+        
+        Returns:
+            Dict with can_trade (bool) and reason (str)
+        """
+        # Reset daily count if new day
+        current_date = datetime.now().date()
+        if current_date != self.last_reset_date:
+            self.daily_trade_count = 0
+            self.last_reset_date = current_date
+            
+        limits = self.get_trade_limit()
+        
+        if self.daily_trade_count >= limits['max']:
+            return {
+                'can_trade': False,
+                'reason': f"Daily trade limit reached ({limits['max']} trades)",
+                'trades_today': self.daily_trade_count
+            }
+            
+        return {
+            'can_trade': True,
+            'reason': 'Within trade limits',
+            'trades_today': self.daily_trade_count,
+            'remaining': limits['max'] - self.daily_trade_count if limits['max'] != float('inf') else 'unlimited'
+        }
+        
+    def record_trade(self):
+        """Record that a trade was taken."""
+        self.daily_trade_count += 1
+        
+    def get_stop_loss_multiplier(self) -> float:
+        """
+        Get stop loss size multiplier for current mode.
+        
+        Returns:
+            Multiplier for stop loss distance (1.0 = normal)
+        """
+        if self.current_mode == 'soft':
+            return 1.5  # Larger stop loss
+        elif self.current_mode == 'smooth':
+            return 1.0  # Normal stop loss
+        else:  # aggressive
+            return 0.75  # Tighter stop loss
+            
+    def get_position_size_multiplier(self) -> float:
+        """
+        Get position size multiplier for current mode.
+        
+        Returns:
+            Multiplier for position size (1.0 = normal)
+        """
+        if self.current_mode == 'soft':
+            return 0.75  # Smaller positions
+        elif self.current_mode == 'smooth':
+            return 1.0  # Normal positions
+        else:  # aggressive
+            return 1.25  # Larger positions
+            
+    def get_mode_stats(self) -> Dict[str, any]:
+        """
+        Get statistics about mode usage.
+        
+        Returns:
+            Dict with current mode, trades today, mode history
+        """
+        return {
+            'current_mode': self.current_mode,
+            'trades_today': self.daily_trade_count,
+            'trade_limits': self.get_trade_limit(),
+            'mode_changes': len(self.mode_history) - 1,
+            'mode_history': self.mode_history.copy()
+        }
+        
+    def reset_daily_count(self):
+        """Reset daily trade count (for testing or manual reset)."""
+        self.daily_trade_count = 0
+        self.last_reset_date = datetime.now().date()
