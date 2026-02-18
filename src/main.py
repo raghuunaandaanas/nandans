@@ -3130,3 +3130,648 @@ class MultiTimeframeCoordinator:
             'reason': 'Waiting for precise entry on 1m',
             'alignment': alignment
         }
+
+
+class InvestmentRecommender:
+    """
+    Investment recommendation system for BE5 reversals.
+    Scans NFO stocks for investment opportunities.
+    """
+    
+    def __init__(self, level_calculator):
+        """Initialize investment recommender."""
+        self.level_calculator = level_calculator
+        self.monthly_levels = {}
+        self.yearly_levels = {}
+    
+    def scan_nfo_stocks_for_be5_reversals(self, stocks: List[Dict[str, any]], 
+                                          timeframe: str = 'monthly') -> List[Dict[str, any]]:
+        """
+        Scan NFO stocks for BE5 reversal opportunities.
+        
+        Args:
+            stocks: List of stock data with symbol, current_price, first_close
+            timeframe: 'monthly' or 'yearly'
+            
+        Returns:
+            List of investment candidates with BE5 levels
+        """
+        candidates = []
+        
+        for stock in stocks:
+            symbol = stock['symbol']
+            current_price = stock['current_price']
+            first_close = stock.get('first_close', current_price)
+            
+            # Calculate levels from first close
+            levels = self.level_calculator.calculate_levels(first_close, '1d')
+            
+            # Check if current price is near BE5
+            be5 = levels['be5']
+            distance_to_be5 = abs(current_price - be5) / be5
+            
+            # BE5 reversal opportunity if within 2% of BE5
+            if distance_to_be5 <= 0.02:
+                candidate = {
+                    'symbol': symbol,
+                    'current_price': current_price,
+                    'be5_level': be5,
+                    'distance_percent': distance_to_be5 * 100,
+                    'first_close': first_close,
+                    'levels': levels,
+                    'timeframe': timeframe,
+                    'opportunity': 'BE5_REVERSAL'
+                }
+                candidates.append(candidate)
+        
+        return candidates
+    
+    def rank_investment_candidates(self, candidates: List[Dict[str, any]], 
+                                   criteria: Dict[str, float] = None) -> List[Dict[str, any]]:
+        """
+        Rank investment candidates based on criteria.
+        
+        Args:
+            candidates: List of investment candidates
+            criteria: Ranking criteria (volume, volatility, etc.)
+            
+        Returns:
+            Ranked list of candidates
+        """
+        if not criteria:
+            criteria = {
+                'distance_weight': 1.0,  # Closer to BE5 is better
+                'volume_weight': 0.5,
+                'volatility_weight': 0.3
+            }
+        
+        for candidate in candidates:
+            # Calculate score (lower distance is better)
+            distance_score = 100 - candidate['distance_percent']
+            
+            # Add volume and volatility scores if available
+            volume_score = candidate.get('volume_score', 50)
+            volatility_score = candidate.get('volatility_score', 50)
+            
+            # Weighted total score
+            total_score = (
+                distance_score * criteria['distance_weight'] +
+                volume_score * criteria['volume_weight'] +
+                volatility_score * criteria['volatility_weight']
+            )
+            
+            candidate['score'] = total_score
+        
+        # Sort by score (highest first)
+        ranked = sorted(candidates, key=lambda x: x['score'], reverse=True)
+        
+        return ranked
+    
+    def categorize_stocks(self, stocks: List[Dict[str, any]], 
+                         levels: Dict[str, Dict[str, float]]) -> Dict[str, List[str]]:
+        """
+        Categorize stocks as Good, Bad, or Ugly based on performance.
+        
+        Args:
+            stocks: List of stock data
+            levels: Pre-calculated levels for each stock
+            
+        Returns:
+            Dict with 'good', 'bad', 'ugly' categories
+        """
+        categories = {
+            'good': [],  # Above BU3
+            'bad': [],   # Between BE1 and BU1
+            'ugly': []   # Below BE3
+        }
+        
+        for stock in stocks:
+            symbol = stock['symbol']
+            current_price = stock['current_price']
+            
+            if symbol not in levels:
+                continue
+            
+            stock_levels = levels[symbol]
+            
+            # Categorize based on current price vs levels
+            if current_price >= stock_levels['bu3']:
+                categories['good'].append(symbol)
+            elif current_price <= stock_levels['be3']:
+                categories['ugly'].append(symbol)
+            else:
+                categories['bad'].append(symbol)
+        
+        return categories
+    
+    def generate_daily_review_sheet(self, stocks: List[Dict[str, any]], 
+                                   date: str) -> Dict[str, any]:
+        """
+        Generate daily investment review sheet.
+        
+        Args:
+            stocks: List of stock data
+            date: Review date
+            
+        Returns:
+            Review sheet with recommendations
+        """
+        # Calculate levels for all stocks
+        levels = {}
+        for stock in stocks:
+            symbol = stock['symbol']
+            first_close = stock.get('first_close', stock['current_price'])
+            levels[symbol] = self.level_calculator.calculate_levels(first_close, '1d')
+        
+        # Categorize stocks
+        categories = self.categorize_stocks(stocks, levels)
+        
+        # Find BE5 reversal opportunities
+        be5_candidates = self.scan_nfo_stocks_for_be5_reversals(stocks, 'monthly')
+        ranked_candidates = self.rank_investment_candidates(be5_candidates)
+        
+        review_sheet = {
+            'date': date,
+            'total_stocks': len(stocks),
+            'categories': categories,
+            'be5_opportunities': ranked_candidates[:10],  # Top 10
+            'good_stocks_count': len(categories['good']),
+            'bad_stocks_count': len(categories['bad']),
+            'ugly_stocks_count': len(categories['ugly']),
+            'top_recommendation': ranked_candidates[0] if ranked_candidates else None
+        }
+        
+        return review_sheet
+
+
+class GammaDetector:
+    """
+    Gamma move detection for options trading.
+    Identifies strikes that can turn 1 rupee into xx,xxx.
+    """
+    
+    def __init__(self, level_calculator):
+        """Initialize gamma detector."""
+        self.level_calculator = level_calculator
+        self.monitored_stocks = []
+        self.gamma_opportunities = []
+    
+    def calculate_gamma_levels(self, strike: float, base_price: float, 
+                              expiry_days: int) -> Dict[str, float]:
+        """
+        Calculate gamma levels for a strike.
+        
+        Args:
+            strike: Option strike price
+            base_price: Current underlying price
+            expiry_days: Days to expiry
+            
+        Returns:
+            Dict with gamma levels
+        """
+        # Calculate levels for the strike
+        levels = self.level_calculator.calculate_levels(strike, '1d')
+        
+        # Gamma potential increases as expiry approaches
+        time_decay_factor = max(0.1, expiry_days / 30)
+        
+        # Distance from ATM affects gamma
+        distance_from_atm = abs(strike - base_price) / base_price
+        
+        # Gamma is highest for ATM options
+        gamma_factor = 1.0 / (1.0 + distance_from_atm * 10)
+        
+        gamma_levels = {
+            'strike': strike,
+            'base_price': base_price,
+            'expiry_days': expiry_days,
+            'gamma_factor': gamma_factor,
+            'time_decay_factor': time_decay_factor,
+            'potential_multiplier': gamma_factor / time_decay_factor * 100,
+            'entry_level': levels['base'],
+            'target_level': levels['bu5'],
+            'stop_loss': levels['be1']
+        }
+        
+        return gamma_levels
+    
+    def predict_gamma_strikes(self, instrument: str, current_price: float,
+                            available_strikes: List[float], 
+                            expiry_date: str) -> List[Dict[str, any]]:
+        """
+        Predict which strikes have gamma potential.
+        
+        Args:
+            instrument: Instrument symbol
+            current_price: Current underlying price
+            available_strikes: List of available strikes
+            expiry_date: Expiry date
+            
+        Returns:
+            List of gamma strike predictions
+        """
+        from datetime import datetime
+        
+        # Calculate days to expiry
+        try:
+            expiry = datetime.strptime(expiry_date, '%Y-%m-%d')
+            today = datetime.now()
+            expiry_days = (expiry - today).days
+        except:
+            expiry_days = 7  # Default to 1 week
+        
+        gamma_strikes = []
+        
+        # Find ATM and near-ATM strikes
+        atm_strike = min(available_strikes, key=lambda x: abs(x - current_price))
+        atm_index = available_strikes.index(atm_strike)
+        
+        # Check strikes within 3 above and below ATM
+        start_idx = max(0, atm_index - 3)
+        end_idx = min(len(available_strikes), atm_index + 4)
+        
+        for strike in available_strikes[start_idx:end_idx]:
+            gamma_levels = self.calculate_gamma_levels(strike, current_price, expiry_days)
+            
+            # High gamma potential if:
+            # 1. Near ATM (within 5%)
+            # 2. Less than 7 days to expiry
+            # 3. High gamma factor
+            distance_pct = abs(strike - current_price) / current_price * 100
+            
+            if distance_pct <= 5 and expiry_days <= 7 and gamma_levels['gamma_factor'] > 0.5:
+                prediction = {
+                    'instrument': instrument,
+                    'strike': strike,
+                    'current_price': current_price,
+                    'expiry_days': expiry_days,
+                    'gamma_levels': gamma_levels,
+                    'potential': 'HIGH' if gamma_levels['potential_multiplier'] > 50 else 'MEDIUM',
+                    'entry_price': 1.0,  # 1 rupee entry
+                    'target_price': gamma_levels['potential_multiplier'],
+                    'risk_reward': gamma_levels['potential_multiplier']
+                }
+                gamma_strikes.append(prediction)
+        
+        # Sort by potential multiplier
+        gamma_strikes.sort(key=lambda x: x['gamma_levels']['potential_multiplier'], 
+                          reverse=True)
+        
+        return gamma_strikes
+    
+    def monitor_gamma_opportunities(self, stocks: List[str], 
+                                   market_data: Dict[str, any]) -> List[Dict[str, any]]:
+        """
+        Monitor 10 key stocks for gamma opportunities.
+        
+        Args:
+            stocks: List of stock symbols to monitor
+            market_data: Current market data
+            
+        Returns:
+            List of gamma opportunities
+        """
+        self.monitored_stocks = stocks[:10]  # Limit to 10
+        opportunities = []
+        
+        for symbol in self.monitored_stocks:
+            if symbol not in market_data:
+                continue
+            
+            data = market_data[symbol]
+            current_price = data['current_price']
+            available_strikes = data.get('strikes', [])
+            expiry_date = data.get('expiry_date', '2026-02-25')
+            
+            # Predict gamma strikes
+            gamma_strikes = self.predict_gamma_strikes(
+                symbol, current_price, available_strikes, expiry_date
+            )
+            
+            if gamma_strikes:
+                opportunities.extend(gamma_strikes)
+        
+        self.gamma_opportunities = opportunities
+        return opportunities
+    
+    def alert_gamma_opportunity(self, opportunity: Dict[str, any]) -> Dict[str, any]:
+        """
+        Generate alert for gamma opportunity.
+        
+        Args:
+            opportunity: Gamma opportunity data
+            
+        Returns:
+            Alert dict
+        """
+        alert = {
+            'type': 'GAMMA_OPPORTUNITY',
+            'instrument': opportunity['instrument'],
+            'strike': opportunity['strike'],
+            'potential': opportunity['potential'],
+            'entry_price': opportunity['entry_price'],
+            'target_price': opportunity['target_price'],
+            'risk_reward': opportunity['risk_reward'],
+            'message': f"Gamma opportunity detected: {opportunity['instrument']} "
+                      f"{opportunity['strike']} strike can turn ₹1 into "
+                      f"₹{opportunity['target_price']:.0f}",
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        return alert
+
+
+class VolatilitySpikeManager:
+    """
+    Manages news/volatility spikes using B5 Factor levels.
+    No indicators - only numbers and levels.
+    """
+    
+    def __init__(self, spike_detector, level_calculator):
+        """Initialize volatility spike manager."""
+        self.spike_detector = spike_detector
+        self.level_calculator = level_calculator
+    
+    def analyze_volatility_spike(self, price_movement: Dict[str, float], 
+                                levels: Dict[str, float]) -> Dict[str, any]:
+        """
+        Analyze if volatility spike is tradeable.
+        
+        Args:
+            price_movement: Dict with high, low, open, close
+            levels: B5 Factor levels
+            
+        Returns:
+            Analysis dict
+        """
+        current_price = price_movement['close']
+        high = price_movement['high']
+        low = price_movement['low']
+        
+        # Calculate spike magnitude
+        spike_range = high - low
+        points = levels['points']
+        spike_magnitude = spike_range / points
+        
+        # Check if spike aligns with BU/BE levels
+        bu_levels = [levels['bu1'], levels['bu2'], levels['bu3'], 
+                    levels['bu4'], levels['bu5']]
+        be_levels = [levels['be1'], levels['be2'], levels['be3'], 
+                    levels['be4'], levels['be5']]
+        
+        # Check if high touched any BU level
+        bu_touched = any(abs(high - bu) / bu < 0.005 for bu in bu_levels)
+        
+        # Check if low touched any BE level
+        be_touched = any(abs(low - be) / be < 0.005 for be in be_levels)
+        
+        # Spike is tradeable if it aligns with levels
+        is_tradeable = bu_touched or be_touched
+        
+        # Classify spike
+        if is_tradeable:
+            classification = 'TRADEABLE'
+            reason = 'Spike aligns with BU/BE levels'
+        else:
+            classification = 'NOISE'
+            reason = 'Spike does not align with levels'
+        
+        analysis = {
+            'spike_magnitude': spike_magnitude,
+            'spike_range': spike_range,
+            'points': points,
+            'bu_touched': bu_touched,
+            'be_touched': be_touched,
+            'classification': classification,
+            'reason': reason,
+            'is_tradeable': is_tradeable,
+            'current_price': current_price
+        }
+        
+        return analysis
+    
+    def adjust_position_sizing(self, base_size: float, volatility_spike: Dict[str, any]) -> float:
+        """
+        Adjust position size during high volatility.
+        
+        Args:
+            base_size: Base position size
+            volatility_spike: Spike analysis
+            
+        Returns:
+            Adjusted position size
+        """
+        spike_magnitude = volatility_spike['spike_magnitude']
+        
+        # Reduce size if spike is large (> 3× Points)
+        if spike_magnitude > 3:
+            adjustment_factor = 0.5  # 50% of base size
+        elif spike_magnitude > 2:
+            adjustment_factor = 0.75  # 75% of base size
+        else:
+            adjustment_factor = 1.0  # Full size
+        
+        adjusted_size = base_size * adjustment_factor
+        
+        return adjusted_size
+    
+    def adjust_stop_loss(self, base_stop_loss: float, levels: Dict[str, float], 
+                        volatility_spike: Dict[str, any]) -> float:
+        """
+        Widen stop loss based on increased Points during volatility.
+        
+        Args:
+            base_stop_loss: Base stop loss distance
+            levels: B5 Factor levels
+            volatility_spike: Spike analysis
+            
+        Returns:
+            Adjusted stop loss distance
+        """
+        spike_magnitude = volatility_spike['spike_magnitude']
+        points = levels['points']
+        
+        # Widen stop loss if spike is large
+        if spike_magnitude > 3:
+            # Use 1.5× Points instead of 0.5× Points
+            adjusted_stop_loss = points * 1.5
+        elif spike_magnitude > 2:
+            # Use 1.0× Points
+            adjusted_stop_loss = points * 1.0
+        else:
+            # Use standard 0.5× Points
+            adjusted_stop_loss = base_stop_loss
+        
+        return adjusted_stop_loss
+
+
+class ProfitRidingSystem:
+    """
+    Profit riding system for holding positions through multiple levels.
+    Moves stop loss to breakeven and trails through levels.
+    """
+    
+    def __init__(self, position_manager):
+        """Initialize profit riding system."""
+        self.position_manager = position_manager
+        self.profit_riding_stats = {
+            'total_rides': 0,
+            'successful_rides': 0,
+            'early_exits': 0,
+            'max_levels_reached': 0
+        }
+    
+    def should_move_to_breakeven(self, position: Dict[str, any], 
+                                 current_price: float, 
+                                 levels: Dict[str, float]) -> bool:
+        """
+        Check if stop loss should move to breakeven.
+        
+        Args:
+            position: Current position
+            current_price: Current price
+            levels: B5 Factor levels
+            
+        Returns:
+            True if should move to breakeven
+        """
+        direction = position['direction']
+        entry_price = position['entry_price']
+        
+        if direction == 'long':
+            # Move to breakeven at BU2
+            return current_price >= levels['bu2']
+        else:
+            # Move to breakeven at BE2
+            return current_price <= levels['be2']
+    
+    def calculate_trailing_stop(self, position: Dict[str, any], 
+                                current_price: float, 
+                                levels: Dict[str, float]) -> float:
+        """
+        Calculate trailing stop loss at previous level.
+        
+        Args:
+            position: Current position
+            current_price: Current price
+            levels: B5 Factor levels
+            
+        Returns:
+            Trailing stop loss price
+        """
+        direction = position['direction']
+        
+        # Determine which level we're at
+        bu_levels = [levels['bu1'], levels['bu2'], levels['bu3'], 
+                    levels['bu4'], levels['bu5']]
+        be_levels = [levels['be1'], levels['be2'], levels['be3'], 
+                    levels['be4'], levels['be5']]
+        
+        if direction == 'long':
+            # Find current level
+            current_level_idx = 0
+            for i, bu in enumerate(bu_levels):
+                if current_price >= bu:
+                    current_level_idx = i
+            
+            # Trail stop to previous level
+            if current_level_idx >= 2:  # At BU3 or higher
+                # Stop at 50% between previous two levels
+                prev_level = bu_levels[current_level_idx - 1]
+                prev_prev_level = bu_levels[current_level_idx - 2]
+                trailing_stop = (prev_level + prev_prev_level) / 2
+            elif current_level_idx == 1:  # At BU2
+                # Stop at breakeven
+                trailing_stop = position['entry_price']
+            else:
+                # Use original stop loss
+                trailing_stop = position.get('stop_loss', levels['base'] - levels['points'] * 0.5)
+        
+        else:  # short
+            # Find current level
+            current_level_idx = 0
+            for i, be in enumerate(be_levels):
+                if current_price <= be:
+                    current_level_idx = i
+            
+            # Trail stop to previous level
+            if current_level_idx >= 2:  # At BE3 or lower
+                # Stop at 50% between previous two levels
+                prev_level = be_levels[current_level_idx - 1]
+                prev_prev_level = be_levels[current_level_idx - 2]
+                trailing_stop = (prev_level + prev_prev_level) / 2
+            elif current_level_idx == 1:  # At BE2
+                # Stop at breakeven
+                trailing_stop = position['entry_price']
+            else:
+                # Use original stop loss
+                trailing_stop = position.get('stop_loss', levels['base'] + levels['points'] * 0.5)
+        
+        return trailing_stop
+    
+    def should_exit_position(self, position: Dict[str, any], 
+                            candle: Dict[str, float], 
+                            trailing_stop: float) -> bool:
+        """
+        Check if position should exit (candle close below trailing stop).
+        
+        Args:
+            position: Current position
+            candle: Current candle data
+            trailing_stop: Trailing stop loss price
+            
+        Returns:
+            True if should exit
+        """
+        direction = position['direction']
+        close_price = candle['close']
+        
+        if direction == 'long':
+            # Exit if close below trailing stop
+            return close_price < trailing_stop
+        else:
+            # Exit if close above trailing stop
+            return close_price > trailing_stop
+    
+    def update_profit_riding_stats(self, position: Dict[str, any], 
+                                   exit_reason: str, 
+                                   levels_reached: int):
+        """
+        Update profit riding statistics.
+        
+        Args:
+            position: Closed position
+            exit_reason: Reason for exit
+            levels_reached: Number of levels reached
+        """
+        self.profit_riding_stats['total_rides'] += 1
+        
+        if exit_reason == 'TARGET_REACHED':
+            self.profit_riding_stats['successful_rides'] += 1
+        else:
+            self.profit_riding_stats['early_exits'] += 1
+        
+        if levels_reached > self.profit_riding_stats['max_levels_reached']:
+            self.profit_riding_stats['max_levels_reached'] = levels_reached
+    
+    def get_profit_riding_stats(self) -> Dict[str, any]:
+        """
+        Get profit riding statistics.
+        
+        Returns:
+            Stats dict
+        """
+        total = self.profit_riding_stats['total_rides']
+        
+        if total > 0:
+            success_rate = self.profit_riding_stats['successful_rides'] / total
+        else:
+            success_rate = 0.0
+        
+        return {
+            'total_rides': total,
+            'successful_rides': self.profit_riding_stats['successful_rides'],
+            'early_exits': self.profit_riding_stats['early_exits'],
+            'success_rate': success_rate,
+            'max_levels_reached': self.profit_riding_stats['max_levels_reached']
+        }
