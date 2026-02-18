@@ -1,0 +1,4 @@
+# file: C:\Users\winner\AppData\Roaming\Python\Python313\site-packages\numpy\__config__.py
+# hypothesis_version: 6.151.9
+
+['1.26.4', '19.44.35217', '3.0.12', '3.13', 'Build Dependencies', 'Compilers', 'False', 'Machine Information', 'Python Information', 'SIMD Extensions', 'True', 'args', 'auto', 'baseline', 'blas', 'build', 'c', 'c++', 'cl', 'commands', 'cpu', 'cross-compiled', 'cython', 'dep2153771924992', 'detection method', 'dicts', 'endian', 'false', 'family', 'found', 'host', 'include directory', 'internal', 'lapack', 'lib directory', 'link', 'linker', 'linker args', 'little', 'msvc', 'name', 'not found', 'path', 'pc file directory', 'show', 'stdout', 'system', 'unknown', 'version', 'windows', 'x86_64']
