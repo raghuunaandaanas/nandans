@@ -18,7 +18,8 @@ if sys.platform == 'win32':
 
 from src.main import (
     LevelCalculator, SignalGenerator, PositionManager, RiskManager,
-    AutoSenseEngine, OrderManager, TradingModeManager, LiveTradingEngine
+    AutoSenseEngine, OrderManager, TradingModeManager, LiveTradingEngine,
+    MultiTimeframeCoordinator
 )
 from src.api_integrations import DeltaExchangeClient, ShoonyaClient
 from src.database import DatabaseManager
@@ -49,6 +50,7 @@ class LiveTradingBot:
         self.risk_manager = RiskManager()
         self.auto_sense = AutoSenseEngine()
         self.trading_mode = TradingModeManager(initial_mode='smooth')
+        self.multi_timeframe = MultiTimeframeCoordinator(self.level_calculator)
         
         # Initialize exchange client
         self.exchange = exchange
@@ -67,7 +69,11 @@ class LiveTradingBot:
         self.is_running = False
         self.current_positions = {}
         self.levels = {}
+        self.levels_5m = {}
+        self.levels_15m = {}
         self.manual_base_price = None  # Can be set manually
+        self.manual_base_price_5m = None
+        self.manual_base_price_15m = None
         
     def connect_to_exchange(self) -> bool:
         """
@@ -137,10 +143,18 @@ class LiveTradingBot:
             Dict with calculated levels
         """
         try:
-            # Use manual base price if set
-            if self.manual_base_price:
-                base_price = self.manual_base_price
-                print(f"\n[INFO] Using manual base price: {base_price:.2f}")
+            # Use manual base price if set for this timeframe
+            manual_price = None
+            if timeframe == '1m' and self.manual_base_price:
+                manual_price = self.manual_base_price
+            elif timeframe == '5m' and self.manual_base_price_5m:
+                manual_price = self.manual_base_price_5m
+            elif timeframe == '15m' and self.manual_base_price_15m:
+                manual_price = self.manual_base_price_15m
+            
+            if manual_price:
+                base_price = manual_price
+                print(f"\n[INFO] Using manual base price for {timeframe}: {base_price:.2f}")
             else:
                 # Try to get first candle close at market open
                 print(f"\n[INFO] Fetching first candle close at {market_open_time} IST...")
@@ -226,7 +240,7 @@ class LiveTradingBot:
             levels: Calculated levels
             
         Returns:
-            Signal dict
+            Signal dict with 'signal' key containing 'bullish', 'bearish', or None
         """
         try:
             # Check entry signal
@@ -236,15 +250,22 @@ class LiveTradingBot:
                 mode=self.trading_mode.current_mode
             )
             
-            if signal['signal'] is not None:
+            # Convert 'buy'/'sell' to 'bullish'/'bearish' for multi-timeframe coordinator
+            converted_signal = signal.copy()
+            if signal['signal'] == 'buy':
+                converted_signal['signal'] = 'bullish'
+            elif signal['signal'] == 'sell':
+                converted_signal['signal'] = 'bearish'
+            
+            if converted_signal['signal'] is not None:
                 print(f"\n🎯 SIGNAL DETECTED!")
                 print(f"   Symbol: {symbol}")
-                print(f"   Signal: {signal['signal'].upper()}")
+                print(f"   Signal: {signal['signal'].upper()}")  # Show original buy/sell
                 print(f"   Price: {current_price:.2f}")
                 print(f"   Level: {signal.get('level', 'N/A')}")
                 print(f"   Confidence: {signal.get('confidence', 0):.2%}")
             
-            return signal
+            return converted_signal
             
         except Exception as e:
             print(f"⚠️  Error checking signals: {str(e)}")
@@ -256,7 +277,7 @@ class LiveTradingBot:
         
         Args:
             symbol: Trading symbol
-            signal: Signal dict
+            signal: Signal dict (with 'bullish'/'bearish' format)
             current_price: Current price
             
         Returns:
@@ -264,6 +285,14 @@ class LiveTradingBot:
         """
         try:
             if signal['signal'] is None:
+                return False
+            
+            # Convert bullish/bearish back to buy/sell for execution
+            if signal['signal'] == 'bullish':
+                trade_direction = 'buy'
+            elif signal['signal'] == 'bearish':
+                trade_direction = 'sell'
+            else:
                 return False
             
             # Check if we can trade
@@ -280,12 +309,13 @@ class LiveTradingBot:
             position_size = self.position_manager.calculate_position_size(
                 capital=capital,
                 risk_percent=risk_percent,
-                stop_loss_distance=stop_loss_distance
+                stop_loss_distance=stop_loss_distance,
+                price=current_price
             )
             
             print(f"\n💰 Executing Trade:")
             print(f"   Symbol: {symbol}")
-            print(f"   Direction: {signal['signal']}")
+            print(f"   Direction: {trade_direction.upper()}")
             print(f"   Price: {current_price:.2f}")
             print(f"   Size: {position_size:.4f}")
             print(f"   Mode: {self.mode.upper()}")
@@ -306,10 +336,9 @@ class LiveTradingBot:
                     return False
                 
                 # Place order
-                side = signal['signal']  # 'buy' or 'sell'
                 order = self.order_manager.place_market_order(
                     instrument=symbol,
-                    side=side,
+                    side=trade_direction,
                     quantity=position_size
                 )
                 
@@ -359,19 +388,49 @@ class LiveTradingBot:
                 if current_price > 0:
                     print(f"💹 Current Price: {current_price:.2f}")
                     
-                    # Calculate levels if not already done (using first candle close)
+                    # Calculate levels for all timeframes if not already done
                     if not self.levels:
+                        print(f"\n[MULTI-TIMEFRAME] Calculating levels for 1m, 5m, 15m...")
                         self.levels = self.calculate_levels_from_real_data(
                             symbol, '1m', market_open_time
                         )
                     
-                    if self.levels:
-                        # Check for signals
-                        signal = self.check_for_signals(symbol, current_price, self.levels)
+                    if not self.levels_5m:
+                        self.levels_5m = self.calculate_levels_from_real_data(
+                            symbol, '5m', market_open_time
+                        )
+                    
+                    if not self.levels_15m:
+                        self.levels_15m = self.calculate_levels_from_real_data(
+                            symbol, '15m', market_open_time
+                        )
+                    
+                    if self.levels and self.levels_5m and self.levels_15m:
+                        # Check signals for all timeframes
+                        signal_1m = self.check_for_signals(symbol, current_price, self.levels)
+                        signal_5m = self.check_for_signals(symbol, current_price, self.levels_5m)
+                        signal_15m = self.check_for_signals(symbol, current_price, self.levels_15m)
                         
-                        # Execute trade if signal found
-                        if signal['signal'] is not None:
-                            self.execute_trade(symbol, signal, current_price)
+                        # Check timeframe alignment
+                        alignment = self.multi_timeframe.check_timeframe_alignment(
+                            signal_1m, signal_5m, signal_15m
+                        )
+                        
+                        print(f"\n[TIMEFRAME ALIGNMENT]")
+                        print(f"   1m: {signal_1m.get('signal', 'neutral')} | 5m: {signal_5m.get('signal', 'neutral')} | 15m: {signal_15m.get('signal', 'neutral')}")
+                        print(f"   Aligned: {alignment['aligned']}")
+                        print(f"   Direction: {alignment['direction']}")
+                        print(f"   Confidence: {alignment['confidence']:.2%}")
+                        print(f"   Position Multiplier: {alignment['position_multiplier']}x")
+                        print(f"   Reason: {alignment['reason']}")
+                        
+                        # Only trade if we have a signal and alignment
+                        if signal_1m.get('signal') is not None and alignment['aligned']:
+                            print(f"   ✅ Taking trade with {alignment['direction']} alignment")
+                            self.execute_trade(symbol, signal_1m, current_price)
+                        elif signal_1m.get('signal') is not None:
+                            print(f"   ⚠️  Skipping trade - timeframes not aligned")
+                            print(f"   Directions: {alignment.get('directions', {})}")
                     
                     # Check risk limits
                     risk_check = self.risk_manager.check_daily_loss_limit(0.0, 10000.0)
@@ -436,7 +495,9 @@ def main():
     # MANUAL BASE PRICE (Set this to first candle close if known)
     # If set, this will be used instead of fetching from API
     # Example: MANUAL_BASE_PRICE = 67511.00  (first candle close at 5:30 AM IST)
-    MANUAL_BASE_PRICE = 67511.00  # Set to None to fetch automatically
+    MANUAL_BASE_PRICE = 67511.00  # 1m first candle close - Set to None to fetch automatically
+    MANUAL_BASE_PRICE_5M = 67511.00  # 5m first candle close
+    MANUAL_BASE_PRICE_15M = 67511.00  # 15m first candle close
     
     print(f"⚙️  Configuration:")
     print(f"   Exchange: {EXCHANGE}")
@@ -444,15 +505,23 @@ def main():
     print(f"   Mode: {MODE}")
     print(f"   Market Open Time: {MARKET_OPEN_TIME} IST")
     if MANUAL_BASE_PRICE:
-        print(f"   Manual Base Price: {MANUAL_BASE_PRICE} (First Candle Close)")
+        print(f"   Manual Base Price 1m: {MANUAL_BASE_PRICE} (First Candle Close)")
+    if MANUAL_BASE_PRICE_5M:
+        print(f"   Manual Base Price 5m: {MANUAL_BASE_PRICE_5M}")
+    if MANUAL_BASE_PRICE_15M:
+        print(f"   Manual Base Price 15m: {MANUAL_BASE_PRICE_15M}")
     print(f"   Check Interval: {INTERVAL}s")
     
     # Create bot
     bot = LiveTradingBot(exchange=EXCHANGE, mode=MODE)
     
-    # Set manual base price if provided
+    # Set manual base prices if provided
     if MANUAL_BASE_PRICE:
         bot.manual_base_price = MANUAL_BASE_PRICE
+    if MANUAL_BASE_PRICE_5M:
+        bot.manual_base_price_5m = MANUAL_BASE_PRICE_5M
+    if MANUAL_BASE_PRICE_15M:
+        bot.manual_base_price_15m = MANUAL_BASE_PRICE_15M
     
     # Connect to exchange
     if not bot.connect_to_exchange():
