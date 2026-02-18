@@ -72,13 +72,12 @@ class LiveTradingBot:
             if self.exchange == 'delta':
                 # Test connection by getting products
                 products = self.api_client.get_products()
-                if products:
+                if products and 'result' in products:
                     print(f"✅ Connected to Delta Exchange")
-                    print(f"   Available products: {len(products)}")
+                    print(f"   Available products: {len(products['result'])}")
                     return True
             else:
                 # Test Shoonya connection
-                # Note: Shoonya requires login first
                 print("⚠️  Shoonya requires manual login")
                 print("   Please ensure credentials are valid in shoonya_cred.json")
                 return True
@@ -100,8 +99,10 @@ class LiveTradingBot:
         try:
             if self.exchange == 'delta':
                 ticker = self.api_client.get_ticker(symbol)
-                if ticker and 'close' in ticker:
-                    return float(ticker['close'])
+                if ticker and 'result' in ticker:
+                    result = ticker['result']
+                    if 'close' in result:
+                        return float(result['close'])
             else:
                 quotes = self.api_client.get_quotes('NSE', symbol)
                 if quotes and 'lp' in quotes:
@@ -168,7 +169,7 @@ class LiveTradingBot:
                 mode=self.trading_mode.current_mode
             )
             
-            if signal['signal'] != 'neutral':
+            if signal['signal'] is not None:
                 print(f"\n🎯 SIGNAL DETECTED!")
                 print(f"   Symbol: {symbol}")
                 print(f"   Signal: {signal['signal'].upper()}")
@@ -180,7 +181,7 @@ class LiveTradingBot:
             
         except Exception as e:
             print(f"⚠️  Error checking signals: {str(e)}")
-            return {'signal': 'neutral'}
+            return {'signal': None}
     
     def execute_trade(self, symbol: str, signal: Dict[str, any], current_price: float) -> bool:
         """
@@ -195,7 +196,7 @@ class LiveTradingBot:
             True if trade executed
         """
         try:
-            if signal['signal'] == 'neutral':
+            if signal['signal'] is None:
                 return False
             
             # Check if we can trade
@@ -238,7 +239,7 @@ class LiveTradingBot:
                     return False
                 
                 # Place order
-                side = 'buy' if signal['signal'] == 'bullish' else 'sell'
+                side = signal['signal']  # 'buy' or 'sell'
                 order = self.order_manager.place_market_order(
                     instrument=symbol,
                     side=side,
@@ -298,12 +299,12 @@ class LiveTradingBot:
                         signal = self.check_for_signals(symbol, current_price, self.levels)
                         
                         # Execute trade if signal found
-                        if signal['signal'] != 'neutral':
+                        if signal['signal'] is not None:
                             self.execute_trade(symbol, signal, current_price)
                     
                     # Check risk limits
-                    risk_status = self.risk_manager.check_daily_loss_limit(0.0, 10000.0)
-                    if not risk_status['within_limit']:
+                    risk_check = self.risk_manager.check_daily_loss_limit(0.0, 10000.0)
+                    if not risk_check.get('within_limit', True):
                         print(f"\n🛑 RISK LIMIT REACHED - STOPPING")
                         break
                 else:
@@ -318,6 +319,8 @@ class LiveTradingBot:
             self.is_running = False
         except Exception as e:
             print(f"\n❌ Error in trading loop: {str(e)}")
+            import traceback
+            traceback.print_exc()
             self.is_running = False
     
     def enable_live_trading(self):
@@ -353,10 +356,10 @@ def main():
     """)
     
     # Configuration
-    EXCHANGE = 'delta'  # 'delta' or 'shoonya'
-    SYMBOL = 'BTCUSD'   # Trading symbol
-    MODE = 'paper'      # 'paper' or 'live'
-    INTERVAL = 5        # Check every 5 seconds
+    EXCHANGE = 'delta'     # 'delta' or 'shoonya'
+    SYMBOL = 'BTCUSDT'     # Trading symbol
+    MODE = 'paper'         # 'paper' or 'live'
+    INTERVAL = 5           # Check every 5 seconds
     
     # Create bot
     bot = LiveTradingBot(exchange=EXCHANGE, mode=MODE)
